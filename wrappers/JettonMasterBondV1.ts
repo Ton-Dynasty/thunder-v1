@@ -15,6 +15,8 @@ export const MasterOpocde = {
     TopUp: 0xd372158c,
     Mint: 0x642b7d07,
     InternalTransfer: 0x178d4519,
+    Burn: 0x595f07bc,
+    BurnNotification: 0x7bdd97de,
 };
 
 export type BuyToken = {

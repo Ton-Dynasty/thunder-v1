@@ -15,6 +15,34 @@ describe('JettonMasterBondV1', () => {
     const precision = 1000n;
     const fee_rate = 10n;
 
+    const buyToken = async (
+        buyer: SandboxContract<TreasuryContract>,
+        tonAmount: bigint = toNano('10'),
+        mint_token_out: bigint = 0n,
+        destination: Address = buyer.address,
+        response_address: Address = buyer.address,
+        custom_payload: Cell | null = null,
+        forward_ton_amount: bigint = 0n,
+        forward_payload: Cell = beginCell().storeUint(0n, 1).endCell(),
+    ) => {
+        let sendAllTon = tonAmount + toNano('1');
+        await jettonMasterBondV1.sendBuyToken(
+            buyer.getSender(),
+            { value: sendAllTon },
+            {
+                $$type: 'BuyToken',
+                query_id: 0n,
+                ton_amount: tonAmount,
+                mint_token_out: mint_token_out,
+                destination: destination,
+                response_address: response_address,
+                custom_payload: custom_payload,
+                forward_ton_amount: forward_ton_amount,
+                forward_payload: forward_payload,
+            },
+        );
+    };
+
     beforeEach(async () => {
         ({ blockchain, deployer, dexRouter, jettonMasterBondV1 } = await loadFixture());
     });
@@ -27,7 +55,7 @@ describe('JettonMasterBondV1', () => {
         // blockchain and jettonMasterBondV1 are ready to use
     });
 
-    it('should buy token with ton', async () => {
+    it('should buy token with 10 tons', async () => {
         let [tonReservesBefore, jettonReservesBefore] = await jettonMasterBondV1.getReserves();
 
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
@@ -77,6 +105,12 @@ describe('JettonMasterBondV1', () => {
 
         let [tonReservesAfter, jettonReservesAfter] = await jettonMasterBondV1.getReserves();
 
+        // Expect that ton reserves is equal to 9900000000n
+        expect(tonReservesAfter).toEqual(9900000000n);
+
+        // Expect that jetton reserve is equal to 99019704921279334n
+        expect(jettonReservesAfter).toEqual(99019704921279334n);
+
         // Expect that buyer received meme token
         expect(buyerMemeTokenBalance).toBe(jettonReservesBefore - jettonReservesAfter);
 
@@ -89,5 +123,51 @@ describe('JettonMasterBondV1', () => {
         let feeAfter = await jettonMasterBondV1.getFees();
         // Expect that fees increased tonAmount * 10%
         expect(feeAfter).toEqual((tonAmount * fee_rate) / precision);
+    });
+
+    it('should burn meme tokens', async () => {
+        const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
+        await buyToken(buyer);
+
+        let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
+        let buyerMemeTokenBalanceBefore = await buyerWallet.getJettonBalance();
+
+        // Buyers burn 10 meme tokens
+        let buyerTonBalanceBefore = await buyer.getBalance();
+        let burnAmount = buyerMemeTokenBalanceBefore / 2n;
+        const burnResult = await buyerWallet.sendBurn(buyer.getSender(), toNano('1'), burnAmount, null, null);
+        let buyerMemeTokenBalanceAfter = await buyerWallet.getJettonBalance();
+        let buyerTonBalanceAfter = await buyer.getBalance();
+
+        // Expect that buyers meme token balance decreased burnAmount
+        expect(buyerMemeTokenBalanceBefore - buyerMemeTokenBalanceAfter).toEqual(burnAmount);
+
+        // Expect that buyer send op::burn to buyers memejetonWallet
+        expect(burnResult.transactions).toHaveTransaction({
+            op: MasterOpocde.Burn,
+            from: buyer.address,
+            to: buyerWallet.address,
+            success: true,
+        });
+
+        // Expect that buyers meme token wallet send jetton notification to jettonMasterBondV1
+        expect(burnResult.transactions).toHaveTransaction({
+            op: MasterOpocde.BurnNotification,
+            from: buyerWallet.address,
+            to: jettonMasterBondV1.address,
+            success: true,
+        });
+
+        let [tonReservesAfter, jettonReservesAfter] = await jettonMasterBondV1.getReserves();
+
+        // Expect ton reserves = 4925618189n
+        expect(tonReservesAfter).toEqual(4925618189n);
+
+        // Expect jetton reserves = 99509852460639667n
+        expect(jettonReservesAfter).toEqual(99509852460639667n);
+
+        // Expect that buyers ton balance increased at least 4924637993n
+        let gas_fee = toNano('0.05');
+        expect(buyerTonBalanceAfter - buyerTonBalanceBefore + gas_fee).toBeGreaterThanOrEqual(4924637993n);
     });
 });

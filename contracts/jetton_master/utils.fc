@@ -12,16 +12,17 @@
     return (amount_out, true_amount_in);
 }
 
-(int) simulate::estimate_burn_amount_out(int jetton_out) {
+(int) simulate::estimate_burn_jetton_amount(int jetton_out) impure inline_ref {
     int k = const::v_ton * master::total_supply;
     int delta_ton = (master::ton_reserves + const::v_ton) - k / (master::jetton_reserves + jetton_out);
     int fee = delta_ton * const::fee_rate / const::precision;
     int amount_out = delta_ton - fee;
 
+    ;; Upload storage
     master::ton_reserves -= delta_ton;
     master::jetton_reserves += jetton_out;
     master::fee += fee;
-
+    
     return amount_out;
 }
 
@@ -94,3 +95,23 @@ slice calculate_jetton_wallet_address(cell state_init) inline {
     send_raw_message(msg, SEND_MODE_REGULAR);
 }
 
+() transfer_ton( ;; transfer TON with body
+    int query_id,
+    int bounce_flag,
+    slice receiver,
+    int value,
+    int mode
+) impure inline_ref {
+    cell msg_body = begin_cell()
+        .store_op(op::excesses)
+        .store_query_id(query_id)
+        .end_cell();
+
+    var msg = begin_cell()
+        .store_msg_flags_and_address_none(bounce_flag)
+        .store_slice(receiver)
+        .store_coins(value)
+        .store_only_body_ref(msg_body);
+    
+    send_raw_message(msg.end_cell(), mode);
+}

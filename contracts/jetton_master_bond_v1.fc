@@ -7,7 +7,7 @@
 #include "jetton_master/errors.fc";
 #include "jetton_master/utils.fc";
 
-() handle::mint(
+() internal::mint_token(
     int query_id,
     slice ctx::sender, 
     int ctx::value, 
@@ -72,6 +72,41 @@
     return ();
 }
 
+() internal::burn_token(
+    int query_id,
+    slice ctx::sender,
+    int ctx::value,
+    int ctx::fwd_fee,
+    int burn_amount,
+    slice from_address,
+    slice response_address
+) impure inline_ref {
+
+    ;; Calculate the gas fee
+    int total_fees = 50000000;
+    int gas_consumptoin = 20000000;
+    throw_unless(error::not_enough_ton, ctx::value > total_fees);
+
+    int send_ton = ctx::value - gas_consumptoin;
+
+    ;; Calculate sender's wallet address
+    cell state_init = calculate_jetton_wallet_state_init(from_address, my_address(), master::jetton_wallet_code);
+    slice true_sender = calculate_jetton_wallet_address(state_init);
+    throw_unless(error::not_valid_wallet, equal_slices_bits(true_sender, ctx::sender));
+
+    ;; Calculate amount out based on burn jetton_amount
+    int amount_out = simulate::estimate_burn_jetton_amount(burn_amount);
+
+    slice receiver = from_address;
+    if (~ is_address_none(response_address)) {
+        receiver = response_address;
+    }
+
+    transfer_ton(query_id, NON_BOUNCEABLE, receiver, amount_out + send_ton, SEND_MODE_REGULAR);
+    master::save_data();
+    return ();
+}
+
 () route_internal(slice ctx::sender, int ctx::value, int ctx::fwd_fee, slice ctx::body) impure inline {
     ;; load op and query id
     (int op, int query_id) = ctx::body~load_op_and_query_id();
@@ -89,13 +124,13 @@
         int forward_ton_amount = ctx::body~load_coins();
         cell forward_payload = ctx::body~load_ref();
 
-        ;; Throw error if token already listed
+        ;; Throw error if token already listed. TODO: we should send back ton
         throw_unless(error::token_already_listed, master::on_moon == 0);
 
-        ;; Throw error if token amount is equal to 0
+        ;; Throw error if token amount is equal to 0. TODO: we should send back ton
         throw_unless(error::invalid_amount, ton_amount > 0);
 
-        handle::mint(
+        internal::mint_token(
             query_id, 
             ctx::sender, 
             ctx::value, 
@@ -112,35 +147,11 @@
     }
 
     if (op == op::burn_notification) {
-        throw_unless(error::token_already_listed, master::on_moon == 0);
-
+        throw_unless(error::token_already_listed, master::on_moon == 0); ;; TODO: we should send back ton
         int jetton_amount = ctx::body~load_coins();
         slice from_address = ctx::body~load_msg_addr();
-
-
-        ;; Calculate sender's wallet address
-        cell state_init = calculate_jetton_wallet_state_init(ctx::sender, my_address(), master::jetton_wallet_code);
-        slice true_sender = calculate_jetton_wallet_address(state_init);
-        throw_unless(error::not_valid_wallet, equal_slices_bits(true_sender, ctx::sender));
-
-        ;; Calculate amount out based on burn jetton_amount
-
         slice response_address = ctx::body~load_msg_addr();
-        ctx::body.end_parse();
-
-        slice receiver = from_address;
-        if (~ is_address_none(response_address)) {
-            receiver = response_address;
-        }
-
-        var msg = begin_cell()
-        .store_msg_flags_and_address_none(NON_BOUNCEABLE)
-        .store_slice(receiver) ;; dest
-        .store_coins(0)
-        .store_prefix_only_body()
-        .store_op(op::excesses)
-        .store_query_id(query_id);
-        send_raw_message(msg.end_cell(), SEND_MODE_REGULAR);
+        internal::burn_token(query_id, ctx::sender, ctx::value, ctx::fwd_fee, jetton_amount, from_address, response_address);
 
         return ();
     }
