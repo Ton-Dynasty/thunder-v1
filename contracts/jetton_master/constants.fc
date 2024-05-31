@@ -1,0 +1,6 @@
+const ONE_TON = 1000000000;
+const const::v_ton = 1000 * ONE_TON; ;; virtual ton liquidity, should be removed when listing
+const const::ton_the_moon = 16000 * ONE_TON; ;; when ton_reserves reach this target, then trigger listing process
+const const::precision = 1000;
+const const::fee_rate = 10; ;; fee_rate / precision = 1%, trading fee
+const const::commission = 100; ;; commision / precision = 10%, ton taken by admin when trigger listing process
