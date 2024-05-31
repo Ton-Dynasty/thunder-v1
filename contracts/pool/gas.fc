@@ -1,0 +1,2 @@
+const gas::gas_consumption = 200000000; ;; 0.2 gas
+const gas::forward_ton = 100000000; ;; 0.1 gas
