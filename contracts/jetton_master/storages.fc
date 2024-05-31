@@ -43,5 +43,4 @@ global cell master::jetton_content;
             .store_ref(basic_info)
         .end_cell()
     );
-
 }

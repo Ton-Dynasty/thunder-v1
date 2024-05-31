@@ -1,4 +1,4 @@
-(int) simulate::estimate_mint_jetton_amount(
+(int, int) simulate::estimate_mint_jetton_amount(
     int amount_in ;; The amount of TON provided for minting.
 ) impure inline_ref {
     int k = const::v_ton * master::total_supply;
@@ -8,6 +8,19 @@
     ;; Calculate amount_out base on (x + delta_x ) * (y - delta_y) = k
     int x = master::ton_reserves + const::v_ton;
     int amount_out = master::jetton_reserves - (k / (x + true_amount_in));
+
+    return (amount_out, true_amount_in);
+}
+
+(int) simulate::estimate_burn_amount_out(int jetton_out) {
+    int k = const::v_ton * master::total_supply;
+    int delta_ton = (master::ton_reserves + const::v_ton) - k / (master::jetton_reserves + jetton_out);
+    int fee = delta_ton * const::fee_rate / const::precision;
+    int amount_out = delta_ton - fee;
+
+    master::ton_reserves -= delta_ton;
+    master::jetton_reserves += jetton_out;
+    master::fee += fee;
 
     return amount_out;
 }
@@ -49,6 +62,7 @@ slice calculate_jetton_wallet_address(cell state_init) inline {
 () mint_jetton(
     int bounce_flag,
     int query_id,
+    int remaining_ton,
     int jetton_amount,
     slice receiver,
     slice response_address,
@@ -74,9 +88,10 @@ slice calculate_jetton_wallet_address(cell state_init) inline {
     cell msg = begin_cell()
     .store_msg_flags_and_address_none(BOUNCEABLE)
     .store_slice(to_wallet_address)
-    .store_coins(0)
+    .store_coins(remaining_ton)
     .store_statinit_ref_and_body_ref(state_init, msg_body)
     .end_cell();
 
-    send_raw_message(msg, SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE | SEND_MODE_BOUNCE_ON_ACTION_FAIL);
+    send_raw_message(msg, SEND_MODE_REGULAR);
 }
+
