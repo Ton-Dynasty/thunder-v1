@@ -37,7 +37,7 @@ export async function loadFixture() {
                 totalSupply: toNano('100000000'),
                 adminAddress: deployer.address,
                 tonReserves: 0n,
-                jettonReserves: toNano('1000'),
+                jettonReserves: toNano('100000000'),
                 fee: 0n,
                 onMoon: 0n,
                 dexRouter: dexRouter.address,

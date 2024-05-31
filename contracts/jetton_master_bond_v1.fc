@@ -19,7 +19,7 @@
     cell custom_payload,
     int forward_ton_amount,
     cell forward_payload
-) {
+) impure inline_ref {
     ;; Check that user send enough TON to mint tokens and pay for gas fees
     ;; (int total_fees, int gas_consumptoin) = calculate_fees(ctx::fwd_fee); TODO: implement this gas calculation after whole code are ready @ipromise2324
     int total_fees = 50000000;
@@ -31,10 +31,11 @@
     throw_unless(error::not_meet_min_amount, token_out >= mint_token_out); ;; TODO: we should send back ton if token_out < mint_token_out
 
     ;; Calculate remaining ton and update storage
-    int remaining_ton = ctx::value - gas_consumptoin - true_amount_in;
+    int remaining_ton = ctx::value - gas_consumptoin - ton_amount;
     master::ton_reserves += true_amount_in;
     master::jetton_reserves -= token_out;
     master::fee += true_amount_in * const::fee_rate / const::precision;
+
 
     if(master::ton_reserves + token_out == const::ton_the_moon) {
         master::on_moon = 1;
@@ -60,7 +61,7 @@
         query_id,
         remaining_ton,
         token_out,
-        ctx::sender,
+        destination,
         response_address,
         forward_ton_amount,
         forward_payload
@@ -88,7 +89,7 @@
         int forward_ton_amount = ctx::body~load_coins();
         cell forward_payload = ctx::body~load_ref();
 
-        return handle::mint(
+        handle::mint(
             query_id, 
             ctx::sender, 
             ctx::value, 
@@ -101,6 +102,7 @@
             forward_ton_amount,
             forward_payload
         );
+        return ();
     }
 
     if (op == op::burn_notification) {
@@ -158,4 +160,14 @@
 
     ;; route function to handle internal message
     route_internal(ctx::sender, ctx::value, ctx::fwd_fee, ctx::body);
+}
+
+slice get_wallet_address(slice owner_address) method_id {
+    master::load_data();
+    return calculate_jetton_wallet_address(calculate_jetton_wallet_state_init(owner_address, my_address(), master::jetton_wallet_code));
+}
+
+(int, int) get_reserves() method_id {
+    master::load_data();
+    return (master::ton_reserves, master::jetton_reserves);
 }

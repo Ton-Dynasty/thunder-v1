@@ -2,7 +2,7 @@
     int amount_in ;; The amount of TON provided for minting.
 ) impure inline_ref {
     int k = const::v_ton * master::total_supply;
-    int amount_in_after_fees = amount_in * ((const::precision - const::fee_rate) / const::precision); ;; Subtract mint fees
+    int amount_in_after_fees = (amount_in * (const::precision - const::fee_rate) / const::precision); ;; Subtract mint fees
     int true_amount_in = min(amount_in_after_fees, const::ton_the_moon - master::ton_reserves); ;; Master can only mint up to const::ton_the_moon
 
     ;; Calculate amount_out base on (x + delta_x ) * (y - delta_y) = k
@@ -84,7 +84,6 @@ slice calculate_jetton_wallet_address(cell state_init) inline {
     ;; Calculate receiver's wallet address
     cell state_init = calculate_jetton_wallet_state_init(receiver, my_address(), master::jetton_wallet_code);
     slice to_wallet_address = calculate_jetton_wallet_address(state_init);
-
     cell msg = begin_cell()
     .store_msg_flags_and_address_none(BOUNCEABLE)
     .store_slice(to_wallet_address)
