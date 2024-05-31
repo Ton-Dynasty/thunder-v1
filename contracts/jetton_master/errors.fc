@@ -1,0 +1,3 @@
+;; Jetton Master errors
+const error::not_enough_ton = 2000;
+const error::not_meet_min_amount = 2001;

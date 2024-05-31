@@ -1,0 +1,2 @@
+const op::mint = 0x642b7d07;
+const op::internal_transfer = 0x178d4519;
