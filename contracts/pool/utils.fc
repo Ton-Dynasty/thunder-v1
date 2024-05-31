@@ -1,0 +1,89 @@
+
+(slice, int) simulate::deposit(
+    int asset0_amount,
+    int asset1_amount,
+    slice lp_receiver
+) inline {
+    int product = asset0_amount * asset1_amount;
+    throw_unless(error::invalid_liquidity_amount, product > 0);
+
+    int lp_amount = 0;
+
+    if(pool::lp_total_supply == 0) {
+        ;; first deposit: lp amount = sqrt(asset0_amount * asset1_amount)
+        lp_amount = math::sqrt(product) / const::required_min_liquidity;
+        lp_receiver = address_none(); ;; Lock the initial liquidity, so it will be impossible to fully drain the pool.
+    }
+    else {
+        int to_mint0 = muldiv(asset0_amount, pool::lp_total_supply, pool::reserve0);
+        int to_mint1 = muldiv(asset1_amount, pool::lp_total_supply, pool::reserve1);
+        lp_amount = min(to_mint0, to_mint1);
+    }
+    pool::reserve0 += asset0_amount;
+    pool::reserve1 += asset1_amount;
+    pool::lp_total_supply += lp_amount;
+
+    return (lp_receiver, lp_amount);
+}
+
+() deploy( ;; deploy contract with state_init
+    int bounce_flag,
+    slice receiver,
+    int value,
+    cell body,
+    cell state_init,
+    int mode
+) impure inline_ref {
+    var msg = begin_cell()
+        .store_msg_flags_and_address_none(bounce_flag)
+        .store_slice(receiver)
+        .store_coins(value)
+        .store_statinit_ref_and_body_ref(state_init, body)
+        .end_cell();
+
+    send_raw_message(msg, mode);
+}
+
+cell pack_jetton_lp_wallet_data(int balance, slice owner_address, slice jetton_master_address, cell jetton_wallet_code) inline {
+    return begin_cell()
+    .store_coins(balance)
+    .store_slice(owner_address)
+    .store_slice(jetton_master_address)
+    .store_ref(jetton_wallet_code)
+  .end_cell();
+}
+
+cell calculate_jetton_lp_wallet_state_init(slice owner_address, slice jetton_master_address, cell jetton_wallet_code) inline {
+    return begin_cell()
+    .store_uint(0, 2)
+    .store_dict(jetton_wallet_code)
+    .store_dict(pack_jetton_lp_wallet_data(0, owner_address, jetton_master_address, jetton_wallet_code))
+    .store_uint(0, 1)
+  .end_cell();
+}
+
+slice calculate_jetton_lp_wallet_address(cell state_init) inline {
+    return begin_cell().store_uint(4, 3)
+    .store_int(MY_WORKCHAIN, 8)
+    .store_uint(cell_hash(state_init), 256)
+  .end_cell().begin_parse();
+}
+
+slice calculate_user_jetton_lp_wallet_address(slice owner_address, slice jetton_master_address, cell jetton_wallet_code) inline {
+    return calculate_jetton_lp_wallet_address(calculate_jetton_lp_wallet_state_init(owner_address, jetton_master_address, jetton_wallet_code));
+}
+
+() mint_lp(int query_id, slice to, int amount, int send_ton, cell payload) impure inline {
+    cell state_init = calculate_jetton_lp_wallet_state_init(to, my_address(), pool::lp_jetton_wallet_code);
+    slice to_wallet_address = calculate_jetton_lp_wallet_address(state_init);
+    var body = begin_cell()
+    .store_uint(op::internal_transfer, 32)
+    .store_uint(query_id, 64)
+    .store_coins(amount)
+    .store_slice(my_address())
+    .store_slice(to)
+    .store_coins(payload.cell_null?() ? 0 : gas::forward_ton) 
+    .store_maybe_ref(payload);
+
+    deploy(BOUNCEABLE, to_wallet_address, send_ton, body.end_cell(), state_init, SEND_MODE_REGULAR);
+}
