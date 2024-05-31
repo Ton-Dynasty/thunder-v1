@@ -1,0 +1,5 @@
+;; general errors
+const err::invalid_op = 0xffff;
+
+;; workchain errors
+const err::wrong_workchain = 333;
