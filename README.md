@@ -1,4 +1,4 @@
-# thunder-v2
+# thunder-v1
 
 ## Project structure
 
