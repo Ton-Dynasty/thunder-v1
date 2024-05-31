@@ -1,35 +1,30 @@
-import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
-import { Cell, toNano } from '@ton/core';
+import { Blockchain, SandboxContract, TreasuryContract, printTransactionFees } from '@ton/sandbox';
+import { Cell, beginCell, toNano } from '@ton/core';
 import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
+import { DexRouter } from '../wrappers/DexRouter';
 import '@ton/test-utils';
 import { compile } from '@ton/blueprint';
+import { JettonWallet } from '../wrappers/JettonWallet';
+import { loadFixture } from './helper';
 
 describe('JettonMasterBondV1', () => {
-    let code: Cell;
+    let jettonMasterBondV1Code: Cell;
+    let dexRouterCode: Cell;
+    let jettonWalletCode: Cell;
 
     beforeAll(async () => {
-        code = await compile('JettonMasterBondV1');
+        jettonMasterBondV1Code = await compile(JettonMasterBondV1.name);
+        dexRouterCode = await compile(DexRouter.name);
+        jettonWalletCode = await compile(JettonWallet.name);
     });
 
     let blockchain: Blockchain;
     let deployer: SandboxContract<TreasuryContract>;
+    let dexRouter: SandboxContract<DexRouter>;
     let jettonMasterBondV1: SandboxContract<JettonMasterBondV1>;
 
     beforeEach(async () => {
-        blockchain = await Blockchain.create();
-
-        jettonMasterBondV1 = blockchain.openContract(JettonMasterBondV1.createFromConfig({}, code));
-
-        deployer = await blockchain.treasury('deployer');
-
-        const deployResult = await jettonMasterBondV1.sendDeploy(deployer.getSender(), toNano('0.05'));
-
-        expect(deployResult.transactions).toHaveTransaction({
-            from: deployer.address,
-            to: jettonMasterBondV1.address,
-            deploy: true,
-            success: true,
-        });
+        ({ blockchain, deployer, dexRouter, jettonMasterBondV1 } = await loadFixture());
     });
 
     it('should deploy', async () => {
