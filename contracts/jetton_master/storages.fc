@@ -11,7 +11,7 @@ global cell master::jetton_content;
 () master::load_data() impure inline_ref {
     slice ds = get_data().begin_parse();
     master::total_supply = ds~load_coins();
-    master::admin_address = ds~load_msg_address();
+    master::admin_address = ds~load_msg_addr();
     master::ton_reserves = ds~load_coins();
     master::jetton_reserves = ds~load_coins();
     master::fee = ds~load_coins();
@@ -19,13 +19,12 @@ global cell master::jetton_content;
     ;; load basic info
     slice basic_info = ds~load_ref().begin_parse();
     master::on_moon = basic_info~load_uint(2);
-    master::dex_router = basic_info~load_msg_address();
+    master::dex_router = basic_info~load_msg_addr();
     master::jetton_wallet_code = basic_info~load_ref();
     master::jetton_content = basic_info~load_ref();
 }
 
 () master::save_data() impure inline_ref {
-
     ;; pack basic info
     cell basic_info = begin_cell()
         .store_uint(master::on_moon, 2)
@@ -34,6 +33,7 @@ global cell master::jetton_content;
         .store_ref(master::jetton_content)
     .end_cell();
 
+    ;; set data
     set_data(
         begin_cell()
             .store_coins(master::total_supply)

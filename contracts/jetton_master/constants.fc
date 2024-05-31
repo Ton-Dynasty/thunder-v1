@@ -1,4 +1,4 @@
-const ONE_TON = 1000000000
+const ONE_TON = 1000000000;
 const const::v_ton = 1000 * ONE_TON; ;; virtual ton liquidity, should be removed when listing
 const const::ton_the_moon = 16000 * ONE_TON; ;; when ton_reserves reach this target, then trigger listing process
 const const::precision = 1000;

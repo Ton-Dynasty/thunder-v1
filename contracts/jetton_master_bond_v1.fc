@@ -1,5 +1,21 @@
 #include "imports/stdlib.fc";
+#include "common/errors.fc";
+#include "common/workchain.fc";
+#include "jetton_master/constants.fc";
+#include "jetton_master/storages.fc";
 
-() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
 
+() main(int ctx::value, cell in_msg_full, slice ctx::body) impure {
+    slice s = in_msg_full.begin_parse();
+    int flags = s~load_msg_flags();
+
+    if (is_bounced(flags)) { ;; skip all bounced messages
+        return ();
+    }
+    
+    ;; get context
+    (slice ctx::sender, int ctx::fwd_fee) = s~retrieve_ctx(MY_WORKCHAIN);
+
+    ;; route function to handle internal message
+    ;; route_internal(ctx::sender, ctx::value, ctx::fwd_fee, ctx::body);
 }
