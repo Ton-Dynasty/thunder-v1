@@ -43,7 +43,6 @@ const op::top_up = 0xd372158c;
     }
 
     if (op == op::top_up) {
-        ~strdump("top_up");
         return ();
     }
 

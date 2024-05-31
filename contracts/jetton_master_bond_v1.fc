@@ -34,7 +34,7 @@
     int remaining_ton = ctx::value - gas_consumptoin - ton_amount;
     master::ton_reserves += true_amount_in;
     master::jetton_reserves -= token_out;
-    master::fee += true_amount_in * const::fee_rate / const::precision;
+    master::fee += ton_amount * const::fee_rate / const::precision;
 
 
     if(master::ton_reserves + token_out == const::ton_the_moon) {
@@ -89,6 +89,12 @@
         int forward_ton_amount = ctx::body~load_coins();
         cell forward_payload = ctx::body~load_ref();
 
+        ;; Throw error if token already listed
+        throw_unless(error::token_already_listed, master::on_moon == 0);
+
+        ;; Throw error if token amount is equal to 0
+        throw_unless(error::invalid_amount, ton_amount > 0);
+
         handle::mint(
             query_id, 
             ctx::sender, 
@@ -140,7 +146,6 @@
     }
 
     if(op == op::top_up) {
-        ~strdump("Deploy jetton master contract");
         return ();
     }
 
@@ -170,4 +175,9 @@ slice get_wallet_address(slice owner_address) method_id {
 (int, int) get_reserves() method_id {
     master::load_data();
     return (master::ton_reserves, master::jetton_reserves);
+}
+
+(int) get_fee() method_id {
+    master::load_data();
+    return master::fee;
 }

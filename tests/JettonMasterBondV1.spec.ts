@@ -83,9 +83,11 @@ describe('JettonMasterBondV1', () => {
         // Expect buyer meme token balance is equal to 980295078720666n
         expect(buyerMemeTokenBalance).toBe(980295078720666n);
 
-        // Expect that ton reserves increased tonAmount * 10%
+        // Expect that ton reserves increased tonAmount * 90%
         expect(tonReservesAfter - tonReservesBefore).toEqual((tonAmount * (precision - fee_rate)) / precision);
 
-
+        let feeAfter = await jettonMasterBondV1.getFees();
+        // Expect that fees increased tonAmount * 10%
+        expect(feeAfter).toEqual((tonAmount * fee_rate) / precision);
     });
 });

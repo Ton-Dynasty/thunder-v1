@@ -133,4 +133,9 @@ export class JettonMasterBondV1 implements Contract {
         const jettonReserves = walletAddress.stack.readBigNumber();
         return [tonReserves, jettonReserves];
     }
+
+    async getFees(provider: ContractProvider): Promise<bigint> {
+        const fees = await provider.get('get_fee', []);
+        return fees.stack.readBigNumber();
+    }
 }
