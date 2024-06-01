@@ -38,6 +38,59 @@
     return ();
 }
 
+() handle::swap_internal(
+    int query_id,
+    slice ctx::sender,
+    int ctx::value,
+    int ctx::fwd_fee,
+    slice sender,
+    int asset_in,
+    int amount_in,
+    int min_amount_out,
+    int deadline,
+    slice recipient,
+    cell extra_payload,
+    cell fulfill_payload,
+    cell reject_payload
+) {
+    throw_unless(error::invalid_sender, equal_slices(ctx::sender, pool::dex_router));
+    int send_ton = ctx::value - gas::gas_consumption;
+    if ((deadline == 0) | (now() > deadline)) {
+        ;; TODO: deadline expired, return funds with reject_payload
+        throw_unless(error::deadline_expired, false);
+        return ();
+    }
+    
+    if (asset_in > 1) {
+        ;; TODO: asset not found, return funds with reject_payload
+        throw_unless(error::asset_not_found, false);
+        return ();
+    }
+
+    if (is_address_none(recipient)) {
+        recipient = sender;
+    }
+
+    (int amount_out, int trade_fee) = simulate::get_amount_out(asset_in, amount_in);
+    int asset_out = 0;
+    if (asset_in == 0) {
+        pool::reserve0 += amount_in;
+        pool::reserve1 -= amount_out;
+        asset_out = 1;
+    } else {
+        pool::reserve1 += amount_in;
+        pool::reserve0 -= amount_out;
+        asset_out = 0;
+    }
+
+
+    cell msg_body = pack_payout_from_pool(query_id, sender, recipient, asset_out, amount_out, fulfill_payload);
+    send_bounceable_msg(pool::dex_router, send_ton , msg_body, SEND_MODE_REGULAR);
+
+    pool::save_data();
+    return ();
+}
+
 () route_internal(slice ctx::sender, int ctx::value, int ctx::fwd_fee, slice ctx::body) impure inline {
     ;; load op and query id
     (int op, int query_id) = ctx::body~load_op_and_query_id();
@@ -66,6 +119,39 @@
             fulfill_payload,
             reject_payload
         );
+        return ();
+    }
+    if (op == op::swap_internal){
+        ~strdump("swap_internal");
+        slice sender = ctx::body~load_msg_addr();
+        int asset_in = ctx::body~load_uint(1);
+        int amount_in = ctx::body~load_coins();
+        int min_amount_out = ctx::body~load_coins();
+        int deadline = ctx::body~load_uint(64);
+        slice recipient = ctx::body~load_msg_addr();
+        cell extra_payload = ctx::body~load_maybe_ref();
+        cell fulfill_payload = ctx::body~load_maybe_ref();
+        cell reject_payload = ctx::body~load_maybe_ref();
+
+        return handle::swap_internal(
+            query_id,
+            ctx::sender,
+            ctx::value,
+            ctx::fwd_fee,
+            sender,
+            asset_in,
+            amount_in,
+            min_amount_out,
+            deadline,
+            recipient,
+            extra_payload,
+            fulfill_payload,
+            reject_payload
+        );
+    }
+
+    if (op == op::withdraw) {
+        ~strdump("withdraw");
         return ();
     }
 

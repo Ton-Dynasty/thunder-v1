@@ -29,6 +29,18 @@
     return (lp_receiver, lp_amount);
 }
 
+(int, int) simulate::get_amount_out(int asset_in_index, int amount_in) inline {
+    int trade_fee = amount_in * pool::swap_fee / const::fee_precision;
+    int amount_in_after_fee = amount_in - trade_fee;
+    if (asset_in_index == 0) {
+        int amount_out = pool::reserve1 - pool::reserve1 * pool::reserve0 / (pool::reserve0 + amount_in_after_fee);
+        return (amount_out, trade_fee);
+    } else {
+        int amount_out = pool::reserve0 - pool::reserve0 * pool::reserve1 / (pool::reserve1 + amount_in_after_fee);
+        return (amount_out, trade_fee);
+    }
+}
+
 () deploy( ;; deploy contract with state_init
     int bounce_flag,
     slice receiver,
@@ -89,4 +101,27 @@ slice calculate_user_jetton_lp_wallet_address(slice owner_address, slice jetton_
     .store_maybe_ref(payload);
 
     deploy(BOUNCEABLE, to_wallet_address, send_ton, body.end_cell(), state_init, SEND_MODE_REGULAR);
+}
+
+cell pack_payout_from_pool(int query_id, slice sender, slice receipient, int asset_out, int amount_out, cell payload) inline {
+    var data = begin_cell()
+        .store_op(op::payout_from_pool)
+        .store_query_id(query_id)
+        .store_slice(receipient)
+        .store_coins(asset_out)
+        .store_coins(amount_out)
+        .store_slice(receipient)
+        .store_maybe_ref(payload)
+        .end_cell();
+
+    return data;
+}
+
+() send_bounceable_msg(slice to, int value, cell body, int mode) impure inline_ref {
+    var msg = begin_cell()
+        .store_msg_flags_and_address_none(BOUNCEABLE)
+        .store_slice(to) ;; dest
+        .store_coins(value)
+        .store_only_body_ref(body);
+    send_raw_message(msg.end_cell(), mode);
 }

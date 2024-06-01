@@ -1,3 +1,5 @@
-const error::invalid_liquidity_amount = 2000;
+const error::invalid_liquidity_amount = 2020;
 const error::insufficient_liquidity = 2001;
-const error::invalid_sender = 2023;
+const error::invalid_sender = 2022;
+const error::deadline_expired = 2023;
+const error::asset_not_found = 2024;
