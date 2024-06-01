@@ -132,6 +132,37 @@
     pool::load_data();
 
     ;; dispatch
+    if (op == op::transfer_notification) {
+        ~strdump("transfer_notification");
+        int jetton_amount = ctx::body~load_coins();
+        slice jetton_sender = ctx::body~load_msg_addr();
+        slice forward_payload = ctx::body~load_ref().begin_parse();
+
+        op = forward_payload~load_op(); ;; op MUST be the first 32 bits of the payload in this case
+
+        if (op == op::withdraw) {
+            ~strdump("withdraw");
+            int lp_amount = ctx::body~load_coins();
+            int asset0_min_amount = ctx::body~load_coins();
+            int asset1_min_amount = ctx::body~load_coins();
+            slice recipient = ctx::body~load_msg_addr();
+            cell fulfill_payload = ctx::body~load_maybe_ref();
+            cell reject_payload = ctx::body~load_maybe_ref();
+            return handle::withdraw(
+                query_id,
+                ctx::sender,
+                ctx::value,
+                ctx::fwd_fee,
+                lp_amount,
+                asset0_min_amount,
+                asset1_min_amount,
+                recipient,
+                fulfill_payload,
+                reject_payload
+            );
+        }
+        return ();
+    }
     if (op == op::deposit) {
         ~strdump("deposit");
         int asset0_amount = ctx::body~load_coins();
@@ -178,28 +209,6 @@
             deadline,
             recipient,
             extra_payload,
-            fulfill_payload,
-            reject_payload
-        );
-    }
-
-    if (op == op::withdraw) {
-        ~strdump("withdraw");
-        int lp_amount = ctx::body~load_coins();
-        int asset0_min_amount = ctx::body~load_coins();
-        int asset1_min_amount = ctx::body~load_coins();
-        slice recipient = ctx::body~load_msg_addr();
-        cell fulfill_payload = ctx::body~load_maybe_ref();
-        cell reject_payload = ctx::body~load_maybe_ref();
-        return handle::withdraw(
-            query_id,
-            ctx::sender,
-            ctx::value,
-            ctx::fwd_fee,
-            lp_amount,
-            asset0_min_amount,
-            asset1_min_amount,
-            recipient,
             fulfill_payload,
             reject_payload
         );
