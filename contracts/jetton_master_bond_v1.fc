@@ -7,6 +7,7 @@
 #include "jetton_master/storages.fc";
 #include "jetton_master/errors.fc";
 #include "jetton_master/utils.fc";
+#include "jetton_master/gas.fc";
 
 () handle::ton_the_moon(int query_id) impure inline {
     master::on_moon = 1;
@@ -56,9 +57,7 @@
     cell forward_payload
 ) impure inline_ref {
     ;; Check that user send enough TON to mint tokens and pay for gas fees
-    ;; (int total_fees, int gas_consumptoin) = calculate_fees(ctx::fwd_fee); TODO: implement this gas calculation after whole code are ready @ipromise2324
-    int total_fees = 50000000;
-    int gas_consumptoin = 20000000;
+    (int total_fees, int gas_consumptoin) = cal_buy_fee(ctx::fwd_fee);
     throw_unless(error::not_enough_ton, ctx::value > ton_amount + total_fees + forward_ton_amount);
     
     ;; Calculate token_out based on ton_amount
@@ -66,7 +65,7 @@
     throw_unless(error::not_meet_min_amount, token_out >= mint_token_out); ;; TODO: we should send back ton if token_out < mint_token_out
 
     ;; Calculate remaining ton and update storage
-    int ton_back_to_user = ctx::value - gas_consumptoin - ton_has_to_pay;
+    int ton_back_to_user = ctx::value - gas_consumptoin - ton_has_to_pay - forward_ton_amount;
 
     master::ton_reserves += true_amount_in;
     master::fee += ton_has_to_pay - true_amount_in;
@@ -103,8 +102,7 @@
 ) impure inline_ref {
 
     ;; Calculate the gas fee
-    int total_fees = 50000000;
-    int gas_consumptoin = 20000000;
+    (int total_fees, int gas_consumptoin) = cal_sell_fee(ctx::fwd_fee);
     throw_unless(error::not_enough_ton, ctx::value > total_fees);
 
     int send_ton = ctx::value - gas_consumptoin;

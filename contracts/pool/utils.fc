@@ -4,10 +4,10 @@
     int asset1_amount,
     slice lp_receiver
 ) inline {
-    ~strdump("simulate deposit");
+    ;; ~strdump("simulate deposit");
     int product = asset0_amount * asset1_amount;
-    ~strdump("product");
-    ~dump(product);
+    ;; ~strdump("product");
+    ;; ~dump(product);
     throw_unless(error::invalid_liquidity_amount, product > 0);
 
     int lp_amount = 0;
