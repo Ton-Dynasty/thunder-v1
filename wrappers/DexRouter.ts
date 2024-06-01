@@ -3,6 +3,7 @@ import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, 
 export type DexRouterConfig = {
     ownerAddress: Address;
     poolCode: Cell;
+    lpWalletCode: Cell;
 };
 
 export const DexRouterOpcode = {
@@ -10,7 +11,11 @@ export const DexRouterOpcode = {
 };
 
 export function dexRouterConfigToCell(config: DexRouterConfig): Cell {
-    return beginCell().storeAddress(config.ownerAddress).storeRef(config.poolCode).endCell();
+    return beginCell()
+        .storeAddress(config.ownerAddress)
+        .storeRef(config.poolCode)
+        .storeRef(config.lpWalletCode)
+        .endCell();
 }
 
 export class DexRouter implements Contract {
@@ -35,5 +40,15 @@ export class DexRouter implements Contract {
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell().storeUint(DexRouterOpcode.TopUp, 32).storeUint(0, 64).endCell(),
         });
+    }
+
+    async getPoolAddress(provider: ContractProvider, jettonMaster: Address): Promise<Address> {
+        const poolAddress = await provider.get('get_pool_address', [
+            {
+                type: 'slice',
+                cell: beginCell().storeAddress(jettonMaster).endCell(),
+            },
+        ]);
+        return poolAddress.stack.readAddress();
     }
 }

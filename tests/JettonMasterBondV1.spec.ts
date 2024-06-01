@@ -5,7 +5,7 @@ import { DexRouter } from '../wrappers/DexRouter';
 import '@ton/test-utils';
 import { compile } from '@ton/blueprint';
 import { JettonWallet } from '../wrappers/JettonWallet';
-import { loadFixture } from './helper';
+import { loadJMBondFixture, buyToken } from './helper';
 
 describe('JettonMasterBondV1', () => {
     let blockchain: Blockchain;
@@ -14,34 +14,6 @@ describe('JettonMasterBondV1', () => {
     let jettonMasterBondV1: SandboxContract<JettonMasterBondV1>;
     const precision = 1000n;
     const fee_rate = 10n;
-
-    const buyToken = async (
-        buyer: SandboxContract<TreasuryContract>,
-        tonAmount: bigint = toNano('10'),
-        mint_token_out: bigint = 0n,
-        destination: Address = buyer.address,
-        response_address: Address = buyer.address,
-        custom_payload: Cell | null = null,
-        forward_ton_amount: bigint = 0n,
-        forward_payload: Cell = beginCell().storeUint(0n, 1).endCell(),
-    ) => {
-        let sendAllTon = tonAmount + toNano('1');
-        return await jettonMasterBondV1.sendBuyToken(
-            buyer.getSender(),
-            { value: sendAllTon },
-            {
-                $$type: 'BuyToken',
-                query_id: 0n,
-                ton_amount: tonAmount,
-                mint_token_out: mint_token_out,
-                destination: destination,
-                response_address: response_address,
-                custom_payload: custom_payload,
-                forward_ton_amount: forward_ton_amount,
-                forward_payload: forward_payload,
-            },
-        );
-    };
 
     const getMasterData = async (jettonMasterBondV1: SandboxContract<JettonMasterBondV1>, field: string = '') => {
         const [tonReserves, jettonReserves, fee, totalSupply, onMoon, dexRouter, adminAddress] =
@@ -76,7 +48,7 @@ describe('JettonMasterBondV1', () => {
     };
 
     beforeEach(async () => {
-        ({ blockchain, deployer, dexRouter, jettonMasterBondV1 } = await loadFixture());
+        ({ blockchain, deployer, dexRouter, jettonMasterBondV1 } = await loadJMBondFixture());
     });
 
     const userWallet = async (address: Address, jettonMaster: SandboxContract<JettonMasterBondV1>) =>
@@ -161,7 +133,7 @@ describe('JettonMasterBondV1', () => {
 
     it('should burn half of buyers meme tokens', async () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
-        await buyToken(buyer);
+        await buyToken(jettonMasterBondV1, buyer);
 
         let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
         let buyerMemeTokenBalanceBefore = await buyerWallet.getJettonBalance();
@@ -209,7 +181,7 @@ describe('JettonMasterBondV1', () => {
     it('should trnasfer tokens and tons to DexRouter after meeting TonTheMoon', async () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
         const buyTon = toNano('1000000');
-        const toTheMoonResult = await buyToken(buyer, buyTon);
+        const toTheMoonResult = await buyToken(jettonMasterBondV1, buyer, buyTon);
 
         // Expect that jettonMasterBondV1 send internal transfer to DexRouter wallet
         let dexRouterWalletAddress = await jettonMasterBondV1.getWalletAddress(dexRouter.address);
@@ -280,6 +252,15 @@ describe('JettonMasterBondV1', () => {
         // Epext that onMoon = 1n
         let onMoon = await getMasterData(jettonMasterBondV1, 'onMoon');
         expect(onMoon).toEqual(1n);
+
+        let poolAddress = await dexRouter.getPoolAddress(jettonMasterBondV1.address);
+        // Expect that Dex Router send deposit asset to Pool
+        expect(toTheMoonResult.transactions).toHaveTransaction({
+            op: MasterOpocde.DepositAsset,
+            from: dexRouter.address,
+            to: poolAddress,
+            success: true,
+        });
     });
 
     it('should buy meme tokens and sell meme tokens 100 times', async () => {
@@ -289,7 +270,7 @@ describe('JettonMasterBondV1', () => {
 
         // use for loop to buy and sell meme tokens 100 times
         for (let i = 0; i < 100; i++) {
-            await buyToken(buyer, buyTon);
+            await buyToken(jettonMasterBondV1, buyer, buyTon);
             let burnAmount = await buyerWallet.getJettonBalance();
             await buyerWallet.sendBurn(buyer.getSender(), toNano('1'), burnAmount, null, null);
         }

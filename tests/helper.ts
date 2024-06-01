@@ -1,14 +1,16 @@
 import { Blockchain, SandboxContract, TreasuryContract, printTransactionFees } from '@ton/sandbox';
-import { beginCell, toNano } from '@ton/core';
+import { Address, Cell, beginCell, toNano } from '@ton/core';
 import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
 import { DexRouter } from '../wrappers/DexRouter';
 import { compile } from '@ton/blueprint';
 import { JettonWallet } from '../wrappers/JettonWallet';
+import { PoolV1 } from '../wrappers/PoolV1';
 
-export async function loadFixture() {
+export async function loadJMBondFixture() {
     const jettonMasterBondV1Code = await compile(JettonMasterBondV1.name);
     const dexRouterCode = await compile(DexRouter.name);
     const jettonWalletCode = await compile(JettonWallet.name);
+    const poolCode = await compile(PoolV1.name);
 
     const blockchain = await Blockchain.create();
     const deployer = await blockchain.treasury('deployer', { workchain: 0, balance: toNano('100000000') });
@@ -17,7 +19,8 @@ export async function loadFixture() {
         DexRouter.createFromConfig(
             {
                 ownerAddress: deployer.address,
-                poolCode: beginCell().endCell(),
+                poolCode: poolCode,
+                lpWalletCode: jettonWalletCode,
             },
             dexRouterCode,
         ),
@@ -58,3 +61,33 @@ export async function loadFixture() {
 
     return { blockchain, deployer, dexRouter, jettonMasterBondV1 };
 }
+
+
+export const buyToken = async (
+    jettonMasterBondV1: SandboxContract<JettonMasterBondV1>,
+    buyer: SandboxContract<TreasuryContract>,
+    tonAmount: bigint = toNano('10'),
+    mint_token_out: bigint = 0n,
+    destination: Address = buyer.address,
+    response_address: Address = buyer.address,
+    custom_payload: Cell | null = null,
+    forward_ton_amount: bigint = 0n,
+    forward_payload: Cell = beginCell().storeUint(0n, 1).endCell(),
+) => {
+    let sendAllTon = tonAmount + toNano('1');
+    return await jettonMasterBondV1.sendBuyToken(
+        buyer.getSender(),
+        { value: sendAllTon },
+        {
+            $$type: 'BuyToken',
+            query_id: 0n,
+            ton_amount: tonAmount,
+            mint_token_out: mint_token_out,
+            destination: destination,
+            response_address: response_address,
+            custom_payload: custom_payload,
+            forward_ton_amount: forward_ton_amount,
+            forward_payload: forward_payload,
+        },
+    );
+};

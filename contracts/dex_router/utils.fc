@@ -1,0 +1,66 @@
+cell pack_pool_data(slice jetton_master_address, cell lp_jetton_content) inline {
+
+    cell init_data = begin_cell()
+        .store_slice(my_address())
+        .store_slice(begin_cell().store_uint(0, 2).end_cell().begin_parse())
+        .store_slice(jetton_master_address)
+    .end_cell();
+
+    return begin_cell()
+            .store_slice(dex_router::owner_address)
+            .store_coins(0) ;; reserve 0
+            .store_coins(0) ;; reserve 1
+            .store_coins(0) ;; total_supply
+            .store_coins(1) ;; admin_fees
+            .store_coins(1) ;; swap_fees
+            .store_ref(init_data)
+            .store_ref(dex_router::lp_wallet_code)
+            .store_ref(lp_jetton_content)
+        .end_cell();
+    }
+
+cell calculate_pool_state_init(slice jetton_master_address) inline {
+    return begin_cell()
+    .store_uint(0, 2) ;; 0b00 - No split_depth; No special
+    .store_maybe_ref(dex_router::pool_code)
+    .store_maybe_ref(
+        pack_pool_data(
+            jetton_master_address,
+            begin_cell().end_cell() ;; TODO: This should replaced with real LP jetton content
+        )
+    )
+    .store_uint(0, 1) ;; Empty libraries
+    .end_cell();
+}
+
+slice calculate_address(cell state_init) inline {
+    return begin_cell()
+    .store_uint(4, 3) ;; 0b100 = addr_std$10 tag; No anycast
+    .store_int(MY_WORKCHAIN, 8)
+    .store_uint(cell_hash(state_init), 256)
+    .end_cell()
+    .begin_parse();
+}
+
+(cell) pack_deposit_asset_data(
+    int query_id, 
+    int asset0_amount, 
+    int asset1_amount, 
+    int min_lp_amount, 
+    slice lp_receiver, 
+    cell fulfill_payload, 
+    cell reject_payload
+) {
+    ;; deposit asset payload
+    cell msg_body = begin_cell()
+        .store_op(op::deposit)
+        .store_query_id(query_id)
+        .store_coins(asset0_amount)
+        .store_coins(asset1_amount)
+        .store_coins(min_lp_amount)
+        .store_slice(lp_receiver)
+        .store_maybe_ref(null())
+        .store_maybe_ref(null())
+        .end_cell();
+    return msg_body;
+}
