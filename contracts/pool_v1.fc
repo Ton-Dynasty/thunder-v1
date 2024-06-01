@@ -33,6 +33,7 @@
     ;; TODO: refund and reject_payload
     throw_unless(error::insufficient_liquidity, lp_amount >= min_lp_amount);
 
+
     mint_lp(query_id, lp_receiver, lp_amount, send_ton, fulfill_payload);
     pool::save_data();
     return ();

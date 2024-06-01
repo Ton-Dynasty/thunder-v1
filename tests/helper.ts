@@ -19,7 +19,7 @@ export async function loadFixture() {
         DexRouter.createFromConfig(
             {
                 ownerAddress: deployer.address,
-                poolCode: beginCell().endCell(),
+                poolCode: poolCode,
                 lpWalletCode: jettonWalletCode,
             },
             dexRouterCode,

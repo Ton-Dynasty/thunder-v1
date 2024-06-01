@@ -1,0 +1,16 @@
+() deploy( ;; deploy contract with state_init
+    int bounce_flag,
+    slice receiver,
+    int value,
+    cell body,
+    cell state_init,
+    int mode
+) impure inline_ref {
+    var msg = begin_cell()
+        .store_msg_flags_and_address_none(bounce_flag)
+        .store_slice(receiver)
+        .store_coins(value)
+        .store_statinit_ref_and_body_ref(state_init, body)
+        .end_cell();
+    send_raw_message(msg, mode);
+}

@@ -60,7 +60,6 @@ slice calculate_jetton_wallet_address(cell state_init) inline {
     .begin_parse();
 }
 
-
 () mint_jetton(
     int bounce_flag,
     int query_id,
@@ -86,14 +85,8 @@ slice calculate_jetton_wallet_address(cell state_init) inline {
     ;; Calculate receiver's wallet address
     cell state_init = calculate_jetton_wallet_state_init(receiver, my_address(), master::jetton_wallet_code);
     slice to_wallet_address = calculate_jetton_wallet_address(state_init);
-    cell msg = begin_cell()
-    .store_msg_flags_and_address_none(BOUNCEABLE)
-    .store_slice(to_wallet_address)
-    .store_coins(remaining_ton)
-    .store_statinit_ref_and_body_ref(state_init, msg_body)
-    .end_cell();
 
-    send_raw_message(msg, SEND_MODE_REGULAR);
+    deploy(bounce_flag, to_wallet_address, remaining_ton, msg_body, state_init, SEND_MODE_REGULAR);
 }
 
 () transfer_ton( ;; transfer TON with body
