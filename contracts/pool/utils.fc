@@ -41,6 +41,16 @@
     }
 }
 
+(int, int) simulate::withdraw(int lp_amount) inline {
+    throw_unless(error::invalid_burn_amount, lp_amount <= pool::lp_total_supply & (lp_amount > 0));
+    int asset0_amount = muldiv(lp_amount, pool::reserve0, pool::lp_total_supply);
+    int asset1_amount = muldiv(lp_amount, pool::reserve1, pool::lp_total_supply);
+    pool::reserve0 -= asset0_amount;
+    pool::reserve1 -= asset1_amount;
+    pool::lp_total_supply -= lp_amount;
+    return (asset0_amount, asset1_amount);
+}
+
 () deploy( ;; deploy contract with state_init
     int bounce_flag,
     slice receiver,
