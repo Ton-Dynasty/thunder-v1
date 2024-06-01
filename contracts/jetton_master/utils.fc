@@ -1,15 +1,16 @@
-(int, int) simulate::estimate_mint_jetton_amount(
+(int, int, int) simulate::estimate_mint_jetton_amount(
     int amount_in ;; The amount of TON provided for minting.
 ) impure inline_ref {
     int k = const::v_ton * master::total_supply;
     int amount_in_after_fees = (amount_in * (const::precision - const::fee_rate) / const::precision); ;; Subtract mint fees
-    int true_amount_in = min(amount_in_after_fees, const::ton_the_moon - master::ton_reserves - const::v_ton); ;; Master can only mint up to const::ton_the_moon
+    int true_amount_in = min(amount_in_after_fees, const::ton_the_moon - master::ton_reserves); ;; Master can only mint up to const::ton_the_moon
+    int ton_has_to_pay = true_amount_in * const::precision / (const::precision - const::fee_rate);
 
     ;; Calculate amount_out base on (x + delta_x ) * (y - delta_y) = k
     int x = master::ton_reserves + const::v_ton;
     int amount_out = master::jetton_reserves - (k / (x + true_amount_in));
 
-    return (amount_out, true_amount_in);
+    return (amount_out, true_amount_in, ton_has_to_pay);
 }
 
 (int) simulate::estimate_burn_jetton_amount(int jetton_out) impure inline_ref {

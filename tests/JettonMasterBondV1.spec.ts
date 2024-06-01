@@ -184,6 +184,5 @@ describe('JettonMasterBondV1', () => {
             to: dexRouterWalletAddress,
             success: true,
         });
-
     });
 });

@@ -27,26 +27,37 @@
     throw_unless(error::not_enough_ton, ctx::value > ton_amount + total_fees);
     
     ;; Calculate token_out based on ton_amount
-    (int token_out, int true_amount_in) = simulate::estimate_mint_jetton_amount(ton_amount);
+    (int token_out, int true_amount_in, int ton_has_to_pay) = simulate::estimate_mint_jetton_amount(ton_amount);
     throw_unless(error::not_meet_min_amount, token_out >= mint_token_out); ;; TODO: we should send back ton if token_out < mint_token_out
 
     ;; Calculate remaining ton and update storage
-    int remaining_ton = ctx::value - gas_consumptoin - ton_amount;
+    int ton_back_to_user = ctx::value - gas_consumptoin - ton_has_to_pay;
 
     master::ton_reserves += true_amount_in;
     master::fee += ton_amount * const::fee_rate / const::precision;
     master::jetton_reserves -= token_out;
-    if(master::ton_reserves + const::v_ton == const::ton_the_moon) {
+
+    if(master::ton_reserves == const::ton_the_moon) {
         master::on_moon = 1;
+        ;; Calculate the tunder fi fee 
         int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision;
-        int send_all_ton = send_ton_liquidity + ONE_TON / 20; ;; TODO: This ONE_TON / 20 need to be recalculated again
+        int fee_for_admin = master::ton_reserves - send_ton_liquidity - ONE_TON; ;; ONE_TON is for building pool and farm.
+        int price_for_now = const:price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
+        int send_jetton_liquidity = const:price_precision * send_ton_liquidity / price_for_now;
+        int extra_jetton = master::jetton_reserves - send_jetton_liquidity;
+        ;; TODO: We should use this extra_jetton to do something, but for now we substract it in total supply
+        master::total_supply -= extra_jetton;
+
+        ;; TODO: This ONE_TON / 20 need to be recalculated again
         cell add_liquidity_payload = begin_cell().store_uint(op::create_pool ,32).store_coins(send_ton_liquidity).end_cell();
+        send_ton_liquidity += ONE_TON; ;; ONE_TON is for building pool and farm.
+        int ton_to_dex_router = send_ton_liquidity + ONE_TON / 20  + fee_for_admin; ;; fee_for_admin will be transfer in excess msg. 
         ;; Send mint jetton to Router
         mint_jetton(
             BOUNCEABLE,
             query_id,
-            send_all_ton, 
-            master::jetton_reserves,
+            ton_to_dex_router, 
+            send_jetton_liquidity,
             master::dex_router,
             master::admin_address,
             send_ton_liquidity, 
@@ -61,7 +72,7 @@
     mint_jetton(
         BOUNCEABLE,
         query_id,
-        remaining_ton,
+        ton_back_to_user,
         token_out,
         destination,
         response_address,

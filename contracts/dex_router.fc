@@ -37,8 +37,12 @@ const op::top_up = 0xd372158c;
         op = forward_payload~load_op(); ;; op MUST be the first 32 bits of the payload in this case
 
         if(op == op::create_pool) {
+            int ton_amount = forward_payload~load_coins();
             ~strdump("create_pool");
+            ~strdump("jetton reserves");
             ~dump(jetton_amount);
+            ~strdump("ton reserves");
+            ~dump(ton_amount);
             return ();
         }
     }
