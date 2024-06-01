@@ -26,7 +26,7 @@
     slice lp_receiver,
     cell fulfill_payload,
     cell reject_payload
-) {
+) impure inline {
     throw_unless(error::invalid_sender, equal_slices(ctx::sender, pool::dex_router));
     int send_ton = ctx::value - gas::gas_consumption;
     (lp_receiver, int lp_amount) = simulate::deposit(asset0_amount, asset1_amount, lp_receiver);
@@ -47,13 +47,14 @@
 
     ;; dispatch
     if (op == op::deposit) {
+        ~strdump("deposit");
         int asset0_amount = ctx::body~load_coins();
         int asset1_amount = ctx::body~load_coins();
         int min_lp_amount = ctx::body~load_coins();
         slice lp_receiver = ctx::body~load_msg_addr();
         cell fulfill_payload = ctx::body~load_maybe_ref();
         cell reject_payload = ctx::body~load_maybe_ref();
-        return handle::deposit(
+        handle::deposit(
             query_id,
             ctx::sender,
             ctx::value,
@@ -65,6 +66,12 @@
             fulfill_payload,
             reject_payload
         );
+        return ();
+    }
+
+    if (op == op::top_up) {
+        ~strdump("top_up");
+        return ();
     }
 
     throw(error::invalid_op);

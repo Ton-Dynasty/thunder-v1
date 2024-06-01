@@ -4,7 +4,10 @@
     int asset1_amount,
     slice lp_receiver
 ) inline {
+    ~strdump("simulate deposit");
     int product = asset0_amount * asset1_amount;
+    ~strdump("product");
+    ~dump(product);
     throw_unless(error::invalid_liquidity_amount, product > 0);
 
     int lp_amount = 0;
@@ -44,20 +47,20 @@
     send_raw_message(msg, mode);
 }
 
-cell pack_jetton_lp_wallet_data(int balance, slice owner_address, slice jetton_master_address, cell jetton_wallet_code) inline {
+cell pack_jetton_lp_wallet_data(int balance, slice owner_address, slice jetton_master_address) inline {
     return begin_cell()
+    .store_uint(0, 4)
     .store_coins(balance)
     .store_slice(owner_address)
     .store_slice(jetton_master_address)
-    .store_ref(jetton_wallet_code)
   .end_cell();
 }
 
 cell calculate_jetton_lp_wallet_state_init(slice owner_address, slice jetton_master_address, cell jetton_wallet_code) inline {
     return begin_cell()
     .store_uint(0, 2)
-    .store_dict(jetton_wallet_code)
-    .store_dict(pack_jetton_lp_wallet_data(0, owner_address, jetton_master_address, jetton_wallet_code))
+    .store_maybe_ref(jetton_wallet_code)
+    .store_maybe_ref(pack_jetton_lp_wallet_data(0, owner_address, jetton_master_address))
     .store_uint(0, 1)
   .end_cell();
 }

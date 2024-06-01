@@ -87,7 +87,9 @@
 }
 
 () receive_jettons(slice in_msg_body, slice sender_address, int my_ton_balance, int msg_value) impure inline_ref {
+    ~strdump("receive_jettons");
     (int status, int balance, slice owner_address, slice jetton_master_address) = load_data();
+    ~strdump("000");
     int incoming_transfers_locked = ((status & 2) == 2);
     throw_if(error::contract_locked, incoming_transfers_locked);
     ;; see internal TL-B layout in jetton.tlb
@@ -96,6 +98,7 @@
     balance += jetton_amount;
     slice from_address = in_msg_body~load_msg_addr();
     slice response_address = in_msg_body~load_msg_addr();
+    ~strdump("000");
     throw_unless(error::not_valid_wallet,
         equal_slices_bits(jetton_master_address, sender_address)
         |
@@ -141,6 +144,7 @@
         .end_cell();
         send_raw_message(msg, SEND_MODE_CARRY_ALL_BALANCE | SEND_MODE_IGNORE_ERRORS);
     }
+    ~strdump("222");
 
     save_data(status, balance, owner_address, jetton_master_address);
 }
