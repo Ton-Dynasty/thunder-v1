@@ -71,8 +71,15 @@
                 null(), ;; fulfill_payload
                 null() ;; reject_payload
             );
-
             return ();
+        }
+
+        if(op == op::add_liquidity) {
+
+        }
+
+        if(op == op::swap) {
+
         }
     }
 
