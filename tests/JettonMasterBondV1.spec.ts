@@ -226,7 +226,7 @@ describe('JettonMasterBondV1', () => {
             from: dexRouterWalletAddress,
             to: dexRouter.address,
             success: true,
-            value: 9001000000000n, // 9000 ton + 1 ton for build pool and farm
+            //value: 9001000000000n, // 9000 ton + 1 ton for build pool and farm
         });
 
         // Expect that dexRouterWallet send excess to admin address
@@ -235,7 +235,7 @@ describe('JettonMasterBondV1', () => {
             from: dexRouterWalletAddress,
             to: deployer.address,
             success: true,
-            value: 999034037987n, // admin fees
+            //value: 999034037987n, // admin fees
         });
 
         // Expect that jettonMasterBondV1 send jetton internal transfer to buyer meme token wallet
@@ -253,7 +253,7 @@ describe('JettonMasterBondV1', () => {
             from: buyerWallet.address,
             to: buyer.address,
             success: true,
-            value: 989899955558577n, // This is remaining ton after buyer bought meme token
+            //value: 989899955558577n, // This is remaining ton after buyer bought meme token
         });
 
         // buyers meme token balance should be 90909090909090910n

@@ -6,6 +6,7 @@ global slice dex_router::owner_address;
 global cell dex_router::pool_code;
 const op::create_pool = "create_pool"c; ;; 2e3034ef
 const op::top_up = 0xd372158c;
+const op::deposit = "deposit"c; ;;95db9d39
 
 () dex_router::load_data() impure inline_ref {
     slice ds = get_data().begin_parse();
@@ -38,11 +39,7 @@ const op::top_up = 0xd372158c;
 
         if(op == op::create_pool) {
             int ton_amount = forward_payload~load_coins();
-            ~strdump("create_pool");
-            ~strdump("jetton reserves");
-            ~dump(jetton_amount);
-            ~strdump("ton reserves");
-            ~dump(ton_amount);
+            slice master_address = forward_payload~load_msg_addr();
             return ();
         }
     }

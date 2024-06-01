@@ -19,7 +19,7 @@
     master::total_supply -= extra_jetton;
 
     ;; TODO: This ONE_TON / 20 need to be recalculated again
-    cell add_liquidity_payload = begin_cell().store_uint(op::create_pool ,32).store_coins(send_ton_liquidity).end_cell();
+    cell add_liquidity_payload = begin_cell().store_uint(op::create_pool ,32).store_coins(send_ton_liquidity).store_slice(my_address()).end_cell();
     send_ton_liquidity += ONE_TON; ;; ONE_TON is for building pool and farm.
     int ton_to_dex_router = send_ton_liquidity + ONE_TON / 20  + fee_for_admin; ;; fee_for_admin will be transfer in excess msg. 
     ;; Send mint jetton to Router
