@@ -11,7 +11,7 @@ export async function run(provider: NetworkProvider) {
     let userMeMeWalletAddress = await jettonMasterBondV1.getWalletAddress(provider.sender().address!);
     let userMeMeWallet = provider.open(JettonWallet.createFromAddress(userMeMeWalletAddress));
 
-    let burnAmount = 49475509622737n / 4n; //49475509622737n / 2n;
+    let burnAmount = 49475509622737n / 4n; // Pay 0.5 TON to buy MEME in the first place
 
     let msg = JettonWallet.burnMessage(burnAmount, provider.sender().address!, null);
 
