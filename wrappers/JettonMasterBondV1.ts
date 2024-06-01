@@ -19,6 +19,7 @@ export const MasterOpocde = {
     BurnNotification: 0x7bdd97de,
     Excess: 0xd53276db,
     JettonNotification: 0x7362d09c,
+    DepositAsset: 0x95db9d39,
 };
 
 export type BuyToken = {

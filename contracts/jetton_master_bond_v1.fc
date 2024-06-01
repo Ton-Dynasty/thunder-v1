@@ -1,5 +1,6 @@
 #include "imports/stdlib.fc";
 #include "common/errors.fc";
+#include "common/utils.fc";
 #include "common/workchain.fc";
 #include "jetton_master/constants.fc";
 #include "jetton_master/opcodes.fc";
@@ -58,7 +59,7 @@
     ;; (int total_fees, int gas_consumptoin) = calculate_fees(ctx::fwd_fee); TODO: implement this gas calculation after whole code are ready @ipromise2324
     int total_fees = 50000000;
     int gas_consumptoin = 20000000;
-    throw_unless(error::not_enough_ton, ctx::value > ton_amount + total_fees);
+    throw_unless(error::not_enough_ton, ctx::value > ton_amount + total_fees + forward_ton_amount);
     
     ;; Calculate token_out based on ton_amount
     (int token_out, int true_amount_in, int ton_has_to_pay) = simulate::estimate_mint_jetton_amount(ton_amount);
