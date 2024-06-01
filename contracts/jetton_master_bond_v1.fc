@@ -145,7 +145,7 @@
         ctx::body.end_parse();
 
         ;; Throw error if token already listed. TODO: we should send back ton
-        throw_unless(error::token_already_listed, master::on_moon == 0);
+        throw_unless(error::token_already_listed, master::on_moon == FALSE);
 
         ;; Throw error if token amount is equal to 0. TODO: we should send back ton
         throw_unless(error::invalid_amount, ton_amount > 0);
@@ -167,7 +167,7 @@
     }
 
     if (op == op::burn_notification) {
-        throw_unless(error::token_already_listed, master::on_moon == 0); ;; TODO: we should send back ton
+        throw_unless(error::token_already_listed, master::on_moon == FALSE); ;; TODO: we should send back ton
         int jetton_amount = ctx::body~load_coins();
         slice from_address = ctx::body~load_msg_addr();
         slice response_address = ctx::body~load_msg_addr();
@@ -178,7 +178,7 @@
     }
 
     if (op == op::change_content_cell) {
-        throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
+        throw_unless(error::not_owner, equal_slices_bits(ctx::sender, master::admin_address));
         master::jetton_content = ctx::body~load_ref();
         ctx::body.end_parse();
         master::save_data();
@@ -186,7 +186,7 @@
     }
 
     if (op == op::upgrade) {
-        throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
+        throw_unless(error::not_owner, equal_slices_bits(ctx::sender, master::admin_address));
         (cell new_data, cell new_code) = (ctx::body~load_ref(), ctx::body~load_ref());
         ctx::body.end_parse();
         set_data(new_data);
