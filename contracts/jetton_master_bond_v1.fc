@@ -207,3 +207,12 @@ slice get_wallet_address(slice owner_address) method_id {
     master::load_data();
     return (master::ton_reserves, master::jetton_reserves, master::fee, master::total_supply, master::on_moon, master::dex_router, master::admin_address);
 }
+
+(int, int, slice, cell, cell) get_jetton_data() method_id {
+    master::load_data();
+    int total_supply = master::total_supply;
+    slice admin_address = master::admin_address;
+    cell jetton_wallet_code = master::jetton_wallet_code;
+    int mintable = TRUE;
+    return (total_supply, mintable, admin_address, master::jetton_content, jetton_wallet_code);
+}
