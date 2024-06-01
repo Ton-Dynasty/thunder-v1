@@ -41,4 +41,14 @@ export class DexRouter implements Contract {
             body: beginCell().storeUint(DexRouterOpcode.TopUp, 32).storeUint(0, 64).endCell(),
         });
     }
+
+    async getPoolAddress(provider: ContractProvider, jettonMaster: Address): Promise<Address> {
+        const poolAddress = await provider.get('get_pool_address', [
+            {
+                type: 'slice',
+                cell: beginCell().storeAddress(jettonMaster).endCell(),
+            },
+        ]);
+        return poolAddress.stack.readAddress();
+    }
 }

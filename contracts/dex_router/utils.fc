@@ -1,4 +1,4 @@
-cell pack_pool_data(slice jetton_master_address, slice admin_address, cell lp_jetton_content) inline {
+cell pack_pool_data(slice jetton_master_address, cell lp_jetton_content) inline {
 
     cell init_data = begin_cell()
         .store_slice(my_address())
@@ -7,7 +7,7 @@ cell pack_pool_data(slice jetton_master_address, slice admin_address, cell lp_je
     .end_cell();
 
     return begin_cell()
-            .store_slice(admin_address)
+            .store_slice(dex_router::owner_address)
             .store_coins(0) ;; reserve 0
             .store_coins(0) ;; reserve 1
             .store_coins(0) ;; total_supply
@@ -19,14 +19,13 @@ cell pack_pool_data(slice jetton_master_address, slice admin_address, cell lp_je
         .end_cell();
     }
 
-cell calculate_pool_state_init(slice jetton_master_address, slice admin_address) inline {
+cell calculate_pool_state_init(slice jetton_master_address) inline {
     return begin_cell()
     .store_uint(0, 2) ;; 0b00 - No split_depth; No special
     .store_maybe_ref(dex_router::pool_code)
     .store_maybe_ref(
         pack_pool_data(
             jetton_master_address,
-            admin_address,
             begin_cell().end_cell() ;; TODO: This should replaced with real LP jetton content
         )
     )

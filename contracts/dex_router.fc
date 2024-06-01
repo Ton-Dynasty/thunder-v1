@@ -11,7 +11,6 @@
     int ctx::value, 
     int ctx::fwd_fee,
     slice jetton_master_address,
-    slice admin_address,
     int query_id, 
     int asset0_amount, 
     int asset1_amount, 
@@ -37,7 +36,7 @@
     );
 
     ;; Calculate receiver's wallet address
-    cell state_init = calculate_pool_state_init(jetton_master_address, admin_address);
+    cell state_init = calculate_pool_state_init(jetton_master_address);
     slice pool_address = calculate_address(state_init);
 
     deploy(BOUNCEABLE, pool_address, remaining_ton, deposit_asset_payload, state_init, SEND_MODE_REGULAR);
@@ -64,7 +63,6 @@
                 1000000000,  ;; This 1 ton is provided by thunder fi
                 ctx::fwd_fee,
                 master_address,
-                dex_router::owner_address, ;; pool admin
                 query_id, 
                 ton_amount, 
                 jetton_amount, 
@@ -100,3 +98,10 @@
     route_internal(ctx::sender, ctx::value, ctx::fwd_fee, ctx::body);
 }
 
+(slice) get_pool_address(slice jetton_master_address) method_id {
+    dex_router::load_data();
+    ;; Calculate receiver's wallet address
+    cell state_init = calculate_pool_state_init(jetton_master_address);
+    slice pool_address = calculate_address(state_init);
+    return pool_address;
+}

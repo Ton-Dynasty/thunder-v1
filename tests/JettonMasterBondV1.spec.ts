@@ -210,7 +210,6 @@ describe('JettonMasterBondV1', () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
         const buyTon = toNano('1000000');
         const toTheMoonResult = await buyToken(buyer, buyTon);
-        printTransactionFees(toTheMoonResult.transactions);
 
         // Expect that jettonMasterBondV1 send internal transfer to DexRouter wallet
         let dexRouterWalletAddress = await jettonMasterBondV1.getWalletAddress(dexRouter.address);
@@ -281,6 +280,16 @@ describe('JettonMasterBondV1', () => {
         // Epext that onMoon = 1n
         let onMoon = await getMasterData(jettonMasterBondV1, 'onMoon');
         expect(onMoon).toEqual(1n);
+
+        let poolAddress = await dexRouter.getPoolAddress(jettonMasterBondV1.address);
+        // Expect that Dex Router send deposit asset to Pool
+        expect(toTheMoonResult.transactions).toHaveTransaction({
+            op: MasterOpocde.DepositAsset,
+            from: dexRouter.address,
+            to: poolAddress,
+            success: true,
+        });
+
     });
 
     it('should buy meme tokens and sell meme tokens 100 times', async () => {
