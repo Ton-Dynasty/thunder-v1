@@ -16,6 +16,7 @@ global cell master::jetton_content;
     master::jetton_reserves = ds~load_coins();
     master::fee = ds~load_coins();
 
+
     ;; load basic info
     slice basic_info = ds~load_ref().begin_parse();
     master::on_moon = basic_info~load_uint(2);
@@ -40,6 +41,7 @@ global cell master::jetton_content;
             .store_slice(master::admin_address)
             .store_coins(master::ton_reserves)
             .store_coins(master::jetton_reserves)
+            .store_coins(master::fee)
             .store_ref(basic_info)
         .end_cell()
     );

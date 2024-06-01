@@ -6,6 +6,7 @@ global slice dex_router::owner_address;
 global cell dex_router::pool_code;
 const op::create_pool = "create_pool"c; ;; 2e3034ef
 const op::top_up = 0xd372158c;
+const op::deposit = "deposit"c; ;;95db9d39
 
 () dex_router::load_data() impure inline_ref {
     slice ds = get_data().begin_parse();
@@ -37,13 +38,13 @@ const op::top_up = 0xd372158c;
         op = forward_payload~load_op(); ;; op MUST be the first 32 bits of the payload in this case
 
         if(op == op::create_pool) {
-            ~strdump("create_pool");
+            int ton_amount = forward_payload~load_coins();
+            slice master_address = forward_payload~load_msg_addr();
             return ();
         }
     }
 
     if (op == op::top_up) {
-        ~strdump("top_up");
         return ();
     }
 
