@@ -281,4 +281,29 @@ describe('JettonMasterBondV1', () => {
         let onMoon = await getMasterData(jettonMasterBondV1, 'onMoon');
         expect(onMoon).toEqual(1n);
     });
+
+    it('should buy meme tokens and sell meme tokens 100 times', async () => {
+        let buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
+        const buyTon = toNano('10');
+        let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
+
+        // use for loop to buy and sell meme tokens 100 times
+        for (let i = 0; i < 100; i++) {
+            await buyToken(buyer, buyTon);
+            let burnAmount = await buyerWallet.getJettonBalance();
+            await buyerWallet.sendBurn(buyer.getSender(), toNano('1'), burnAmount, null, null);
+        }
+
+        // Expect that ton reserves = 0
+        let tonReservesAfter = await getMasterData(jettonMasterBondV1, 'tonReserves');
+        expect(tonReservesAfter).toEqual(0n);
+
+        // Expect that jetton reserves = 100000000000000000n
+        let jettonReservesAfter = await getMasterData(jettonMasterBondV1, 'jettonReserves');
+        expect(jettonReservesAfter).toEqual(100000000000000000n);
+
+        // Expect that fee = 19900000000n
+        let feeAfter = await getMasterData(jettonMasterBondV1, 'fee');
+        expect(feeAfter).toEqual(19900000000n);
+    });
 });

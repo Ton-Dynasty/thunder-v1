@@ -68,7 +68,7 @@
     int ton_back_to_user = ctx::value - gas_consumptoin - ton_has_to_pay;
 
     master::ton_reserves += true_amount_in;
-    master::fee += ton_amount * const::fee_rate / const::precision;
+    master::fee += ton_has_to_pay - true_amount_in;
     master::jetton_reserves -= token_out;
 
     if(master::ton_reserves == const::ton_the_moon) {
