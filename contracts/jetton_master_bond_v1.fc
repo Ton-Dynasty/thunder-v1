@@ -49,7 +49,7 @@
     int ctx::value, 
     int ctx::fwd_fee,
     int ton_amount,
-    int mint_token_out,
+    int min_token_out,
     slice destination,
     slice response_address,
     cell custom_payload,
@@ -62,7 +62,7 @@
     
     ;; Calculate token_out based on ton_amount
     (int token_out, int true_amount_in, int ton_has_to_pay) = simulate::estimate_mint_jetton_amount(ton_amount);
-    throw_unless(error::not_meet_min_amount, token_out >= mint_token_out); ;; TODO: we should send back ton if token_out < mint_token_out
+    throw_unless(error::not_meet_min_amount, token_out >= min_token_out); ;; TODO: we should send back ton if token_out < min_token_out
 
     ;; Calculate remaining ton and update storage
     int ton_back_to_user = ctx::value - gas_consumptoin - ton_has_to_pay - forward_ton_amount;
@@ -136,12 +136,13 @@
     if (op == op::mint) {
         ;; load data in mint msg
         int ton_amount = ctx::body~load_coins();
-        int mint_token_out = ctx::body~load_coins();
+        int min_token_out = ctx::body~load_coins();
         slice destination = ctx::body~load_msg_addr();
         slice response_address = ctx::body~load_msg_addr();
         cell custom_payload = ctx::body~load_maybe_ref();
         int forward_ton_amount = ctx::body~load_coins();
         cell forward_payload = ctx::body~load_ref();
+        ctx::body.end_parse();
 
         ;; Throw error if token already listed. TODO: we should send back ton
         throw_unless(error::token_already_listed, master::on_moon == 0);
@@ -155,7 +156,7 @@
             ctx::value, 
             ctx::fwd_fee, 
             ton_amount,
-            mint_token_out,
+            min_token_out,
             destination,
             response_address,
             custom_payload,
@@ -170,8 +171,26 @@
         int jetton_amount = ctx::body~load_coins();
         slice from_address = ctx::body~load_msg_addr();
         slice response_address = ctx::body~load_msg_addr();
+        ctx::body.end_parse();
         internal::burn_token(query_id, ctx::sender, ctx::value, ctx::fwd_fee, jetton_amount, from_address, response_address);
 
+        return ();
+    }
+
+    if (op == op::change_content_cell) {
+        throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
+        master::jetton_content = ctx::body~load_ref();
+        ctx::body.end_parse();
+        master::save_data();
+        return ();
+    }
+
+    if (op == op::upgrade) {
+        throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
+        (cell new_data, cell new_code) = (ctx::body~load_ref(), ctx::body~load_ref());
+        ctx::body.end_parse();
+        set_data(new_data);
+        set_code(new_code);
         return ();
     }
 
@@ -196,6 +215,8 @@
     ;; route function to handle internal message
     route_internal(ctx::sender, ctx::value, ctx::fwd_fee, ctx::body);
 }
+
+;; public getters
 
 slice get_wallet_address(slice owner_address) method_id {
     master::load_data();

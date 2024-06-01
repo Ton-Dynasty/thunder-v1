@@ -4,16 +4,22 @@ import { compile, NetworkProvider } from '@ton/blueprint';
 import { PoolV1 } from '../wrappers/PoolV1';
 import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
 import { JettonWallet } from '../wrappers/JettonWallet';
+import { promptAddress, promptAmount } from '../utils/ui';
 
 export async function run(provider: NetworkProvider) {
-    const jettonMasterAddress = Address.parse('EQBlp2jL9j0cbIfVuUNWCdbEwn3wn6FP5waw6ZwQ66FjnUpn');
+    // configurable constants
+    const decimals = 9;
+
+    const jettonMasterAddress = await promptAddress('Enter the JettonMasterBondV1 address: ', provider.ui());
     const jettonMasterBondV1 = provider.open(JettonMasterBondV1.createFromAddress(jettonMasterAddress));
-    let userMeMeWalletAddress = await jettonMasterBondV1.getWalletAddress(provider.sender().address!);
-    let userMeMeWallet = provider.open(JettonWallet.createFromAddress(userMeMeWalletAddress));
+    const userMeMeWalletAddress = await jettonMasterBondV1.getWalletAddress(provider.sender().address!);
+    const userMemeWallet = provider.open(JettonWallet.createFromAddress(userMeMeWalletAddress));
+    const { balance } = await userMemeWallet.getWalletData();
+    const burnAmount = await promptAmount(`Enter the amount of MEME to sell (max: ${Number(balance) / 10**decimals}): `, decimals, provider.ui()); // prettier-ignore
 
-    let burnAmount = 49475509622737n / 4n; // Pay 0.5 TON to buy MEME in the first place
+    // let burnAmount = 49475509622737n / 4n; // Pay 0.5 TON to buy MEME in the first place
 
-    let msg = JettonWallet.burnMessage(burnAmount, provider.sender().address!, null);
+    const msg = JettonWallet.burnMessage(burnAmount, provider.sender().address!, null);
 
     await provider.sender().send({
         to: userMeMeWalletAddress,

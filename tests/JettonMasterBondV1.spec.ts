@@ -101,7 +101,7 @@ describe('JettonMasterBondV1', () => {
                 $$type: 'BuyToken',
                 query_id: 0n,
                 ton_amount: tonAmount,
-                mint_token_out: 0n,
+                minTokenOut: 0n,
                 destination: buyer.address,
                 response_address: buyer.address,
                 custom_payload: null,

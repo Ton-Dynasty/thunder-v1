@@ -1,18 +1,19 @@
 import { Address, beginCell, toNano } from '@ton/core';
 import { NetworkProvider } from '@ton/blueprint';
 import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
+import { promptAddress, promptToncoin } from '../utils/ui';
 
 export async function run(provider: NetworkProvider) {
-    const jettonMasterAddress = Address.parse('EQBlp2jL9j0cbIfVuUNWCdbEwn3wn6FP5waw6ZwQ66FjnUpn');
+    const jettonMasterAddress = await promptAddress('Enter the JettonMasterBondV1 address: ', provider.ui());
     const jettonMasterBondV1 = provider.open(JettonMasterBondV1.createFromAddress(jettonMasterAddress));
-    let tonAmount = toNano('0.5');
-    let mint_token_out = 0n;
+    let tonAmount = await promptToncoin('Enter the amount of TON to buy MEME: ', provider.ui());
+    let minTokenOut = 0n;
 
     const message = JettonMasterBondV1.packBuyToken({
         $$type: 'BuyToken',
         query_id: 0n,
         ton_amount: tonAmount,
-        mint_token_out: mint_token_out,
+        minTokenOut: minTokenOut,
         destination: provider.sender().address!,
         response_address: provider.sender().address!,
         custom_payload: null,

@@ -2,8 +2,9 @@ const op::mint = 0x642b7d07;
 const op::internal_transfer = 0x178d4519;
 const op::excesses = 0xd53276db;
 const op::burn_notification = 0x7bdd97de;
-
+const op::change_content_cell = 0xcb862902;
+const op::upgrade = 0x2508d66a;
 const op::top_up = 0xd372158c;
-const error::not_valid_wallet = 74;
+
 const op::create_pool = "create_pool"c; ;; 2e3034ef
 
