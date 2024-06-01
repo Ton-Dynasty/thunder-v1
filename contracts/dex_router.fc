@@ -38,6 +38,7 @@ const op::top_up = 0xd372158c;
 
         if(op == op::create_pool) {
             ~strdump("create_pool");
+            ~dump(jetton_amount);
             return ();
         }
     }

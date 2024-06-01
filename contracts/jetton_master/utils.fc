@@ -3,7 +3,7 @@
 ) impure inline_ref {
     int k = const::v_ton * master::total_supply;
     int amount_in_after_fees = (amount_in * (const::precision - const::fee_rate) / const::precision); ;; Subtract mint fees
-    int true_amount_in = min(amount_in_after_fees, const::ton_the_moon - master::ton_reserves); ;; Master can only mint up to const::ton_the_moon
+    int true_amount_in = min(amount_in_after_fees, const::ton_the_moon - master::ton_reserves - const::v_ton); ;; Master can only mint up to const::ton_the_moon
 
     ;; Calculate amount_out base on (x + delta_x ) * (y - delta_y) = k
     int x = master::ton_reserves + const::v_ton;
@@ -22,7 +22,7 @@
     master::ton_reserves -= delta_ton;
     master::jetton_reserves += jetton_out;
     master::fee += fee;
-    
+
     return amount_out;
 }
 

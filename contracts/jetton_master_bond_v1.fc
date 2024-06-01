@@ -32,28 +32,30 @@
 
     ;; Calculate remaining ton and update storage
     int remaining_ton = ctx::value - gas_consumptoin - ton_amount;
+
     master::ton_reserves += true_amount_in;
-    master::jetton_reserves -= token_out;
     master::fee += ton_amount * const::fee_rate / const::precision;
-
-
-    if(master::ton_reserves + token_out == const::ton_the_moon) {
+    master::jetton_reserves -= token_out;
+    if(master::ton_reserves + const::v_ton == const::ton_the_moon) {
         master::on_moon = 1;
         int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision;
+        int send_all_ton = send_ton_liquidity + ONE_TON / 20; ;; TODO: This ONE_TON / 20 need to be recalculated again
         cell add_liquidity_payload = begin_cell().store_uint(op::create_pool ,32).store_coins(send_ton_liquidity).end_cell();
         ;; Send mint jetton to Router
         mint_jetton(
             BOUNCEABLE,
             query_id,
-            ONE_TON / 5, ;; 0.2 TON (TODO: modify this value when calculate fee)
+            send_all_ton, 
             master::jetton_reserves,
             master::dex_router,
-            my_address(),
-            ONE_TON / 20, ;; 0.05 TON (TODO: modify this value when calculate fee)
+            master::admin_address,
+            send_ton_liquidity, 
             add_liquidity_payload
         );
-    }
 
+        master::ton_reserves = 0;
+        master::jetton_reserves = 0;
+    }
 
     ;; Mint tokens to user
     mint_jetton(

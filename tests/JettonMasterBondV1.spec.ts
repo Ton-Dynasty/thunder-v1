@@ -26,7 +26,7 @@ describe('JettonMasterBondV1', () => {
         forward_payload: Cell = beginCell().storeUint(0n, 1).endCell(),
     ) => {
         let sendAllTon = tonAmount + toNano('1');
-        await jettonMasterBondV1.sendBuyToken(
+        return await jettonMasterBondV1.sendBuyToken(
             buyer.getSender(),
             { value: sendAllTon },
             {
@@ -125,14 +125,14 @@ describe('JettonMasterBondV1', () => {
         expect(feeAfter).toEqual((tonAmount * fee_rate) / precision);
     });
 
-    it('should burn meme tokens', async () => {
+    it('should burn half of buyers meme tokens', async () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
         await buyToken(buyer);
 
         let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
         let buyerMemeTokenBalanceBefore = await buyerWallet.getJettonBalance();
 
-        // Buyers burn 10 meme tokens
+        // Buyers burn half of meme tokens
         let buyerTonBalanceBefore = await buyer.getBalance();
         let burnAmount = buyerMemeTokenBalanceBefore / 2n;
         const burnResult = await buyerWallet.sendBurn(buyer.getSender(), toNano('1'), burnAmount, null, null);
@@ -169,5 +169,21 @@ describe('JettonMasterBondV1', () => {
         // Expect that buyers ton balance increased at least 4924637993n
         let gas_fee = toNano('0.05');
         expect(buyerTonBalanceAfter - buyerTonBalanceBefore + gas_fee).toBeGreaterThanOrEqual(4924637993n);
+    });
+
+    it('should trnasfer tokens and tons to DexRouter after meeting TonTheMoon', async () => {
+        const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
+        const toTheMoonResult = await buyToken(buyer, toNano('1000000'));
+        // printTransactionFees(toTheMoonResult.transactions);
+
+        // Expect that jettonMasterBondV1 send internal transfer to DexRouter wallet
+        let dexRouterWalletAddress = await jettonMasterBondV1.getWalletAddress(dexRouter.address);
+        expect(toTheMoonResult.transactions).toHaveTransaction({
+            op: MasterOpocde.InternalTransfer,
+            from: jettonMasterBondV1.address,
+            to: dexRouterWalletAddress,
+            success: true,
+        });
+
     });
 });
