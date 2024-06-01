@@ -17,6 +17,8 @@ export const MasterOpocde = {
     InternalTransfer: 0x178d4519,
     Burn: 0x595f07bc,
     BurnNotification: 0x7bdd97de,
+    Excess: 0xd53276db,
+    JettonNotification: 0x7362d09c,
 };
 
 export type BuyToken = {
@@ -129,15 +131,17 @@ export class JettonMasterBondV1 implements Contract {
         return walletAddress.stack.readAddress();
     }
 
-    async getReserves(provider: ContractProvider): Promise<[bigint, bigint]> {
-        const walletAddress = await provider.get('get_reserves', []);
-        const tonReserves = walletAddress.stack.readBigNumber();
-        const jettonReserves = walletAddress.stack.readBigNumber();
-        return [tonReserves, jettonReserves];
-    }
-
-    async getFees(provider: ContractProvider): Promise<bigint> {
-        const fees = await provider.get('get_fee', []);
-        return fees.stack.readBigNumber();
+    async getMasterData(
+        provider: ContractProvider,
+    ): Promise<[bigint, bigint, bigint, bigint, bigint, Address, Address]> {
+        const fees = await provider.get('get_master_data', []);
+        const tonReserves = fees.stack.readBigNumber();
+        const jettonReserves = fees.stack.readBigNumber();
+        const fee = fees.stack.readBigNumber();
+        const totalSupply = fees.stack.readBigNumber();
+        const onMoon = fees.stack.readBigNumber();
+        const dexRouter = fees.stack.readAddress();
+        const adminAddress = fees.stack.readAddress();
+        return [tonReserves, jettonReserves, fee, totalSupply, onMoon, dexRouter, adminAddress];
     }
 }

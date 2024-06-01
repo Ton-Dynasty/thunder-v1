@@ -7,6 +7,40 @@
 #include "jetton_master/errors.fc";
 #include "jetton_master/utils.fc";
 
+() handle::ton_the_moon(int query_id) impure inline {
+    master::on_moon = 1;
+    ;; Calculate the tunder fi fee 
+    int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision;
+    int fee_for_admin = master::ton_reserves - send_ton_liquidity - ONE_TON; ;; ONE_TON is for building pool and farm.
+    int price_for_now = const:price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
+    int send_jetton_liquidity = const:price_precision * send_ton_liquidity / price_for_now;
+    int extra_jetton = master::jetton_reserves - send_jetton_liquidity;
+    ;; TODO: We should use this extra_jetton to do something, but for now we substract it in total supply
+    master::total_supply -= extra_jetton;
+
+    ;; TODO: This ONE_TON / 20 need to be recalculated again
+    cell add_liquidity_payload = begin_cell().store_uint(op::create_pool ,32).store_coins(send_ton_liquidity).end_cell();
+    send_ton_liquidity += ONE_TON; ;; ONE_TON is for building pool and farm.
+    int ton_to_dex_router = send_ton_liquidity + ONE_TON / 20  + fee_for_admin; ;; fee_for_admin will be transfer in excess msg. 
+    ;; Send mint jetton to Router
+    mint_jetton(
+        BOUNCEABLE,
+        query_id,
+        ton_to_dex_router, 
+        send_jetton_liquidity,
+        master::dex_router,
+        master::admin_address,
+        send_ton_liquidity, 
+        add_liquidity_payload
+    );
+
+    master::ton_reserves = 0;
+    master::jetton_reserves = 0;
+    master::fee = 0;
+
+    return ();
+}
+
 () internal::mint_token(
     int query_id,
     slice ctx::sender, 
@@ -38,34 +72,7 @@
     master::jetton_reserves -= token_out;
 
     if(master::ton_reserves == const::ton_the_moon) {
-        master::on_moon = 1;
-        ;; Calculate the tunder fi fee 
-        int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision;
-        int fee_for_admin = master::ton_reserves - send_ton_liquidity - ONE_TON; ;; ONE_TON is for building pool and farm.
-        int price_for_now = const:price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
-        int send_jetton_liquidity = const:price_precision * send_ton_liquidity / price_for_now;
-        int extra_jetton = master::jetton_reserves - send_jetton_liquidity;
-        ;; TODO: We should use this extra_jetton to do something, but for now we substract it in total supply
-        master::total_supply -= extra_jetton;
-
-        ;; TODO: This ONE_TON / 20 need to be recalculated again
-        cell add_liquidity_payload = begin_cell().store_uint(op::create_pool ,32).store_coins(send_ton_liquidity).end_cell();
-        send_ton_liquidity += ONE_TON; ;; ONE_TON is for building pool and farm.
-        int ton_to_dex_router = send_ton_liquidity + ONE_TON / 20  + fee_for_admin; ;; fee_for_admin will be transfer in excess msg. 
-        ;; Send mint jetton to Router
-        mint_jetton(
-            BOUNCEABLE,
-            query_id,
-            ton_to_dex_router, 
-            send_jetton_liquidity,
-            master::dex_router,
-            master::admin_address,
-            send_ton_liquidity, 
-            add_liquidity_payload
-        );
-
-        master::ton_reserves = 0;
-        master::jetton_reserves = 0;
+        handle::ton_the_moon(query_id);
     }
 
     ;; Mint tokens to user
@@ -81,7 +88,6 @@
     );
 
     master::save_data();
-
     return ();
 }
 
@@ -116,6 +122,7 @@
     }
 
     transfer_ton(query_id, NON_BOUNCEABLE, receiver, amount_out + send_ton, SEND_MODE_REGULAR);
+
     master::save_data();
     return ();
 }
@@ -196,12 +203,7 @@ slice get_wallet_address(slice owner_address) method_id {
     return calculate_jetton_wallet_address(calculate_jetton_wallet_state_init(owner_address, my_address(), master::jetton_wallet_code));
 }
 
-(int, int) get_reserves() method_id {
+(int, int, int, int, int, slice, slice) get_master_data() method_id {
     master::load_data();
-    return (master::ton_reserves, master::jetton_reserves);
-}
-
-(int) get_fee() method_id {
-    master::load_data();
-    return master::fee;
+    return (master::ton_reserves, master::jetton_reserves, master::fee, master::total_supply, master::on_moon, master::dex_router, master::admin_address);
 }

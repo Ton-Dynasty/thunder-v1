@@ -4,4 +4,4 @@ const const::ton_the_moon = 10000 * ONE_TON; ;; when ton_reserves reach this tar
 const const::precision = 1000;
 const const::fee_rate = 10; ;; fee_rate / precision = 1%, trading fee
 const const::commission = 100; ;; commision / precision = 10%, ton taken by admin when trigger listing process
-const const:price_precision = 1000000;
+const const:price_precision = 1000000000;

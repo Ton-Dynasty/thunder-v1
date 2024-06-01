@@ -43,6 +43,38 @@ describe('JettonMasterBondV1', () => {
         );
     };
 
+    const getMasterData = async (jettonMasterBondV1: SandboxContract<JettonMasterBondV1>, field: string = '') => {
+        const [tonReserves, jettonReserves, fee, totalSupply, onMoon, dexRouter, adminAddress] =
+            await jettonMasterBondV1.getMasterData();
+
+        switch (field) {
+            case 'tonReserves':
+                return tonReserves;
+            case 'jettonReserves':
+                return jettonReserves;
+            case 'fee':
+                return fee;
+            case 'totalSupply':
+                return totalSupply;
+            case 'onMoon':
+                return onMoon;
+            case 'dexRouter':
+                return dexRouter;
+            case 'adminAddress':
+                return adminAddress;
+            default:
+                return {
+                    tonReserves,
+                    jettonReserves,
+                    fee,
+                    totalSupply,
+                    onMoon,
+                    dexRouter,
+                    adminAddress,
+                };
+        }
+    };
+
     beforeEach(async () => {
         ({ blockchain, deployer, dexRouter, jettonMasterBondV1 } = await loadFixture());
     });
@@ -56,7 +88,8 @@ describe('JettonMasterBondV1', () => {
     });
 
     it('should buy token with 10 tons', async () => {
-        let [tonReservesBefore, jettonReservesBefore] = await jettonMasterBondV1.getReserves();
+        let tonReservesBefore = BigInt((await getMasterData(jettonMasterBondV1, 'tonReserves')).toString());
+        let jettonReservesBefore = BigInt((await getMasterData(jettonMasterBondV1, 'jettonReserves')).toString());
 
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
         let buyerTonBalanceBefore = await buyer.getBalance();
@@ -103,7 +136,8 @@ describe('JettonMasterBondV1', () => {
         let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
         let buyerMemeTokenBalance = await buyerWallet.getJettonBalance();
 
-        let [tonReservesAfter, jettonReservesAfter] = await jettonMasterBondV1.getReserves();
+        let tonReservesAfter = BigInt((await getMasterData(jettonMasterBondV1, 'tonReserves')).toString());
+        let jettonReservesAfter = BigInt((await getMasterData(jettonMasterBondV1, 'jettonReserves')).toString());
 
         // Expect that ton reserves is equal to 9900000000n
         expect(tonReservesAfter).toEqual(9900000000n);
@@ -112,7 +146,7 @@ describe('JettonMasterBondV1', () => {
         expect(jettonReservesAfter).toEqual(99019704921279334n);
 
         // Expect that buyer received meme token
-        expect(buyerMemeTokenBalance).toBe(jettonReservesBefore - jettonReservesAfter);
+        expect(buyerMemeTokenBalance).toEqual(jettonReservesBefore - jettonReservesAfter);
 
         // Expect buyer meme token balance is equal to 980295078720666n
         expect(buyerMemeTokenBalance).toBe(980295078720666n);
@@ -120,7 +154,7 @@ describe('JettonMasterBondV1', () => {
         // Expect that ton reserves increased tonAmount * 90%
         expect(tonReservesAfter - tonReservesBefore).toEqual((tonAmount * (precision - fee_rate)) / precision);
 
-        let feeAfter = await jettonMasterBondV1.getFees();
+        let feeAfter = await getMasterData(jettonMasterBondV1, 'fee');
         // Expect that fees increased tonAmount * 10%
         expect(feeAfter).toEqual((tonAmount * fee_rate) / precision);
     });
@@ -158,7 +192,8 @@ describe('JettonMasterBondV1', () => {
             success: true,
         });
 
-        let [tonReservesAfter, jettonReservesAfter] = await jettonMasterBondV1.getReserves();
+        let tonReservesAfter = await getMasterData(jettonMasterBondV1, 'tonReserves');
+        let jettonReservesAfter = await getMasterData(jettonMasterBondV1, 'jettonReserves');
 
         // Expect ton reserves = 4925618189n
         expect(tonReservesAfter).toEqual(4925618189n);
@@ -173,8 +208,8 @@ describe('JettonMasterBondV1', () => {
 
     it('should trnasfer tokens and tons to DexRouter after meeting TonTheMoon', async () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
-        const toTheMoonResult = await buyToken(buyer, toNano('1000000'));
-        // printTransactionFees(toTheMoonResult.transactions);
+        const buyTon = toNano('1000000');
+        const toTheMoonResult = await buyToken(buyer, buyTon);
 
         // Expect that jettonMasterBondV1 send internal transfer to DexRouter wallet
         let dexRouterWalletAddress = await jettonMasterBondV1.getWalletAddress(dexRouter.address);
@@ -184,5 +219,66 @@ describe('JettonMasterBondV1', () => {
             to: dexRouterWalletAddress,
             success: true,
         });
+
+        // Expect that dexRouterWallet send jetton notification to dexRouter
+        expect(toTheMoonResult.transactions).toHaveTransaction({
+            op: MasterOpocde.JettonNotification,
+            from: dexRouterWalletAddress,
+            to: dexRouter.address,
+            success: true,
+            value: 9001000000000n, // 9000 ton + 1 ton for build pool and farm
+        });
+
+        // Expect that dexRouterWallet send excess to admin address
+        expect(toTheMoonResult.transactions).toHaveTransaction({
+            op: MasterOpocde.Excess,
+            from: dexRouterWalletAddress,
+            to: deployer.address,
+            success: true,
+            value: 999034037987n, // admin fees
+        });
+
+        // Expect that jettonMasterBondV1 send jetton internal transfer to buyer meme token wallet
+        let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
+        expect(toTheMoonResult.transactions).toHaveTransaction({
+            op: MasterOpocde.InternalTransfer,
+            from: jettonMasterBondV1.address,
+            to: buyerWallet.address,
+            success: true,
+        });
+
+        // Expect that buyers meme token wallet send excess to buyer
+        expect(toTheMoonResult.transactions).toHaveTransaction({
+            op: MasterOpocde.Excess,
+            from: buyerWallet.address,
+            to: buyer.address,
+            success: true,
+            value: 989899955558577n, // This is remaining ton after buyer bought meme token
+        });
+
+        // buyers meme token balance should be 90909090909090910n
+        let buyerMemeTokenBalance = await buyerWallet.getJettonBalance();
+        expect(buyerMemeTokenBalance).toEqual(90909090909090910n);
+
+        // Dex Ruoter meme token balance should be 7438016528925619
+        let dexRouterWallet = await userWallet(dexRouter.address, jettonMasterBondV1);
+        let dexRouterMemeTokenBalance = await dexRouterWallet.getJettonBalance();
+        expect(dexRouterMemeTokenBalance).toEqual(7438016528925619n);
+
+        // Expect jettonMasterBondV1 ton reserves = 0
+        let tonReservesAfter = await getMasterData(jettonMasterBondV1, 'tonReserves');
+        let jettonReservesAfter = await getMasterData(jettonMasterBondV1, 'jettonReserves');
+        expect(tonReservesAfter).toEqual(0n);
+
+        // Expect jettonMasterBondV1 jetton reserves = 0
+        expect(jettonReservesAfter).toEqual(0n);
+
+        // Expect fee = 0
+        let feeAfter = await getMasterData(jettonMasterBondV1, 'fee');
+        expect(feeAfter).toEqual(0n);
+
+        // Epext that onMoon = 1n
+        let onMoon = await getMasterData(jettonMasterBondV1, 'onMoon');
+        expect(onMoon).toEqual(1n);
     });
 });
