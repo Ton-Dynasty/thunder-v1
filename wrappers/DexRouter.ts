@@ -3,6 +3,7 @@ import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, 
 export type DexRouterConfig = {
     ownerAddress: Address;
     poolCode: Cell;
+    lpWalletCode: Cell;
 };
 
 export const DexRouterOpcode = {
@@ -10,7 +11,11 @@ export const DexRouterOpcode = {
 };
 
 export function dexRouterConfigToCell(config: DexRouterConfig): Cell {
-    return beginCell().storeAddress(config.ownerAddress).storeRef(config.poolCode).endCell();
+    return beginCell()
+        .storeAddress(config.ownerAddress)
+        .storeRef(config.poolCode)
+        .storeRef(config.lpWalletCode)
+        .endCell();
 }
 
 export class DexRouter implements Contract {
