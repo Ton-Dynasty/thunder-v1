@@ -7,7 +7,7 @@
 #include "dex_router/utils.fc";
 #include "dex_router/errors.fc";
 
-() internal::create_pool(
+() internal::deposit_asset(
     int ctx::value, 
     int ctx::fwd_fee,
     slice jetton_master_address,
@@ -59,7 +59,7 @@
             int ton_amount = forward_payload~load_coins();
             slice master_address = forward_payload~load_msg_addr();
 
-            internal::create_pool(
+            internal::deposit_asset(
                 1000000000,  ;; This 1 ton is provided by thunder fi
                 ctx::fwd_fee,
                 master_address,
