@@ -1,5 +1,5 @@
 import { Blockchain, SandboxContract, TreasuryContract, printTransactionFees } from '@ton/sandbox';
-import { Address, Cell, Transaction, beginCell, storeStateInit, toNano } from '@ton/core';
+import { Address, Cell, SenderArguments, Transaction, beginCell, storeStateInit, toNano } from '@ton/core';
 import { JettonMasterBondV1, MasterOpocde } from '../wrappers/JettonMasterBondV1';
 import { DexRouter } from '../wrappers/DexRouter';
 import '@ton/test-utils';
@@ -8,6 +8,7 @@ import { JettonWallet } from '../wrappers/JettonWallet';
 import { loadJMBondFixture, buyToken } from './helper';
 import { collectCellStats, computedGeneric } from '../gasUtils';
 import { findTransactionRequired } from '@ton/test-utils';
+import { MockContract } from '../wrappers/MockContract';
 
 describe('JettonMasterBondV1', () => {
     let blockchain: Blockchain;
@@ -135,7 +136,7 @@ describe('JettonMasterBondV1', () => {
         expect(feeAfter).toEqual((tonAmount * fee_rate) / precision);
     });
 
-    it('should burn half of buyers meme tokens', async () => {
+    it('should burn half of buyer meme tokens', async () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
         await buyToken(jettonMasterBondV1, buyer);
 
@@ -187,6 +188,65 @@ describe('JettonMasterBondV1', () => {
         // Expect that buyers ton balance increased at least 4924637993n
         let gas_fee = toNano('0.05');
         expect(buyerTonBalanceAfter - buyerTonBalanceBefore + gas_fee).toBeGreaterThanOrEqual(4924637993n);
+    });
+
+    it('should burn buyer meme tokens and send to the assigned receiver', async () => {
+        const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
+        await buyToken(jettonMasterBondV1, buyer);
+
+        let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
+        let buyerMemeTokenBalanceBefore = await buyerWallet.getJettonBalance();
+
+        // Buyers burn half of meme tokens
+        let buyerTonBalanceBefore = await buyer.getBalance();
+        let burnAmount = buyerMemeTokenBalanceBefore / 2n;
+        let deployerTonBalanceBefore = await deployer.getBalance();
+        const burnResult = await buyerWallet.sendBurn(
+            buyer.getSender(),
+            toNano('1'),
+            burnAmount,
+            deployer.address,
+            null,
+        );
+        let deployerTonBalanceAfter = await deployer.getBalance();
+
+        let buyerMemeTokenBalanceAfter = await buyerWallet.getJettonBalance();
+        let buyerTonBalanceAfter = await buyer.getBalance();
+
+        // Expect that buyers meme token balance decreased burnAmount
+        expect(buyerMemeTokenBalanceBefore - buyerMemeTokenBalanceAfter).toEqual(burnAmount);
+
+        // Expect that buyer send op::burn to buyers memejetonWallet
+        expect(burnResult.transactions).toHaveTransaction({
+            op: MasterOpocde.Burn,
+            from: buyer.address,
+            to: buyerWallet.address,
+            success: true,
+        });
+
+        // Expect that buyers meme token wallet send jetton notification to jettonMasterBondV1
+        expect(burnResult.transactions).toHaveTransaction({
+            op: MasterOpocde.BurnNotification,
+            from: buyerWallet.address,
+            to: jettonMasterBondV1.address,
+            success: true,
+        });
+
+        let tonReservesAfter = (await jettonMasterBondV1.getMasterData()).tonReserves;
+        let jettonReservesAfter = await (await jettonMasterBondV1.getMasterData()).jettonReserves;
+
+        // Expect ton reserves = 4925618189n
+        expect(tonReservesAfter).toEqual(4925618189n);
+
+        // Expect jetton reserves = 99509852460639667n
+        expect(jettonReservesAfter).toEqual(99509852460639667n);
+
+        // Expect that deployers ton balance increased at least 4924637993n
+        let gas_fee = toNano('0.05');
+        expect(deployerTonBalanceAfter - deployerTonBalanceBefore + gas_fee).toBeGreaterThanOrEqual(4924637993n);
+
+        // Buyers ton balance should decrease at least gas fee
+        expect(buyerTonBalanceBefore - buyerTonBalanceAfter).toBeGreaterThan(gas_fee);
     });
 
     it('should trnasfer tokens and tons to DexRouter after meeting TonTheMoon', async () => {
@@ -561,5 +621,69 @@ describe('JettonMasterBondV1', () => {
         // Expect buyer ton balance decreased only the gas fee
         let gas_fee = toNano('0.055');
         expect(buyerAfterBalance + gas_fee).toBeGreaterThan(buyerBeforeBalance);
+    });
+
+    it('should throw wrong wallet error when send burn notification with wrong wallet', async () => {
+        const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
+        await buyToken(jettonMasterBondV1, buyer);
+
+        let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
+        let buyerMemeTokenBalanceBefore = await buyerWallet.getJettonBalance();
+
+        // Buyers burn half of meme tokens
+        let burnAmount = buyerMemeTokenBalanceBefore / 2n;
+        let burnNotifyPayload = beginCell()
+            .storeUint(0x7bdd97de, 32)
+            .storeUint(0, 64) // op, queryId
+            .storeCoins(burnAmount)
+            .storeAddress(buyer.address)
+            .storeAddress(null)
+            .endCell();
+        // const wrongWalletBurnResult = await
+        let burnArg: SenderArguments = {
+            value: toNano('1'),
+            to: jettonMasterBondV1.address,
+            body: burnNotifyPayload,
+        };
+        const wrongBurnResult = await buyer.send(burnArg);
+
+        // Expect to throw wrong wallet error
+        expect(wrongBurnResult.transactions).toHaveTransaction({
+            from: buyer.address,
+            to: jettonMasterBondV1.address,
+            success: false,
+            exitCode: 74,
+        });
+    });
+
+    it('should let mock contract to send provide wallet address and receive take wallet msg', async () => {
+        let mockContract = blockchain.openContract(
+            MockContract.createFromConfig(
+                { jettonMasterAddress: jettonMasterBondV1.address, jettonWalletAddress: deployer.address },
+                await compile(MockContract.name),
+            ),
+        );
+        const deployResult = await mockContract.sendDeploy(deployer.getSender(), toNano('1'));
+        let mockWalletAddressFromContract = await mockContract.getWalletAddress();
+
+        let mockWalletAddressFromGetMethod = await jettonMasterBondV1.getWalletAddress(mockContract.address);
+        // Expect that mockWalletAddress from jettonMasterBond is equal to the address from get method
+        expect(mockWalletAddressFromContract.toString()).toEqual(mockWalletAddressFromGetMethod.toString());
+
+        // Expect that mockContract send take wallet message to jettonMasterBond
+        expect(deployResult.transactions).toHaveTransaction({
+            op: 0x2c76b973,
+            from: mockContract.address,
+            to: jettonMasterBondV1.address,
+            success: true,
+        });
+
+        // Expect that jettonMasterBond send take wallet message to mockContract
+        expect(deployResult.transactions).toHaveTransaction({
+            op: 0xd1735400,
+            from: jettonMasterBondV1.address,
+            to: mockContract.address,
+            success: true,
+        });
     });
 });

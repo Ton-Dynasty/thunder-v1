@@ -1,20 +1,20 @@
 const MIN_STORAGE_DURATION = 4 * 24 * 3600; ;; 4 days
 
-const JETTON_MASTER_BITS = 15620;
-const JETTON_CELLS = 40;
+const JETTON_MASTER_BITS = 17737;
+const JETTON_CELLS = 44;
 
-const DEX_ROUTER_BITS = 16869;
-const DEX_ROUTER_CELLS = 35;
+const DEX_ROUTER_BITS = 17737;
+const DEX_ROUTER_CELLS = 44;
 
 const POOL_BITS = 14268;
 const POOL_CELLS = 28;
 
-const BUY_MEME_GAS = 11506; ;; ton the moon, 18452
-const BURN_MEME_GAS = 10453;
+const BUY_MEME_GAS = 12218; ;; ton the moon, 18452
+const BURN_MEME_GAS = 10903;
 
 const SEND_TO_DEX_ROUTER = 10245;
-const DEPLOY_POOL_GAS = 10281;
-const POOL_DEPOSIT_GAS = 12687;
+const DEPLOY_POOL_GAS = 10774;
+const POOL_DEPOSIT_GAS = 12449;
 
 ;; Jetton transfer fees
 const JETTON_NOTIFY_GAS_CONSUMPTION = 16721;
