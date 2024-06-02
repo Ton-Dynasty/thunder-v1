@@ -293,7 +293,3 @@ slice get_wallet_address(slice owner_address) method_id {
     int mintable = TRUE;
     return (total_supply, mintable, admin_address, master::jetton_content, jetton_wallet_code);
 }
-
-(int) get_contract_balance() method_id {
-    return get_data().begin_parse().preload_uint(64);
-}
