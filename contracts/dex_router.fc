@@ -40,7 +40,6 @@
 () handle::create_pool(
     int query_id,
     slice ctx::sender,  
-    int ctx::value,
     int ctx::fwd_fee,
     int jetton_amount,
     slice jetton_sender,
@@ -48,7 +47,7 @@
     slice master_address
 ) impure inline {
     (int total_fees, int gas_consumptoin) = cal_deploy_pool_fee(ctx::fwd_fee, 1);
-    throw_unless(error::not_enough_ton, ctx::value > total_fees);
+    throw_unless(error::not_enough_ton, BUILD_POOL_GAS_FEE > total_fees);
     int send_ton = BUILD_POOL_GAS_FEE - gas_consumptoin;
 
     (slice pool_address, cell deposit_asset_payload, cell state_init) = internal::deposit_asset(
@@ -123,7 +122,6 @@
             return handle::create_pool(
                 query_id,
                 ctx::sender,  
-                ctx::value,
                 ctx::fwd_fee,
                 jetton_amount,
                 jetton_sender,
