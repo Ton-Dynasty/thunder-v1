@@ -15,7 +15,7 @@ export async function run(provider: NetworkProvider) {
     const fee = 10n; // 1%
     const decimals = '9';
     const totalSupply = toNano('100000000');
-    const dexRouterAddress = Address.parse('kQCWSVUZqiyS-Wnx4MD-QCdLuj1AFxE99xml2gHscDxjdzCo');
+    const dexRouterAddress = Address.parse('kQAErWj5hDEeiQG29kxT9V9LoECKxAZm8GyLNGn27R8HzY8E');
 
     // prompt user for jetton details
     const name = await provider.ui().input('Please enter the name of the jetton:'); // prettier-ignore

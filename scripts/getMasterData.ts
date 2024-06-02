@@ -3,7 +3,7 @@ import { NetworkProvider } from '@ton/blueprint';
 import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
 
 export async function run(provider: NetworkProvider) {
-    const jettonMasterAddress = Address.parse('EQBlp2jL9j0cbIfVuUNWCdbEwn3wn6FP5waw6ZwQ66FjnUpn');
+    const jettonMasterAddress = Address.parse('kQAw3WvUAEr4Iqs0wy6X14oGjLMtv6MlUFa9UXTw4NDF5m0O');
     const jettonMasterBondV1 = provider.open(JettonMasterBondV1.createFromAddress(jettonMasterAddress));
     let masterData = await jettonMasterBondV1.getMasterData();
     console.log(masterData);
