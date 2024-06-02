@@ -2,12 +2,12 @@
 #include "common/errors.fc";
 #include "common/utils.fc";
 #include "common/workchain.fc";
-#include "jetton_master/constants.fc";
-#include "jetton_master/opcodes.fc";
-#include "jetton_master/storages.fc";
-#include "jetton_master/errors.fc";
-#include "jetton_master/utils.fc";
-#include "jetton_master/gas.fc";
+#include "jetton_master_bond/constants.fc";
+#include "jetton_master_bond/opcodes.fc";
+#include "jetton_master_bond/storages.fc";
+#include "jetton_master_bond/errors.fc";
+#include "jetton_master_bond/utils.fc";
+#include "jetton_master_bond/gas.fc";
 
 () handle::ton_the_moon(int query_id, int ctx:fwd_fee) impure inline {
     master::on_moon = TRUE;
