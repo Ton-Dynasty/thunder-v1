@@ -13,18 +13,14 @@
     return (amount_out, true_amount_in, ton_has_to_pay);
 }
 
-(int) simulate::estimate_burn_jetton_amount(int jetton_out) inline_ref {
+(int, int, int, int) simulate::estimate_burn_jetton_amount(int jetton_out) inline_ref {
+    
     int k = const::v_ton * master::total_supply;
     int delta_ton = (master::ton_reserves + const::v_ton) - k / (master::jetton_reserves + jetton_out);
     int fee = delta_ton * const::fee_rate / const::precision;
     int amount_out = delta_ton - fee;
 
-    ;; Upload storage
-    master::ton_reserves -= delta_ton;
-    master::jetton_reserves += jetton_out;
-    master::fee += fee;
-
-    return amount_out;
+    return (amount_out, delta_ton, jetton_out, fee);
 }
 
 cell pack_jetton_wallet_data(int status, int balance, slice owner_address, slice jetton_master_address) inline {

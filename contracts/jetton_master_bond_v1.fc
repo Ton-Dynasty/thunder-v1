@@ -112,7 +112,12 @@
     throw_unless(error::not_valid_wallet, equal_slices_bits(true_sender, ctx::sender));
 
     ;; Calculate amount out based on burn jetton_amount
-    int amount_out = simulate::estimate_burn_jetton_amount(burn_amount);
+    (int amount_out, int delta_ton, int jetton_out, int fee) = simulate::estimate_burn_jetton_amount(burn_amount);
+    
+    ;; Upload storage
+    master::ton_reserves -= delta_ton;
+    master::jetton_reserves += jetton_out;
+    master::fee += fee;
 
     slice receiver = from_address;
     if (~ is_address_none(response_address)) {

@@ -394,6 +394,69 @@ describe('JettonMasterBondV1', () => {
         expect(contractBalanceAfter).toEqual(contractBalanceBefore);
     });
 
+    it('should not sell meme tokens after token on the list', async () => {
+        const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
+        const buyTon = toNano('1000000');
+        await buyToken(jettonMasterBondV1, buyer, buyTon);
+
+        // buyer try to sell meme token after token on the list
+        const contractBalanceBefore = await jettonMasterBondV1.getBalance();
+
+        let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
+        let buyerMemeTokenBalanceBefore = await buyerWallet.getJettonBalance();
+
+        // Buyers burn half of meme tokens
+        let burnAmount = buyerMemeTokenBalanceBefore / 2n;
+        const burnResult = await buyerWallet.sendBurn(buyer.getSender(), toNano('1'), burnAmount, null, null);
+        const contractBalanceAfter = await jettonMasterBondV1.getBalance();
+        let buyerMemeTokenBalanceAfter = await buyerWallet.getJettonBalance();
+
+        // Expect to throw token already listed error
+        expect(burnResult.transactions).toHaveTransaction({
+            from: buyerWallet.address,
+            to: jettonMasterBondV1.address,
+            success: false,
+            exitCode: 2002,
+        });
+
+        // Epect that buyer meme token balance is still same
+        expect(buyerMemeTokenBalanceAfter).toEqual(buyerMemeTokenBalanceBefore);
+
+        // Epext that contract balance is equal to contractBalanceBefore
+        expect(contractBalanceAfter).toEqual(contractBalanceBefore);
+    });
+
+    it('should not sell meme tokens if sending ton is not enough', async () => {
+        const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
+        await buyToken(jettonMasterBondV1, buyer);
+
+        // buyer try to sell meme token after token on the list
+        const contractBalanceBefore = await jettonMasterBondV1.getBalance();
+
+        let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
+        let buyerMemeTokenBalanceBefore = await buyerWallet.getJettonBalance();
+
+        // Buyers burn half of meme tokens
+        let burnAmount = buyerMemeTokenBalanceBefore / 2n;
+        const burnResult = await buyerWallet.sendBurn(buyer.getSender(), toNano('0.006'), burnAmount, null, null);
+        const contractBalanceAfter = await jettonMasterBondV1.getBalance();
+        let buyerMemeTokenBalanceAfter = await buyerWallet.getJettonBalance();
+
+        // Expect to throw token already listed error
+        expect(burnResult.transactions).toHaveTransaction({
+            from: buyerWallet.address,
+            to: jettonMasterBondV1.address,
+            success: false,
+            exitCode: 2000,
+        });
+
+        // Epect that buyer meme token balance is still same
+        expect(buyerMemeTokenBalanceAfter).toEqual(buyerMemeTokenBalanceBefore);
+
+        // Epext that contract balance is equal to contractBalanceBefore
+        expect(contractBalanceAfter).toEqual(contractBalanceBefore);
+    });
+
     it('should throw invalid amount when buy ton amount is 0', async () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
         const buyTon = 0n;
