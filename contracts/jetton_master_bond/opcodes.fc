@@ -8,4 +8,5 @@ const op::top_up = 0xd372158c;
 const op::provide_wallet_address = 0x2c76b973;
 const op::take_wallet_address = 0xd1735400;
 const op::create_pool = "create_pool"c; ;; 2e3034ef
+const op::claim_admin_fee = "claim_admin_fee"c; ;; 913e42af
 
