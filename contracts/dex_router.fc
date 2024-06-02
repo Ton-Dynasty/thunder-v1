@@ -101,9 +101,13 @@
             return ();
         }
 
-        if(op == op::swap) {
-
+        if(op == op::swap_jetton) {
+            return ();
         }
+    }
+
+    if(op == op::swap_ton) {
+        return ();
     }
 
     if (op == op::top_up) {

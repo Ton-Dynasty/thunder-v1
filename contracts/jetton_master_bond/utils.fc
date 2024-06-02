@@ -23,39 +23,6 @@
     return (amount_out, delta_ton, jetton_out, fee);
 }
 
-cell pack_jetton_wallet_data(int status, int balance, slice owner_address, slice jetton_master_address) inline {
-    return begin_cell()
-    .store_uint(status, 4)
-    .store_coins(balance)
-    .store_slice(owner_address)
-    .store_slice(jetton_master_address)
-    .end_cell();
-}
-
-cell calculate_jetton_wallet_state_init(slice owner_address, slice jetton_master_address, cell jetton_wallet_code) inline {
-    return begin_cell()
-    .store_uint(0, 2) ;; 0b00 - No split_depth; No special
-    .store_maybe_ref(jetton_wallet_code)
-    .store_maybe_ref(
-        pack_jetton_wallet_data(
-            0, ;; status
-            0, ;; balance
-            owner_address,
-            jetton_master_address)
-    )
-    .store_uint(0, 1) ;; Empty libraries
-    .end_cell();
-}
-
-slice calculate_jetton_wallet_address(cell state_init) inline {
-    return begin_cell()
-    .store_uint(4, 3) ;; 0b100 = addr_std$10 tag; No anycast
-    .store_int(MY_WORKCHAIN, 8)
-    .store_uint(cell_hash(state_init), 256)
-    .end_cell()
-    .begin_parse();
-}
-
 () mint_jetton(
     int bounce_flag,
     int query_id,
