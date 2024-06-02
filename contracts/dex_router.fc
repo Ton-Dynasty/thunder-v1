@@ -11,7 +11,6 @@
 
 () internal::deposit_asset(
     int ctx::value, 
-    int ctx::fwd_fee,
     slice jetton_master_address,
     int query_id, 
     int asset0_amount, 
@@ -61,8 +60,7 @@
             ;; int remaining_ton = ctx::value - gas_consumptoin; 
 
             internal::deposit_asset(
-                1000000000 - gas_consumptoin,  ;; This 1 ton is provided by thunder fi
-                ctx::fwd_fee,
+                BUILD_POOL_GAS_FEE - gas_consumptoin,  ;; This BUILD_POOL_GAS_FEE is provided by thunder fi
                 master_address,
                 query_id, 
                 ton_amount, 

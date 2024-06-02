@@ -225,6 +225,7 @@ describe('JettonMasterBondV1', () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
         const buyTon = toNano('1000000');
         const toTheMoonResult = await buyToken(jettonMasterBondV1, buyer, buyTon);
+        // printTransactionFees(toTheMoonResult.transactions);
 
         // Expect that jettonMasterBondV1 send internal transfer to DexRouter wallet
         let dexRouterWalletAddress = await jettonMasterBondV1.getWalletAddress(dexRouter.address);
