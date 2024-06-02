@@ -10,7 +10,6 @@
 
 
 (slice, cell, cell) internal::deposit_asset(
-    int ctx::value, 
     slice jetton_master_address,
     int query_id, 
     int asset0_amount, 
@@ -54,12 +53,11 @@
             int ton_amount = forward_payload~load_coins();
             slice master_address = forward_payload~load_msg_addr();
 
-            (int total_fees, int gas_consumptoin) = cal_deploy_pool_fee(ctx::fwd_fee);
-            ;; throw_unless(error::not_enough_ton, ctx::value > total_fees);
-            ;; int remaining_ton = ctx::value - gas_consumptoin; 
+            (int total_fees, int gas_consumptoin) = cal_deploy_pool_fee(ctx::fwd_fee, 1);
+            throw_unless(error::not_enough_ton, ctx::value > total_fees);
+            int send_ton = ctx::value - gas_consumptoin;
 
             (slice pool_address, cell deposit_asset_payload, cell state_init) = internal::deposit_asset(
-                BUILD_POOL_GAS_FEE - gas_consumptoin,  ;; This 1 ton is provided by thunder fi
                 master_address,
                 query_id, 
                 ton_amount, 
@@ -70,16 +68,19 @@
                 null() ;; reject_payload
             );
 
-            deploy(BOUNCEABLE, pool_address, ctx::value - gas_consumptoin, deposit_asset_payload, state_init, SEND_MODE_REGULAR);
+            deploy(BOUNCEABLE, pool_address, send_ton, deposit_asset_payload, state_init, SEND_MODE_REGULAR);
             return ();
         }
 
         if(op == op::add_liquidity) {
             int ton_amount = forward_payload~load_coins();
             slice master_address = forward_payload~load_msg_addr();
+
+            (int total_fees, int gas_consumptoin) = cal_deploy_pool_fee(ctx::fwd_fee, 0);
+            throw_unless(error::not_enough_ton, ctx::value > total_fees);
+            int send_ton = ctx::value - ton_amount - gas_consumptoin;
             
             (slice pool_address, cell deposit_asset_payload, cell state_init) = internal::deposit_asset(
-                ctx::value - GAS_CONSUMPTION, 
                 master_address,
                 query_id, 
                 ton_amount, 
@@ -90,7 +91,7 @@
                 null() ;; reject_payload
             );
 
-            send_bounceable_msg(pool_address, ctx::value - ton_amount - GAS_CONSUMPTION , deposit_asset_payload, SEND_MODE_REGULAR);
+            send_bounceable_msg(pool_address, send_ton, deposit_asset_payload, SEND_MODE_REGULAR);
 
             return ();
         }

@@ -166,7 +166,6 @@
         return ();
     }
     if (op == op::deposit) {
-        ;; ~strdump("deposit");
         int asset0_amount = ctx::body~load_coins();
         int asset1_amount = ctx::body~load_coins();
         int min_lp_amount = ctx::body~load_coins();
@@ -188,7 +187,6 @@
         return ();
     }
     if (op == op::swap_internal){
-        ;; ~strdump("swap_internal");
         slice sender = ctx::body~load_msg_addr();
         int asset_in = ctx::body~load_uint(1);
         int amount_in = ctx::body~load_coins();
