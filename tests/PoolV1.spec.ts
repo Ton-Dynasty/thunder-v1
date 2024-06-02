@@ -1,5 +1,5 @@
 import { Blockchain, printTransactionFees, SandboxContract, TreasuryContract } from '@ton/sandbox';
-import { Address, Cell, toNano } from '@ton/core';
+import { Address, beginCell, Cell, storeStateInit, toNano } from '@ton/core';
 import { PoolV1 } from '../wrappers/PoolV1';
 import { JettonWallet } from '../wrappers/JettonWallet';
 import '@ton/test-utils';
@@ -8,6 +8,7 @@ import { loadJMBondFixture, buyToken } from './helper';
 import { DexRouter } from '../wrappers/DexRouter';
 import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
 import { Op } from '../wrappers/JettonConstants';
+import { collectCellStats } from '../gasUtils';
 
 describe('PoolV1', () => {
     let blockchain: Blockchain;
@@ -38,6 +39,16 @@ describe('PoolV1', () => {
     it('should deploy', async () => {
         // the check is done inside beforeEach
         // blockchain and poolV1 are ready to use
+        // Calculate Jetton Master Bond contract gas fee
+        // const smc = await blockchain.getContract(poolV1.address);
+        // if (smc.accountState === undefined) throw new Error("Can't access wallet account state");
+        // if (smc.accountState.type !== 'active') throw new Error('Wallet account is not active');
+        // if (smc.account.account === undefined || smc.account.account === null)
+        //     throw new Error("Can't access wallet account!");
+        // console.log('Pool max storage stats:', smc.account.account.storageStats.used);
+        // const state = smc.accountState.state;
+        // const stateCell = beginCell().store(storeStateInit(state)).endCell();
+        // console.log('State init stats:', collectCellStats(stateCell, []));
     });
 
 });

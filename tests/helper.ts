@@ -62,12 +62,11 @@ export async function loadJMBondFixture() {
     return { blockchain, deployer, dexRouter, jettonMasterBondV1 };
 }
 
-
 export const buyToken = async (
     jettonMasterBondV1: SandboxContract<JettonMasterBondV1>,
     buyer: SandboxContract<TreasuryContract>,
     tonAmount: bigint = toNano('10'),
-    mint_token_out: bigint = 0n,
+    min_token_out: bigint = 0n,
     destination: Address = buyer.address,
     response_address: Address = buyer.address,
     custom_payload: Cell | null = null,
@@ -82,7 +81,7 @@ export const buyToken = async (
             $$type: 'BuyToken',
             query_id: 0n,
             ton_amount: tonAmount,
-            mint_token_out: mint_token_out,
+            minTokenOut: min_token_out,
             destination: destination,
             response_address: response_address,
             custom_payload: custom_payload,

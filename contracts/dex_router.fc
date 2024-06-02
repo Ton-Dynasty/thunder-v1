@@ -6,10 +6,11 @@
 #include "dex_router/opcodes.fc";
 #include "dex_router/utils.fc";
 #include "dex_router/errors.fc";
+#include "dex_router/gas.fc";
+
 
 () internal::deposit_asset(
     int ctx::value, 
-    int ctx::fwd_fee,
     slice jetton_master_address,
     int query_id, 
     int asset0_amount, 
@@ -19,11 +20,6 @@
     cell fulfill_payload, 
     cell reject_payload
 ) impure inline {
-    int total_fees = 50000000;
-    int gas_consumptoin = 20000000;
-    throw_unless(error::not_enough_ton, ctx::value > total_fees);
-    int remaining_ton = ctx::value - gas_consumptoin; ;; TODO: calculate correct fee
-    
     cell deposit_asset_payload = pack_deposit_asset_data
     (
         query_id, 
@@ -39,7 +35,7 @@
     cell state_init = calculate_pool_state_init(jetton_master_address);
     slice pool_address = calculate_address(state_init);
 
-    deploy(BOUNCEABLE, pool_address, remaining_ton, deposit_asset_payload, state_init, SEND_MODE_REGULAR);
+    deploy(BOUNCEABLE, pool_address, ctx::value, deposit_asset_payload, state_init, SEND_MODE_REGULAR);
     return ();
 }
 
@@ -59,9 +55,12 @@
             int ton_amount = forward_payload~load_coins();
             slice master_address = forward_payload~load_msg_addr();
 
+            (int total_fees, int gas_consumptoin) = cal_deploy_pool_fee(ctx::fwd_fee);
+            ;; throw_unless(error::not_enough_ton, ctx::value > total_fees);
+            ;; int remaining_ton = ctx::value - gas_consumptoin; 
+
             internal::deposit_asset(
-                1000000000,  ;; This 1 ton is provided by thunder fi
-                ctx::fwd_fee,
+                BUILD_POOL_GAS_FEE - gas_consumptoin,  ;; This BUILD_POOL_GAS_FEE is provided by thunder fi
                 master_address,
                 query_id, 
                 ton_amount, 

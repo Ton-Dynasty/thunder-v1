@@ -1,0 +1,95 @@
+const MIN_STORAGE_DURATION = 4 * 24 * 3600; ;; 4 days
+
+const JETTON_MASTER_BITS = 15620;
+const JETTON_CELLS = 40;
+
+const DEX_ROUTER_BITS = 16869;
+const DEX_ROUTER_CELLS = 35;
+
+const POOL_BITS = 14268;
+const POOL_CELLS = 28;
+
+const BUY_MEME_GAS = 11506; ;; ton the moon, 18452
+const BURN_MEME_GAS = 10453;
+
+const SEND_TO_DEX_ROUTER = 10245;
+const DEPLOY_POOL_GAS = 10281;
+const POOL_DEPOSIT_GAS = 12687;
+
+;; Jetton transfer fees
+const JETTON_NOTIFY_GAS_CONSUMPTION = 16721;
+const SEND_TRANSFER_GAS_CONSUMPTION    = 9255;
+const RECEIVE_TRANSFER_GAS_CONSUMPTION = 10355;
+
+const JETTON_WALLET_INITSTATE_BITS  = 931;
+const JETTON_WALLET_INITSTATE_CELLS = 3;
+
+const BUILD_POOL_GAS_FEE = 100000000; ;; 0.1 TON
+const SEND_BACK_FEE = 50000000; ;; 0.05 TON
+int calculate_master_min_storage_fee() inline {
+    return get_storage_fee(MY_WORKCHAIN, MIN_STORAGE_DURATION, JETTON_MASTER_BITS, JETTON_CELLS);
+}
+
+int forward_pool_init_state_overhead() inline {
+    return get_simple_forward_fee(MY_WORKCHAIN, POOL_BITS, POOL_CELLS);
+}
+
+int forward_wallet_init_state_overhead() inline {
+    return get_simple_forward_fee(MY_WORKCHAIN, JETTON_WALLET_INITSTATE_BITS, JETTON_WALLET_INITSTATE_CELLS);
+}
+
+int get_jetton_transfer_fee() inline {
+    int pool_gas_comsumption = get_precompiled_gas_consumption();
+    int send_transfer_gas_consumption = null?(pool_gas_comsumption) ? SEND_TRANSFER_GAS_CONSUMPTION : pool_gas_comsumption;
+    int receive_transfer_gas_consumption = null?(pool_gas_comsumption) ? RECEIVE_TRANSFER_GAS_CONSUMPTION : pool_gas_comsumption;
+    return get_compute_fee(MY_WORKCHAIN, send_transfer_gas_consumption) + get_compute_fee(MY_WORKCHAIN, receive_transfer_gas_consumption);
+}
+
+(int, int) cal_buy_fee(int fwd_fee) inline {
+    int pool_gas_comsumption = get_precompiled_gas_consumption();
+    int buy_meme_gas_consumption = null?(pool_gas_comsumption) ? BUY_MEME_GAS : pool_gas_comsumption;
+    int receive_transfer_gas_consumption = null?(pool_gas_comsumption) ? RECEIVE_TRANSFER_GAS_CONSUMPTION : pool_gas_comsumption;
+    
+
+    int gas_comp = get_compute_fee(MY_WORKCHAIN, buy_meme_gas_consumption) + 
+    calculate_master_min_storage_fee() + 
+    forward_wallet_init_state_overhead();
+    
+
+    int total_fee = gas_comp + 
+    fwd_fee * 2  + 
+    get_compute_fee(MY_WORKCHAIN, receive_transfer_gas_consumption);
+
+    return (total_fee, gas_comp);
+}
+
+(int, int) cal_sell_fee(int fwd_fee) inline {
+    int pool_gas_comsumption = get_precompiled_gas_consumption();
+    int sell_meme_gas_consumption = null?(pool_gas_comsumption) ? BURN_MEME_GAS : pool_gas_comsumption;
+    
+
+    int gas_comp = get_compute_fee(MY_WORKCHAIN, sell_meme_gas_consumption) + 
+    calculate_master_min_storage_fee();
+    
+
+    int total_fee = gas_comp + 
+    fwd_fee * 1;
+
+    return (total_fee, gas_comp);
+}
+
+;; (int) build_pool_fee(int fwd_fee) {
+;;     int pool_gas_comsumption = get_precompiled_gas_consumption();
+;;     ;; int send_to_dex_router_gas_consumption = null?(pool_gas_comsumption) ? SEND_TO_DEX_ROUTER : pool_gas_comsumption;
+;;     int deploy_pool_gas_consumption = null?(pool_gas_comsumption) ? DEPLOY_POOL_GAS : pool_gas_comsumption;
+;;     int deposit_asset_gas_consumption = null?(pool_gas_comsumption) ? POOL_DEPOSIT_GAS : pool_gas_comsumption;
+    
+
+;;     int gas_comp = get_jetton_transfer_fee() * 2 + 
+;;     get_compute_fee(MY_WORKCHAIN, deploy_pool_gas_consumption) +
+;;     get_compute_fee(MY_WORKCHAIN, deposit_asset_gas_consumption) +
+;;     calculate_master_min_storage_fee() * 2 +
+;;     fwd_fee * 5;
+
+;;     return gas_comp;
+;; }

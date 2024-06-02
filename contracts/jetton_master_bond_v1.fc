@@ -7,22 +7,22 @@
 #include "jetton_master/storages.fc";
 #include "jetton_master/errors.fc";
 #include "jetton_master/utils.fc";
+#include "jetton_master/gas.fc";
 
-() handle::ton_the_moon(int query_id) impure inline {
-    master::on_moon = 1;
+() handle::ton_the_moon(int query_id, int ctx:fwd_fee) impure inline {
+    master::on_moon = TRUE;
     ;; Calculate the tunder fi fee 
     int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision;
-    int fee_for_admin = master::ton_reserves - send_ton_liquidity - ONE_TON; ;; ONE_TON is for building pool and farm.
+    int fee_for_admin = master::ton_reserves - send_ton_liquidity - BUILD_POOL_GAS_FEE + master::fee; ;; build_pool_fee is for building pool and farm, thunder fi will pay for it.
     int price_for_now = const:price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
     int send_jetton_liquidity = const:price_precision * send_ton_liquidity / price_for_now;
     int extra_jetton = master::jetton_reserves - send_jetton_liquidity;
     ;; TODO: We should use this extra_jetton to do something, but for now we substract it in total supply
     master::total_supply -= extra_jetton;
 
-    ;; TODO: This ONE_TON / 20 need to be recalculated again
     cell add_liquidity_payload = begin_cell().store_uint(op::create_pool ,32).store_coins(send_ton_liquidity).store_slice(my_address()).end_cell();
-    send_ton_liquidity += ONE_TON; ;; ONE_TON is for building pool and farm.
-    int ton_to_dex_router = send_ton_liquidity + ONE_TON / 20  + fee_for_admin; ;; fee_for_admin will be transfer in excess msg. 
+    send_ton_liquidity += BUILD_POOL_GAS_FEE; ;; build_pool_fee is for building pool and farm.
+    int ton_to_dex_router = send_ton_liquidity + fee_for_admin; ;; fee_for_admin will be transfer in excess msg. 
     ;; Send mint jetton to Router
     mint_jetton(
         BOUNCEABLE,
@@ -48,7 +48,7 @@
     int ctx::value, 
     int ctx::fwd_fee,
     int ton_amount,
-    int mint_token_out,
+    int min_token_out,
     slice destination,
     slice response_address,
     cell custom_payload,
@@ -56,14 +56,12 @@
     cell forward_payload
 ) impure inline_ref {
     ;; Check that user send enough TON to mint tokens and pay for gas fees
-    ;; (int total_fees, int gas_consumptoin) = calculate_fees(ctx::fwd_fee); TODO: implement this gas calculation after whole code are ready @ipromise2324
-    int total_fees = 50000000;
-    int gas_consumptoin = 20000000;
+    (int total_fees, int gas_consumptoin) = cal_buy_fee(ctx::fwd_fee);
     throw_unless(error::not_enough_ton, ctx::value > ton_amount + total_fees + forward_ton_amount);
     
     ;; Calculate token_out based on ton_amount
     (int token_out, int true_amount_in, int ton_has_to_pay) = simulate::estimate_mint_jetton_amount(ton_amount);
-    throw_unless(error::not_meet_min_amount, token_out >= mint_token_out); ;; TODO: we should send back ton if token_out < mint_token_out
+    throw_unless(error::not_meet_min_amount, token_out >= min_token_out); ;; TODO: we should send back ton if token_out < min_token_out
 
     ;; Calculate remaining ton and update storage
     int ton_back_to_user = ctx::value - gas_consumptoin - ton_has_to_pay;
@@ -73,7 +71,7 @@
     master::jetton_reserves -= token_out;
 
     if(master::ton_reserves == const::ton_the_moon) {
-        handle::ton_the_moon(query_id);
+        handle::ton_the_moon(query_id, ctx::fwd_fee);
     }
 
     ;; Mint tokens to user
@@ -103,8 +101,7 @@
 ) impure inline_ref {
 
     ;; Calculate the gas fee
-    int total_fees = 50000000;
-    int gas_consumptoin = 20000000;
+    (int total_fees, int gas_consumptoin) = cal_sell_fee(ctx::fwd_fee);
     throw_unless(error::not_enough_ton, ctx::value > total_fees);
 
     int send_ton = ctx::value - gas_consumptoin;
@@ -115,7 +112,12 @@
     throw_unless(error::not_valid_wallet, equal_slices_bits(true_sender, ctx::sender));
 
     ;; Calculate amount out based on burn jetton_amount
-    int amount_out = simulate::estimate_burn_jetton_amount(burn_amount);
+    (int amount_out, int delta_ton, int jetton_out, int fee) = simulate::estimate_burn_jetton_amount(burn_amount);
+    
+    ;; Upload storage
+    master::ton_reserves -= delta_ton;
+    master::jetton_reserves += jetton_out;
+    master::fee += fee;
 
     slice receiver = from_address;
     if (~ is_address_none(response_address)) {
@@ -138,17 +140,18 @@
     if (op == op::mint) {
         ;; load data in mint msg
         int ton_amount = ctx::body~load_coins();
-        int mint_token_out = ctx::body~load_coins();
+        int min_token_out = ctx::body~load_coins();
         slice destination = ctx::body~load_msg_addr();
         slice response_address = ctx::body~load_msg_addr();
         cell custom_payload = ctx::body~load_maybe_ref();
         int forward_ton_amount = ctx::body~load_coins();
         cell forward_payload = ctx::body~load_ref();
+        ctx::body.end_parse();
 
-        ;; Throw error if token already listed. TODO: we should send back ton
-        throw_unless(error::token_already_listed, master::on_moon == 0);
+        ;; Throw error if token already listed. it will send back ton to user by bounce
+        throw_unless(error::token_already_listed, master::on_moon == FALSE);
 
-        ;; Throw error if token amount is equal to 0. TODO: we should send back ton
+        ;; Throw error if token amount is equal to 0. it will send back ton to user by bounce
         throw_unless(error::invalid_amount, ton_amount > 0);
 
         internal::mint_token(
@@ -157,7 +160,7 @@
             ctx::value, 
             ctx::fwd_fee, 
             ton_amount,
-            mint_token_out,
+            min_token_out,
             destination,
             response_address,
             custom_payload,
@@ -168,12 +171,61 @@
     }
 
     if (op == op::burn_notification) {
-        throw_unless(error::token_already_listed, master::on_moon == 0); ;; TODO: we should send back ton
+        throw_unless(error::token_already_listed, master::on_moon == FALSE); ;; TODO: we should send back ton
         int jetton_amount = ctx::body~load_coins();
         slice from_address = ctx::body~load_msg_addr();
         slice response_address = ctx::body~load_msg_addr();
+        ctx::body.end_parse();
         internal::burn_token(query_id, ctx::sender, ctx::value, ctx::fwd_fee, jetton_amount, from_address, response_address);
 
+        return ();
+    }
+
+    if (op == op::provide_wallet_address) {
+        ;; see provide_wallet_address TL-B layout in jetton.tlb
+        slice owner_address = ctx::body~load_msg_addr();
+        int include_address? = ctx::body~load_bool();
+        ctx::body.end_parse();
+
+        cell included_address = include_address?
+        ? begin_cell().store_slice(owner_address).end_cell()
+        : null();
+
+        ;; build MessageRelaxed, see TL-B layout in stdlib.fc#L733
+        var msg = begin_cell()
+        .store_msg_flags_and_address_none(NON_BOUNCEABLE)
+        .store_slice(ctx::sender)
+        .store_coins(0)
+        .store_prefix_only_body()
+        .store_op(op::take_wallet_address)
+        .store_query_id(query_id);
+
+        if (is_same_workchain(owner_address)) {
+            msg = msg.store_slice(calculate_jetton_wallet_address(calculate_jetton_wallet_state_init(owner_address, my_address(), master::jetton_wallet_code)));
+        } else {
+            msg = msg.store_address_none();
+        }
+
+        cell msg_cell = msg.store_maybe_ref(included_address).end_cell();
+
+        send_raw_message(msg_cell, SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE | SEND_MODE_BOUNCE_ON_ACTION_FAIL);
+        return ();
+    }
+
+    if (op == op::change_content_cell) {
+        throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
+        master::jetton_content = ctx::body~load_ref();
+        ctx::body.end_parse();
+        master::save_data();
+        return ();
+    }
+
+    if (op == op::upgrade) {
+        throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
+        (cell new_data, cell new_code) = (ctx::body~load_ref(), ctx::body~load_ref());
+        ctx::body.end_parse();
+        set_data(new_data);
+        set_code(new_code);
         return ();
     }
 
@@ -199,6 +251,8 @@
     route_internal(ctx::sender, ctx::value, ctx::fwd_fee, ctx::body);
 }
 
+;; public getters
+
 slice get_wallet_address(slice owner_address) method_id {
     master::load_data();
     return calculate_jetton_wallet_address(calculate_jetton_wallet_state_init(owner_address, my_address(), master::jetton_wallet_code));
@@ -216,4 +270,8 @@ slice get_wallet_address(slice owner_address) method_id {
     cell jetton_wallet_code = master::jetton_wallet_code;
     int mintable = TRUE;
     return (total_supply, mintable, admin_address, master::jetton_content, jetton_wallet_code);
+}
+
+(int) get_contract_balance() method_id {
+    return get_data().begin_parse().preload_uint(64);
 }

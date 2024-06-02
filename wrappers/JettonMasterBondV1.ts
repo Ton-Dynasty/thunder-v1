@@ -26,7 +26,7 @@ export type BuyToken = {
     $$type: 'BuyToken';
     query_id: bigint;
     ton_amount: bigint;
-    mint_token_out: bigint;
+    minTokenOut: bigint;
     destination: Address;
     response_address: Address;
     custom_payload: Maybe<Cell>;
@@ -39,7 +39,7 @@ export function storeBuyToken(src: BuyToken) {
         b.storeUint(MasterOpocde.Mint, 32);
         b.storeUint(src.query_id, 64);
         b.storeCoins(src.ton_amount);
-        b.storeCoins(src.mint_token_out);
+        b.storeCoins(src.minTokenOut);
         b.storeAddress(src.destination);
         b.storeAddress(src.response_address);
         b.storeMaybeRef(src.custom_payload);
@@ -69,7 +69,7 @@ export function jettonMasterBondV1ConfigToCell(config: JettonMasterBondV1Config)
         .storeCoins(config.fee)
         .storeRef(
             beginCell()
-                .storeUint(config.onMoon, 2)
+                .storeInt(config.onMoon, 2)
                 .storeAddress(config.dexRouter)
                 .storeRef(config.jettonWalletCode)
                 .storeRef(config.jettonContent)
@@ -132,9 +132,28 @@ export class JettonMasterBondV1 implements Contract {
         return walletAddress.stack.readAddress();
     }
 
-    async getMasterData(
-        provider: ContractProvider,
-    ): Promise<[bigint, bigint, bigint, bigint, bigint, Address, Address]> {
+    async getBalance(provider: ContractProvider): Promise<bigint> {
+        const balance = await provider.get('get_contract_balance', []);
+        return balance.stack.readBigNumber();
+    }
+
+    async getJettonData(provider: ContractProvider) {
+        const res = await provider.get('get_jetton_data', []);
+        const totalSupply = res.stack.readBigNumber();
+        const mintable = res.stack.readBoolean();
+        const adminAddress = res.stack.readAddress();
+        const content = res.stack.readCell();
+        const walletCode = res.stack.readCell();
+        return {
+            totalSupply,
+            mintable,
+            adminAddress,
+            content,
+            walletCode,
+        };
+    }
+
+    async getMasterData(provider: ContractProvider) {
         const fees = await provider.get('get_master_data', []);
         const tonReserves = fees.stack.readBigNumber();
         const jettonReserves = fees.stack.readBigNumber();
@@ -143,6 +162,14 @@ export class JettonMasterBondV1 implements Contract {
         const onMoon = fees.stack.readBigNumber();
         const dexRouter = fees.stack.readAddress();
         const adminAddress = fees.stack.readAddress();
-        return [tonReserves, jettonReserves, fee, totalSupply, onMoon, dexRouter, adminAddress];
+        return {
+            tonReserves,
+            jettonReserves,
+            fee,
+            totalSupply,
+            onMoon,
+            dexRouter,
+            adminAddress,
+        };
     }
 }
