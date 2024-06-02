@@ -47,12 +47,15 @@ int get_jetton_transfer_fee() inline {
         deploy_pool_gas_consumption = null?(pool_gas_consumption) ? DEPLOY_POOL_GAS : pool_gas_consumption;
     }
 
+    int deposit_asset_gas_consumption = null?(pool_gas_consumption) ? POOL_DEPOSIT_GAS : pool_gas_consumption;
+
     int gas_comp = get_compute_fee(MY_WORKCHAIN, send_to_dex_router_consumption) + 
-    get_compute_fee(MY_WORKCHAIN, deploy_pool_gas_consumption) + 
     calculate_dex_router_min_storage_fee();
     
     int total_fee = gas_comp + 
     get_jetton_transfer_fee() + 
+    get_compute_fee(MY_WORKCHAIN, deposit_asset_gas_consumption) +
+    get_compute_fee(MY_WORKCHAIN, deploy_pool_gas_consumption) + 
     fwd_fee * 3;
 
     return (total_fee, gas_comp);

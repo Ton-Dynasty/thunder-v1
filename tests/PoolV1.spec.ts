@@ -173,14 +173,13 @@ describe('PoolV1', () => {
             to: buyerLpWalletAddress,
             success: true,
         });
-
-        let buyerLpWalletBalanceAfter = await buyerLpWallet.getJettonBalance();
-        let buyerJettonWalletBalanceAfter = await buyerJettonWallet.getJettonBalance();
-
+        
         // Expect that buyer LP wallet balance increased
+        let buyerLpWalletBalanceAfter = await buyerLpWallet.getJettonBalance();
         expect(buyerLpWalletBalanceAfter).toBeGreaterThan(buyerLpWalletBalanceBefore);
 
         // Expect that buyer Jetton wallet balance decreased
+        let buyerJettonWalletBalanceAfter = await buyerJettonWallet.getJettonBalance();
         expect(buyerJettonWalletBalanceAfter + sendJettonAmount).toEqual(buyerJettonWalletBalanceBefore);
     });
 });
