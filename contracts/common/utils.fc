@@ -14,3 +14,12 @@
         .end_cell();
     send_raw_message(msg, mode);
 }
+
+() send_bounceable_msg(slice to, int value, cell body, int mode) impure inline_ref {
+    var msg = begin_cell()
+        .store_msg_flags_and_address_none(BOUNCEABLE)
+        .store_slice(to) ;; dest
+        .store_coins(value)
+        .store_only_body_ref(body);
+    send_raw_message(msg.end_cell(), mode);
+}

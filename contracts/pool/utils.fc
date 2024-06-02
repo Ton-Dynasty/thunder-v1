@@ -51,24 +51,6 @@
     return (asset0_amount, asset1_amount);
 }
 
-() deploy( ;; deploy contract with state_init
-    int bounce_flag,
-    slice receiver,
-    int value,
-    cell body,
-    cell state_init,
-    int mode
-) impure inline_ref {
-    var msg = begin_cell()
-        .store_msg_flags_and_address_none(bounce_flag)
-        .store_slice(receiver)
-        .store_coins(value)
-        .store_statinit_ref_and_body_ref(state_init, body)
-        .end_cell();
-
-    send_raw_message(msg, mode);
-}
-
 cell pack_jetton_lp_wallet_data(int balance, slice owner_address, slice jetton_master_address) inline {
     return begin_cell()
     .store_uint(0, 4)
@@ -127,11 +109,3 @@ cell pack_payout_from_pool(int query_id, slice sender, slice receipient, int ass
     return data;
 }
 
-() send_bounceable_msg(slice to, int value, cell body, int mode) impure inline_ref {
-    var msg = begin_cell()
-        .store_msg_flags_and_address_none(BOUNCEABLE)
-        .store_slice(to) ;; dest
-        .store_coins(value)
-        .store_only_body_ref(body);
-    send_raw_message(msg.end_cell(), mode);
-}

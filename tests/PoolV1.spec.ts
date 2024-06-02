@@ -19,6 +19,9 @@ describe('PoolV1', () => {
     let dexRouter: SandboxContract<DexRouter>;
     let jettonMasterBondV1: SandboxContract<JettonMasterBondV1>;
 
+    const userWallet = async (address: Address, jettonMaster: SandboxContract<JettonMasterBondV1>) =>
+        blockchain.openContract(JettonWallet.createFromAddress(await jettonMaster.getWalletAddress(address)));
+
     beforeAll(async () => {
         poolV1Code = await compile(PoolV1.name);
         jettonWalletCode = await compile(JettonWallet.name);
@@ -51,4 +54,9 @@ describe('PoolV1', () => {
         // console.log('State init stats:', collectCellStats(stateCell, []));
     });
 
+    it('should add liquidity', async () => {
+        // Expect that jettonMasterBondV1 send internal transfer to DexRouter wallet
+        
+
+    });        
 });

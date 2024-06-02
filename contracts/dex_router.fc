@@ -9,7 +9,7 @@
 #include "dex_router/gas.fc";
 
 
-() internal::deposit_asset(
+(slice, cell, cell) internal::deposit_asset(
     int ctx::value, 
     slice jetton_master_address,
     int query_id, 
@@ -35,8 +35,7 @@
     cell state_init = calculate_pool_state_init(jetton_master_address);
     slice pool_address = calculate_address(state_init);
 
-    deploy(BOUNCEABLE, pool_address, ctx::value, deposit_asset_payload, state_init, SEND_MODE_REGULAR);
-    return ();
+    return (pool_address, deposit_asset_payload, state_init);
 }
 
 () route_internal(slice ctx::sender, int ctx::value, int ctx::fwd_fee, slice ctx::body) impure inline {
@@ -59,8 +58,8 @@
             ;; throw_unless(error::not_enough_ton, ctx::value > total_fees);
             ;; int remaining_ton = ctx::value - gas_consumptoin; 
 
-            internal::deposit_asset(
-                BUILD_POOL_GAS_FEE - gas_consumptoin,  ;; This BUILD_POOL_GAS_FEE is provided by thunder fi
+            (slice pool_address, cell deposit_asset_payload, cell state_init) = internal::deposit_asset(
+                BUILD_POOL_GAS_FEE - gas_consumptoin,  ;; This 1 ton is provided by thunder fi
                 master_address,
                 query_id, 
                 ton_amount, 
@@ -70,11 +69,30 @@
                 null(), ;; fulfill_payload
                 null() ;; reject_payload
             );
+
+            deploy(BOUNCEABLE, pool_address, ctx::value - gas_consumptoin, deposit_asset_payload, state_init, SEND_MODE_REGULAR);
             return ();
         }
 
         if(op == op::add_liquidity) {
+            int ton_amount = forward_payload~load_coins();
+            slice master_address = forward_payload~load_msg_addr();
+            
+            (slice pool_address, cell deposit_asset_payload, cell state_init) = internal::deposit_asset(
+                ctx::value - GAS_CONSUMPTION, 
+                master_address,
+                query_id, 
+                ton_amount, 
+                jetton_amount, 
+                0, 
+                dex_router::owner_address, ;; lp receiver but this is first time add liqudity so there will be no LP token
+                null(), ;; fulfill_payload
+                null() ;; reject_payload
+            );
 
+            send_bounceable_msg(pool_address, ctx::value - ton_amount - GAS_CONSUMPTION , deposit_asset_payload, SEND_MODE_REGULAR);
+
+            return ();
         }
 
         if(op == op::swap) {
