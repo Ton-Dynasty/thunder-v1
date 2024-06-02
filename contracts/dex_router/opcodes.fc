@@ -1,3 +1,6 @@
 const op::create_pool = "create_pool"c; ;; 2e3034ef
 const op::top_up = 0xd372158c;
 const op::deposit = "deposit"c; ;;95db9d39
+const op::add_liquidity = "add_liquidity"c; ;; 3ebe5431
+const op::swap_jetton = "swap_jetton"c; ;;2d709ea7
+const op::swap_ton = "swap_ton"c; ;;dcb17fc0
