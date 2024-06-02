@@ -1,6 +1,6 @@
 import { Blockchain, printTransactionFees, SandboxContract, TreasuryContract } from '@ton/sandbox';
-import { Address, beginCell, Cell, storeStateInit, toNano } from '@ton/core';
-import { PoolV1 } from '../wrappers/PoolV1';
+import { Address, beginCell, Cell, storeStateInit, toNano, Transaction } from '@ton/core';
+import { PoolV1, PoolOpcodes } from '../wrappers/PoolV1';
 import { JettonWallet } from '../wrappers/JettonWallet';
 import '@ton/test-utils';
 import { compile } from '@ton/blueprint';
@@ -8,7 +8,8 @@ import { loadJMBondFixture, buyToken } from './helper';
 import { DexRouter } from '../wrappers/DexRouter';
 import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
 import { Op } from '../wrappers/JettonConstants';
-import { collectCellStats } from '../gasUtils';
+import { collectCellStats, computedGeneric } from '../gasUtils';
+import { findTransactionRequired } from '@ton/test-utils';
 
 describe('PoolV1', () => {
     let blockchain: Blockchain;
@@ -19,6 +20,7 @@ describe('PoolV1', () => {
     let jettonWalletCode: Cell;
     let dexRouter: SandboxContract<DexRouter>;
     let jettonMasterBondV1: SandboxContract<JettonMasterBondV1>;
+    let printTxGasStats: (name: string, trans: Transaction) => bigint;
 
     const userWallet = async (address: Address, jettonMaster: SandboxContract<JettonMasterBondV1>) =>
         blockchain.openContract(JettonWallet.createFromAddress(await jettonMaster.getWalletAddress(address)));
@@ -66,6 +68,12 @@ describe('PoolV1', () => {
     beforeAll(async () => {
         poolV1Code = await compile(PoolV1.name);
         jettonWalletCode = await compile(JettonWallet.name);
+        printTxGasStats = (name, transaction) => {
+            const txComputed = computedGeneric(transaction);
+            console.log(`${name} used ${txComputed.gasUsed} gas`);
+            console.log(`${name} gas cost: ${txComputed.gasFees}`);
+            return txComputed.gasFees;
+        };
     });
 
     beforeEach(async () => {
@@ -106,8 +114,10 @@ describe('PoolV1', () => {
         let buyerLpWalletAddress = await poolV1.getWalletAddress(buyer.address);
         let buyerLpWallet = blockchain.openContract(JettonWallet.createFromAddress(buyerLpWalletAddress));
         let buyerLpWalletBalanceBefore = await buyerLpWallet.getJettonBalance();
+
         // get buyer's Jetton wallet balance before
         let buyerJettonWalletAddress = await jettonMasterBondV1.getWalletAddress(buyer.address);
+        let dexRouterWalletAddress = await jettonMasterBondV1.getWalletAddress(dexRouter.address);
         let buyerJettonWallet = blockchain.openContract(JettonWallet.createFromAddress(buyerJettonWalletAddress));
         let buyerJettonWalletBalanceBefore = await buyerJettonWallet.getJettonBalance();
 
@@ -123,17 +133,54 @@ describe('PoolV1', () => {
             minLPAmount,
             recipient,
         );
+
+        // Expect that buyer meme wallet send jetton internal transfer to dex router
+        expect(result.transactions).toHaveTransaction({
+            op: PoolOpcodes.InternalTransfer,
+            from: buyerJettonWalletAddress,
+            to: dexRouterWalletAddress,
+            success: true,
+        });
+
+        // Expect that dexRouter Wallet send Jetton Notification dex router
+        expect(result.transactions).toHaveTransaction({
+            op: PoolOpcodes.JettonNotification,
+            from: dexRouterWalletAddress,
+            to: dexRouter.address,
+            success: true,
+        });
+
+        // Expect the Dex Router send deposit asset to pool
+        expect(result.transactions).toHaveTransaction({
+            op: PoolOpcodes.Deposit,
+            from: dexRouter.address,
+            to: poolV1.address,
+            success: true,
+        });
+
+        // const depositAssetTx = findTransactionRequired(result.transactions, {
+        //     op: PoolOpcodes.Deposit,
+        //     from: dexRouter.address,
+        //     to: poolV1.address,
+        //     success: true,
+        // });
+        // printTxGasStats('Burn Meme Jetton With TON', depositAssetTx);
+
+        // Expect that pool send LP token to buyer LP wallet
+        expect(result.transactions).toHaveTransaction({
+            op: PoolOpcodes.InternalTransfer,
+            from: poolV1.address,
+            to: buyerLpWalletAddress,
+            success: true,
+        });
+
         let buyerLpWalletBalanceAfter = await buyerLpWallet.getJettonBalance();
         let buyerJettonWalletBalanceAfter = await buyerJettonWallet.getJettonBalance();
 
+        // Expect that buyer LP wallet balance increased
         expect(buyerLpWalletBalanceAfter).toBeGreaterThan(buyerLpWalletBalanceBefore);
-        expect(buyerJettonWalletBalanceAfter + sendJettonAmount).toEqual(buyerJettonWalletBalanceBefore);
 
-        expect(result.transactions).toHaveTransaction({
-            from: dexRouter.address,
-            to: poolV1.address,
-            deploy: false,
-            success: true,
-        });
+        // Expect that buyer Jetton wallet balance decreased
+        expect(buyerJettonWalletBalanceAfter + sendJettonAmount).toEqual(buyerJettonWalletBalanceBefore);
     });
 });

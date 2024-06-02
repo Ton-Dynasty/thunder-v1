@@ -45,9 +45,12 @@ export function poolV1ConfigToCell(config: PoolV1Config): Cell {
         .endCell();
 }
 
-const PoolOpcodes = {
+export const PoolOpcodes = {
     TopUp: 0xd372158c,
     Deposit: 0x95db9d39,
+    InternalTransfer: 0x178d4519,
+    Excess: 0xd53276db,
+    JettonNotification: 0x7362d09c,
 };
 
 export type Deposit = {

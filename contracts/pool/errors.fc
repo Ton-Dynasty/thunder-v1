@@ -5,3 +5,4 @@ const error::deadline_expired = 2023;
 const error::asset_not_found = 2024;
 const error::invalid_burn_amount = 2025;
 const error::insufficient_out_amount = 2026;
+const error::not_enough_ton = 2000;
