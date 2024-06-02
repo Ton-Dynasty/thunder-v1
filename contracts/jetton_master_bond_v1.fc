@@ -13,7 +13,7 @@
     master::on_moon = TRUE;
     ;; Calculate the tunder fi fee 
     int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision;
-    int fee_for_admin = master::ton_reserves - send_ton_liquidity - BUILD_POOL_GAS_FEE; ;; build_pool_fee is for building pool and farm, thunder fi will pay for it.
+    int fee_for_admin = master::ton_reserves - send_ton_liquidity - BUILD_POOL_GAS_FEE + master::fee; ;; build_pool_fee is for building pool and farm, thunder fi will pay for it.
     int price_for_now = const:price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
     int send_jetton_liquidity = const:price_precision * send_ton_liquidity / price_for_now;
     int extra_jetton = master::jetton_reserves - send_jetton_liquidity;
@@ -143,10 +143,10 @@
         cell forward_payload = ctx::body~load_ref();
         ctx::body.end_parse();
 
-        ;; Throw error if token already listed. TODO: we should send back ton
+        ;; Throw error if token already listed. it will send back ton to user by bounce
         throw_unless(error::token_already_listed, master::on_moon == FALSE);
 
-        ;; Throw error if token amount is equal to 0. TODO: we should send back ton
+        ;; Throw error if token amount is equal to 0. it will send back ton to user by bounce
         throw_unless(error::invalid_amount, ton_amount > 0);
 
         internal::mint_token(
@@ -265,4 +265,8 @@ slice get_wallet_address(slice owner_address) method_id {
     cell jetton_wallet_code = master::jetton_wallet_code;
     int mintable = TRUE;
     return (total_supply, mintable, admin_address, master::jetton_content, jetton_wallet_code);
+}
+
+(int) get_contract_balance() method_id {
+    return get_data().begin_parse().preload_uint(64);
 }

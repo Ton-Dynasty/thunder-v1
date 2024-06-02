@@ -132,6 +132,11 @@ export class JettonMasterBondV1 implements Contract {
         return walletAddress.stack.readAddress();
     }
 
+    async getBalance(provider: ContractProvider): Promise<bigint> {
+        const balance = await provider.get('get_contract_balance', []);
+        return balance.stack.readBigNumber();
+    }
+
     async getJettonData(provider: ContractProvider) {
         const res = await provider.get('get_jetton_data', []);
         const totalSupply = res.stack.readBigNumber();
@@ -148,9 +153,7 @@ export class JettonMasterBondV1 implements Contract {
         };
     }
 
-    async getMasterData(
-        provider: ContractProvider,
-    ): Promise<[bigint, bigint, bigint, bigint, bigint, Address, Address]> {
+    async getMasterData(provider: ContractProvider) {
         const fees = await provider.get('get_master_data', []);
         const tonReserves = fees.stack.readBigNumber();
         const jettonReserves = fees.stack.readBigNumber();
@@ -159,6 +162,14 @@ export class JettonMasterBondV1 implements Contract {
         const onMoon = fees.stack.readBigNumber();
         const dexRouter = fees.stack.readAddress();
         const adminAddress = fees.stack.readAddress();
-        return [tonReserves, jettonReserves, fee, totalSupply, onMoon, dexRouter, adminAddress];
+        return {
+            tonReserves,
+            jettonReserves,
+            fee,
+            totalSupply,
+            onMoon,
+            dexRouter,
+            adminAddress,
+        };
     }
 }
