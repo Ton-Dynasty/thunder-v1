@@ -686,4 +686,51 @@ describe('JettonMasterBondV1', () => {
             success: true,
         });
     });
+
+    it('should admin can claim admin fee', async () => {
+        const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
+        const buyTon = toNano('5000');
+        await buyToken(jettonMasterBondV1, buyer, buyTon);
+
+        const fee = (await jettonMasterBondV1.getMasterData()).fee;
+
+        // Admin claim admin fee
+        let deployerTonBalanceBefore = await deployer.getBalance();
+        const claimResult = await jettonMasterBondV1.sendClaimFee(deployer.getSender(), toNano('0.05'));
+        let deployerTonBalanceAfter = await deployer.getBalance();
+
+        // Expect that depoyer send claim fee to jettonMasterBondV1
+        expect(claimResult.transactions).toHaveTransaction({
+            op: MasterOpocde.ClaimAdminFee,
+            from: deployer.address,
+            to: jettonMasterBondV1.address,
+            success: true,
+        });
+
+        // Expect that jettonMasterBondV1 send fees to deployer
+        expect(claimResult.transactions).toHaveTransaction({
+            from: jettonMasterBondV1.address,
+            to: deployer.address,
+            success: true,
+        });
+
+        // Expect that deployer ton balance increased at least fee
+        let gas_fee_and_build_pool_fee = toNano('0.5');
+        expect(deployerTonBalanceAfter - deployerTonBalanceBefore).toBeGreaterThanOrEqual(fee - gas_fee_and_build_pool_fee);
+    });
+
+    it('should only admin can claim admin fee', async () => {
+        const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
+        const buyTon = toNano('5000');
+        await buyToken(jettonMasterBondV1, buyer, buyTon);
+
+        // Admin claim admin fee
+        const claimResult = await jettonMasterBondV1.sendClaimFee(buyer.getSender(), toNano('0.05'));
+        expect(claimResult.transactions).toHaveTransaction({
+            from: buyer.address,
+            to: jettonMasterBondV1.address,
+            success: false,
+            exitCode: 70,
+        });
+    });
 });

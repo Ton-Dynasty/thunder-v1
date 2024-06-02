@@ -11,9 +11,11 @@
 
 () handle::ton_the_moon(int query_id, int ctx:fwd_fee) impure inline {
     master::on_moon = TRUE;
-    ;; Calculate the tunder fi fee 
-    int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision;
+    ;; Calculate jetton reserves send to dex router and thunder fi admin fee
+    int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision; ;; Only send 90% of ton_reserves to liquidity pool
     int fee_for_admin = master::ton_reserves - send_ton_liquidity - BUILD_POOL_GAS_FEE + master::fee; ;; build_pool_fee is for building pool and farm, thunder fi will pay for it.
+
+    ;; Calculate jetton reserves send to dex router
     int price_for_now = const:price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
     int send_jetton_liquidity = const:price_precision * send_ton_liquidity / price_for_now;
     int extra_jetton = master::jetton_reserves - send_jetton_liquidity;
@@ -21,8 +23,9 @@
     master::total_supply -= extra_jetton;
 
     cell add_liquidity_payload = begin_cell().store_uint(op::create_pool ,32).store_coins(send_ton_liquidity).store_slice(my_address()).end_cell();
-    send_ton_liquidity += BUILD_POOL_GAS_FEE; ;; build_pool_fee is for building pool and farm.
+    send_ton_liquidity += BUILD_POOL_GAS_FEE; ;; build_pool_fee is for building pool and farm and is paid by thunder fi in line 16
     int ton_to_dex_router = send_ton_liquidity + fee_for_admin; ;; fee_for_admin will be transfer in excess msg. 
+
     ;; Send mint jetton to Router
     mint_jetton(
         BOUNCEABLE,
@@ -35,11 +38,22 @@
         add_liquidity_payload
     );
 
+    ;; Update storage
     master::ton_reserves = 0;
     master::jetton_reserves = 0;
     master::fee = 0;
 
     return ();
+}
+
+() internal::claim_admin_fee(
+    int query_id
+) impure inline_ref {
+    int send_ton = master::fee - BUILD_POOL_GAS_FEE; ;; Remaining BUILD_POOL_GAS_FEE for building pool and farm
+    transfer_ton(query_id, NON_BOUNCEABLE, master::admin_address, send_ton, SEND_MODE_REGULAR);
+
+    master::fee = 0;
+    master::save_data();
 }
 
 () internal::mint_token(
@@ -65,11 +79,11 @@
 
     ;; Calculate remaining ton and update storage
     int ton_back_to_user = ctx::value - gas_consumptoin - ton_has_to_pay;
-
     master::ton_reserves += true_amount_in;
     master::fee += ton_has_to_pay - true_amount_in;
     master::jetton_reserves -= token_out;
 
+    ;; If ton_reserves reach to the moon threshold, then send to dex router to deploy liquidity pool
     if(master::ton_reserves == const::ton_the_moon) {
         handle::ton_the_moon(query_id, ctx::fwd_fee);
     }
@@ -103,7 +117,6 @@
     ;; Calculate the gas fee
     (int total_fees, int gas_consumptoin) = cal_sell_fee(ctx::fwd_fee);
     throw_unless(error::not_enough_ton, ctx::value > total_fees);
-
     int send_ton = ctx::value - gas_consumptoin;
 
     ;; Calculate sender's wallet address
@@ -119,11 +132,13 @@
     master::jetton_reserves += jetton_out;
     master::fee += fee;
 
+    ;; If user didn't provide response address to receive ton, then send to from_address
     slice receiver = from_address;
     if (~ is_address_none(response_address)) {
         receiver = response_address;
     }
 
+    ;; Transfer tons (from selling meme tokens) to user
     transfer_ton(query_id, NON_BOUNCEABLE, receiver, amount_out + send_ton, SEND_MODE_REGULAR);
 
     master::save_data();
@@ -137,7 +152,7 @@
     ;; Load data from storage
     master::load_data();
 
-    if (op == op::mint) {
+    if op == op::mint {
         ;; load data in mint msg
         int ton_amount = ctx::body~load_coins();
         int min_token_out = ctx::body~load_coins();
@@ -170,7 +185,8 @@
         return ();
     }
 
-    if (op == op::burn_notification) {
+    if op == op::burn_notification {
+        ;; Throw error if token already listed. it will send back jetton to user by bounce
         throw_unless(error::token_already_listed, master::on_moon == FALSE);
         int jetton_amount = ctx::body~load_coins();
         slice from_address = ctx::body~load_msg_addr();
@@ -181,7 +197,7 @@
         return ();
     }
 
-    if (op == op::provide_wallet_address) {
+    if op == op::provide_wallet_address {
         ;; see provide_wallet_address TL-B layout in jetton.tlb
         slice owner_address = ctx::body~load_msg_addr();
         int include_address? = ctx::body~load_bool();
@@ -212,7 +228,7 @@
         return ();
     }
 
-    if (op == op::change_content_cell) {
+    if op == op::change_content_cell {
         throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
         master::jetton_content = ctx::body~load_ref();
         ctx::body.end_parse();
@@ -220,7 +236,7 @@
         return ();
     }
 
-    if (op == op::upgrade) {
+    if op == op::upgrade {
         throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
         (cell new_data, cell new_code) = (ctx::body~load_ref(), ctx::body~load_ref());
         ctx::body.end_parse();
@@ -229,7 +245,13 @@
         return ();
     }
 
-    if(op == op::top_up) {
+    if op == op::claim_admin_fee {
+        throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
+        internal::claim_admin_fee(query_id);
+        return ();
+    }
+
+    if op == op::top_up {
         return ();
     }
 
