@@ -20,6 +20,7 @@ export const MasterOpocde = {
     Excess: 0xd53276db,
     JettonNotification: 0x7362d09c,
     DepositAsset: 0x95db9d39,
+    ClaimAdminFee: 0x913e42af,
 };
 
 export type BuyToken = {
@@ -119,6 +120,14 @@ export class JettonMasterBondV1 implements Contract {
             value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell().storeUint(MasterOpocde.TopUp, 32).storeUint(0, 64).endCell(),
+        });
+    }
+
+    async sendClaimFee(provider: ContractProvider, via: Sender, value: bigint) {
+        await provider.internal(via, {
+            value,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
+            body: beginCell().storeUint(MasterOpocde.ClaimAdminFee, 32).storeUint(0, 64).endCell(),
         });
     }
 
