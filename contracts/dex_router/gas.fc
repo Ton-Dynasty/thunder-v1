@@ -17,6 +17,7 @@ const JETTON_NOTIFY_GAS_CONSUMPTION = 16721;
 const SEND_TRANSFER_GAS_CONSUMPTION    = 9255;
 const RECEIVE_TRANSFER_GAS_CONSUMPTION = 10355;
 const BUILD_POOL_GAS_FEE = 100000000; ;; 0.1 TON
+const GAS_CONSUMPTION = 100000000; ;; 0.1 TON
 
 ;; const JETTON_MASTER_BITS = 15620;
 ;; const JETTON_CELLS = 40;
@@ -34,16 +35,16 @@ int forward_init_state_overhead() inline {
 }
 
 int get_jetton_transfer_fee() inline {
-    int pool_gas_comsumption = get_precompiled_gas_consumption();
-    int send_transfer_gas_consumption = null?(pool_gas_comsumption) ? SEND_TRANSFER_GAS_CONSUMPTION : pool_gas_comsumption;
-    int receive_transfer_gas_consumption = null?(pool_gas_comsumption) ? RECEIVE_TRANSFER_GAS_CONSUMPTION : pool_gas_comsumption;
+    int pool_gas_consumption = get_precompiled_gas_consumption();
+    int send_transfer_gas_consumption = null?(pool_gas_consumption) ? SEND_TRANSFER_GAS_CONSUMPTION : pool_gas_consumption;
+    int receive_transfer_gas_consumption = null?(pool_gas_consumption) ? RECEIVE_TRANSFER_GAS_CONSUMPTION : pool_gas_consumption;
     return get_compute_fee(MY_WORKCHAIN, send_transfer_gas_consumption) + get_compute_fee(MY_WORKCHAIN, receive_transfer_gas_consumption);
 }
 
 (int, int) cal_deploy_pool_fee(int fwd_fee) inline {
-    int pool_gas_comsumption = get_precompiled_gas_consumption();
-    int deposit_gas_consumption = null?(pool_gas_comsumption) ? POOL_DEPOSIT_GAS : pool_gas_comsumption;
-    int deploy_pool_gas_consumption = null?(pool_gas_comsumption) ? DEPLOY_POOL_GAS : pool_gas_comsumption;
+    int pool_gas_consumption = get_precompiled_gas_consumption();
+    int deposit_gas_consumption = null?(pool_gas_consumption) ? POOL_DEPOSIT_GAS : pool_gas_consumption;
+    int deploy_pool_gas_consumption = null?(pool_gas_consumption) ? DEPLOY_POOL_GAS : pool_gas_consumption;
     
 
     int gas_comp = get_compute_fee(MY_WORKCHAIN, deposit_gas_consumption) + 
@@ -58,10 +59,10 @@ int get_jetton_transfer_fee() inline {
 }
 
 ;; (int) build_pool_fee(int fwd_fee) {
-;;     int pool_gas_comsumption = get_precompiled_gas_consumption();
-;;     ;; int send_to_dex_router_gas_consumption = null?(pool_gas_comsumption) ? SEND_TO_DEX_ROUTER : pool_gas_comsumption;
-;;     int deploy_pool_gas_consumption = null?(pool_gas_comsumption) ? DEPLOY_POOL_GAS : pool_gas_comsumption;
-;;     int deposit_asset_gas_consumption = null?(pool_gas_comsumption) ? POOL_DEPOSIT_GAS : pool_gas_comsumption;
+;;     int pool_gas_consumption = get_precompiled_gas_consumption();
+;;     ;; int send_to_dex_router_gas_consumption = null?(pool_gas_consumption) ? SEND_TO_DEX_ROUTER : pool_gas_consumption;
+;;     int deploy_pool_gas_consumption = null?(pool_gas_consumption) ? DEPLOY_POOL_GAS : pool_gas_consumption;
+;;     int deposit_asset_gas_consumption = null?(pool_gas_consumption) ? POOL_DEPOSIT_GAS : pool_gas_consumption;
     
 
 ;;     int gas_comp = get_jetton_transfer_fee() * 2 + 
