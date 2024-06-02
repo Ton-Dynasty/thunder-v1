@@ -118,4 +118,15 @@ export class PoolV1 implements Contract {
             body: PoolV1.packDeposit(body),
         });
     }
+
+    /* Get */
+    async getWalletAddress(provider: ContractProvider, owner: Address): Promise<Address> {
+        const walletAddress = await provider.get('get_wallet_address', [
+            {
+                type: 'slice',
+                cell: beginCell().storeAddress(owner).endCell(),
+            },
+        ]);
+        return walletAddress.stack.readAddress();
+    }
 }
