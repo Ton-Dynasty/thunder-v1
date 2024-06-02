@@ -19,7 +19,7 @@ global cell master::jetton_content;
 
     ;; load basic info
     slice basic_info = ds~load_ref().begin_parse();
-    master::on_moon = basic_info~load_uint(2);
+    master::on_moon = basic_info~load_int(2);
     master::dex_router = basic_info~load_msg_addr();
     master::jetton_wallet_code = basic_info~load_ref();
     master::jetton_content = basic_info~load_ref();
@@ -28,7 +28,7 @@ global cell master::jetton_content;
 () master::save_data() impure inline_ref {
     ;; pack basic info
     cell basic_info = begin_cell()
-        .store_uint(master::on_moon, 2)
+        .store_int(master::on_moon, 2)
         .store_slice(master::dex_router)
         .store_ref(master::jetton_wallet_code)
         .store_ref(master::jetton_content)

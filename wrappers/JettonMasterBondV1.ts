@@ -69,7 +69,7 @@ export function jettonMasterBondV1ConfigToCell(config: JettonMasterBondV1Config)
         .storeCoins(config.fee)
         .storeRef(
             beginCell()
-                .storeUint(config.onMoon, 2)
+                .storeInt(config.onMoon, 2)
                 .storeAddress(config.dexRouter)
                 .storeRef(config.jettonWalletCode)
                 .storeRef(config.jettonContent)

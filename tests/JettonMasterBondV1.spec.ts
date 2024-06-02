@@ -319,7 +319,7 @@ describe('JettonMasterBondV1', () => {
 
         // Epext that onMoon = 1n
         let onMoon = await getMasterData(jettonMasterBondV1, 'onMoon');
-        expect(onMoon).toEqual(1n);
+        expect(onMoon).toEqual(-1n);
 
         let poolAddress = await dexRouter.getPoolAddress(jettonMasterBondV1.address);
         // Expect that Dex Router send deposit asset to Pool

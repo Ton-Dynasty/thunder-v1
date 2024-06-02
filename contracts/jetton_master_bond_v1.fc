@@ -10,7 +10,7 @@
 #include "jetton_master/gas.fc";
 
 () handle::ton_the_moon(int query_id, int ctx:fwd_fee) impure inline {
-    master::on_moon = 1;
+    master::on_moon = TRUE;
     ;; Calculate the tunder fi fee 
     int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision;
     int fee_for_admin = master::ton_reserves - send_ton_liquidity - BUILD_POOL_GAS_FEE; ;; build_pool_fee is for building pool and farm, thunder fi will pay for it.
@@ -64,7 +64,7 @@
     throw_unless(error::not_meet_min_amount, token_out >= min_token_out); ;; TODO: we should send back ton if token_out < min_token_out
 
     ;; Calculate remaining ton and update storage
-    int ton_back_to_user = ctx::value - gas_consumptoin - ton_has_to_pay - forward_ton_amount;
+    int ton_back_to_user = ctx::value - gas_consumptoin - ton_has_to_pay;
 
     master::ton_reserves += true_amount_in;
     master::fee += ton_has_to_pay - true_amount_in;
