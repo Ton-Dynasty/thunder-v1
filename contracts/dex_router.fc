@@ -49,7 +49,7 @@
 ) impure inline {
     (int total_fees, int gas_consumptoin) = cal_deploy_pool_fee(ctx::fwd_fee, 1);
     throw_unless(error::not_enough_ton, ctx::value > total_fees);
-    int send_ton = ctx::value - gas_consumptoin;
+    int send_ton = BUILD_POOL_GAS_FEE - gas_consumptoin;
 
     (slice pool_address, cell deposit_asset_payload, cell state_init) = internal::deposit_asset(
         master_address,
