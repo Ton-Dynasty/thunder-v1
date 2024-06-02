@@ -20,8 +20,7 @@
     cell fulfill_payload, 
     cell reject_payload
 ) impure inline {
-    cell deposit_asset_payload = pack_deposit_asset_data
-    (
+    cell deposit_asset_payload = pack_deposit_asset_data(
         query_id, 
         asset0_amount, 
         asset1_amount, 
@@ -76,22 +75,29 @@
 
         if(op == op::add_liquidity) {
             int ton_amount = forward_payload~load_coins();
+            int min_lp_amount = forward_payload~load_coins();
             slice master_address = forward_payload~load_msg_addr();
-            
+            slice recipient = forward_payload~load_msg_addr();
+            cell fulfill_payload = forward_payload~load_maybe_ref();
+            cell reject_payload = forward_payload~load_maybe_ref();
+
+            if (is_address_none(recipient)) {
+                recipient = jetton_sender;
+            }
+
             (slice pool_address, cell deposit_asset_payload, cell state_init) = internal::deposit_asset(
                 ctx::value - GAS_CONSUMPTION, 
                 master_address,
                 query_id, 
                 ton_amount, 
                 jetton_amount, 
-                0, 
-                dex_router::owner_address, ;; lp receiver but this is first time add liqudity so there will be no LP token
-                null(), ;; fulfill_payload
-                null() ;; reject_payload
+                min_lp_amount, 
+                recipient,
+                fulfill_payload,
+                reject_payload
             );
 
-            send_bounceable_msg(pool_address, ctx::value - ton_amount - GAS_CONSUMPTION , deposit_asset_payload, SEND_MODE_REGULAR);
-
+            send_bounceable_msg(pool_address, ctx::value - GAS_CONSUMPTION , deposit_asset_payload, SEND_MODE_REGULAR);
             return ();
         }
 

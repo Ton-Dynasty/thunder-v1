@@ -52,5 +52,4 @@ describe('DexRouter', () => {
         // the check is done inside beforeEach
         // blockchain and dexRouter are ready to use
     });
-
 });
