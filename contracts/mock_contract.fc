@@ -1,0 +1,81 @@
+#include "imports/stdlib.fc";
+
+{-   
+    This contract is only for testing purposes.
+-}
+
+const op::top_up = 0xd372158c;
+const op::provide_wallet_address = 0x2c76b973;
+const op::take_wallet_address = 0xd1735400;
+
+global slice jetton_master_address;
+global slice jetton_wallet_address;
+
+() load_data() impure inline_ref {
+    slice ds = get_data().begin_parse();
+    jetton_master_address = ds~load_msg_addr();
+    jetton_wallet_address = ds~load_msg_addr();
+}
+
+() save_data() impure inline_ref {
+    ;; set data
+    set_data(
+        begin_cell()
+            .store_slice(jetton_master_address)
+            .store_slice(jetton_wallet_address)
+        .end_cell()
+    );
+}
+
+(cell) pack_provide_wallet_address(
+    slice jetton_master,
+    int value,
+    int query_id
+) inline_ref {
+    cell msg = begin_cell()
+        .store_msg_flags_and_address_none(BOUNCEABLE)
+        .store_slice(jetton_master) ;; dest
+        .store_coins(value)
+        .store_only_body_ref(begin_cell()
+            .store_op(op::provide_wallet_address)
+            .store_query_id(query_id)
+            .store_slice(my_address())
+            .store_bool(FALSE)
+            .end_cell()
+    ).end_cell();
+    return msg;
+}
+
+() main(int ctx::value, cell in_msg_full, slice ctx::body) impure {
+    slice s = in_msg_full.begin_parse();
+    int flags = s~load_msg_flags();
+
+    if (is_bounced(flags)) { ;; skip all bounced messages
+        return ();
+    }
+    
+    ;; get context
+    (slice ctx::sender, int ctx::fwd_fee) = s~retrieve_ctx(0);
+
+    load_data();
+
+    ;; load op and query id
+    (int op, int query_id) = ctx::body~load_op_and_query_id();
+
+    if op == op::top_up {
+        cell msg = pack_provide_wallet_address(jetton_master_address, 100000000, query_id);
+        send_raw_message(msg, 0);
+        return ();
+    }
+
+    if op == op::take_wallet_address {
+        jetton_wallet_address = ctx::body~load_msg_addr();
+        save_data();
+        return ();
+    }
+}
+
+slice get_wallet_address() method_id {
+    load_data();
+    return jetton_wallet_address;
+}

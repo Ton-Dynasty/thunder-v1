@@ -61,7 +61,7 @@
     
     ;; Calculate token_out based on ton_amount
     (int token_out, int true_amount_in, int ton_has_to_pay) = simulate::estimate_mint_jetton_amount(ton_amount);
-    throw_unless(error::not_meet_min_amount, token_out >= min_token_out); ;; TODO: we should send back ton if token_out < min_token_out
+    throw_unless(error::not_meet_min_amount, token_out >= min_token_out); 
 
     ;; Calculate remaining ton and update storage
     int ton_back_to_user = ctx::value - gas_consumptoin - ton_has_to_pay;
@@ -171,7 +171,7 @@
     }
 
     if (op == op::burn_notification) {
-        throw_unless(error::token_already_listed, master::on_moon == FALSE); ;; TODO: we should send back ton
+        throw_unless(error::token_already_listed, master::on_moon == FALSE);
         int jetton_amount = ctx::body~load_coins();
         slice from_address = ctx::body~load_msg_addr();
         slice response_address = ctx::body~load_msg_addr();

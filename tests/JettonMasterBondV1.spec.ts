@@ -8,6 +8,7 @@ import { JettonWallet } from '../wrappers/JettonWallet';
 import { loadJMBondFixture, buyToken } from './helper';
 import { collectCellStats, computedGeneric } from '../gasUtils';
 import { findTransactionRequired } from '@ton/test-utils';
+import { MockContract } from '../wrappers/MockContract';
 
 describe('JettonMasterBondV1', () => {
     let blockchain: Blockchain;
@@ -652,6 +653,37 @@ describe('JettonMasterBondV1', () => {
             to: jettonMasterBondV1.address,
             success: false,
             exitCode: 74,
+        });
+    });
+
+    it('should let mock contract to send provide wallet address and receive take wallet msg', async () => {
+        let mockContract = blockchain.openContract(
+            MockContract.createFromConfig(
+                { jettonMasterAddress: jettonMasterBondV1.address, jettonWalletAddress: deployer.address },
+                await compile(MockContract.name),
+            ),
+        );
+        const deployResult = await mockContract.sendDeploy(deployer.getSender(), toNano('1'));
+        let mockWalletAddressFromContract = await mockContract.getWalletAddress();
+
+        let mockWalletAddressFromGetMethod = await jettonMasterBondV1.getWalletAddress(mockContract.address);
+        // Expect that mockWalletAddress from jettonMasterBond is equal to the address from get method
+        expect(mockWalletAddressFromContract.toString()).toEqual(mockWalletAddressFromGetMethod.toString());
+
+        // Expect that mockContract send take wallet message to jettonMasterBond
+        expect(deployResult.transactions).toHaveTransaction({
+            op: 0x2c76b973,
+            from: mockContract.address,
+            to: jettonMasterBondV1.address,
+            success: true,
+        });
+
+        // Expect that jettonMasterBond send take wallet message to mockContract
+        expect(deployResult.transactions).toHaveTransaction({
+            op: 0xd1735400,
+            from: jettonMasterBondV1.address,
+            to: mockContract.address,
+            success: true,
         });
     });
 });
