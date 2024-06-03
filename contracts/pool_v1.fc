@@ -69,15 +69,9 @@
 ) impure inline {
     throw_unless(error::invalid_sender, equal_slices(ctx::sender, pool::dex_router));
     int send_ton = ctx::value - gas::gas_consumption;
-    if ((deadline == 0) | (now() > deadline)) {
-        ;; TODO: deadline expired, return funds with reject_payload
-        throw_unless(error::deadline_expired, false);
-        return ();
-    }
-    
-    if (asset_in > 1) {
-        ;; TODO: asset not found, return funds with reject_payload
-        throw_unless(error::asset_not_found, false);
+    if ((now() > deadline)) {
+        cell msg_body = pack_payout_from_pool(query_id, sender, sender, asset_in, amount_in, reject_payload);
+        send_bounceable_msg(pool::dex_router, send_ton , msg_body, SEND_MODE_REGULAR);
         return ();
     }
 
@@ -87,8 +81,11 @@
 
     (int amount_out, int trade_fee) = simulate::get_amount_out(asset_in, amount_in);
 
-    ;; TODO: insufficient_output_amount, return funds with reject_payload
-    throw_unless(error::insufficient_out_amount, amount_out >= min_amount_out);
+    if(amount_out < min_amount_out) {
+        cell msg_body = pack_payout_from_pool(query_id, sender, sender, asset_in, amount_in, reject_payload);
+        send_bounceable_msg(pool::dex_router, send_ton , msg_body, SEND_MODE_REGULAR);
+        return ();
+    }
 
     int asset_out = 0;
     if (asset_in == 0) {
