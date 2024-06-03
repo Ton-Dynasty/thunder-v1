@@ -663,6 +663,7 @@ describe('PoolV1', () => {
         let poolDataBefore = await poolV1.getPoolData();
 
         const result = await swapTon(buyer, dexRouter, dexRouterWalletAddress, sendTonAmount, minAmountOut, deadline);
+        printTransactionFees(result.transactions);
 
         // get buyer's Ton balance after
         let buyerTonBalanceAfter = await buyer.getBalance();
