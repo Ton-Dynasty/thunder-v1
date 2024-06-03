@@ -29,7 +29,7 @@ export type AddLiquidityFP = {
 
 export type SwapJettonFP = {
     $$type: 'SwapJettonFP';
-    masterAddress: Address;
+    otherAssetWallet: Maybe<Address>;
     assetIn: bigint;
     minAmountOut: bigint;
     deadline: bigint;
@@ -80,7 +80,7 @@ export function storeAddLiquidityFP(value: AddLiquidityFP) {
 export function storeSwapJettonFP(value: SwapJettonFP) {
     return (b: Builder) => {
         b.storeUint(DexRouterOpcode.SwapJetton, 32);
-        b.storeAddress(value.masterAddress);
+        b.storeAddress(value.otherAssetWallet);
         b.storeUint(value.assetIn, 1);
         b.storeCoins(value.minAmountOut);
         b.storeUint(value.deadline, 64);
