@@ -190,7 +190,7 @@ describe('JettonMasterBondV1', () => {
         expect(buyerTonBalanceAfter - buyerTonBalanceBefore + gas_fee).toBeGreaterThanOrEqual(4924637993n);
     });
 
-    it('should burn buyer meme tokens and send to the assigned receiver', async () => {
+    it('should burn buyer meme tokens and send to the assigned recipient', async () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
         await buyToken(jettonMasterBondV1, buyer);
 

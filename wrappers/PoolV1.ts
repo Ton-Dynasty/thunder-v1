@@ -60,7 +60,7 @@ export type Deposit = {
     asset0Amount: bigint;
     asset1Amount: bigint;
     minLpAmount: bigint;
-    lpReceiver: Maybe<Address>;
+    lpRecipient: Maybe<Address>;
     fulfillPayload: Maybe<Cell>;
     rejectPayload: Maybe<Cell>;
 };
@@ -72,7 +72,7 @@ export function storeDeposit(src: Deposit) {
         b.storeCoins(src.asset0Amount);
         b.storeCoins(src.asset1Amount);
         b.storeCoins(src.minLpAmount);
-        b.storeAddress(src.lpReceiver);
+        b.storeAddress(src.lpRecipient);
         b.storeMaybeRef(src.fulfillPayload);
         b.storeMaybeRef(src.rejectPayload);
     };

@@ -24,7 +24,7 @@
     int asset0_amount,
     int asset1_amount,
     int min_lp_amount,
-    slice lp_receiver,
+    slice lp_recipient,
     cell fulfill_payload,
     cell reject_payload
 ) impure inline {
@@ -36,11 +36,11 @@
     throw_unless(error::not_enough_ton, ctx::value > total_fees);
     int send_ton = ctx::value - gas_consumption;
 
-    (lp_receiver, int lp_amount) = simulate::deposit(asset0_amount, asset1_amount, lp_receiver);
+    (lp_recipient, int lp_amount) = simulate::deposit(asset0_amount, asset1_amount, lp_recipient);
     ;; TODO: refund and reject_payload
     throw_unless(error::insufficient_liquidity, lp_amount >= min_lp_amount);
 
-    mint_lp(query_id, lp_receiver, lp_amount, send_ton, fulfill_payload);
+    mint_lp(query_id, lp_recipient, lp_amount, send_ton, fulfill_payload);
     pool::save_data();
     return ();
 }
@@ -171,7 +171,7 @@
         int asset0_amount = ctx::body~load_coins();
         int asset1_amount = ctx::body~load_coins();
         int min_lp_amount = ctx::body~load_coins();
-        slice lp_receiver = ctx::body~load_msg_addr();
+        slice lp_recipient = ctx::body~load_msg_addr();
         cell fulfill_payload = ctx::body~load_maybe_ref();
         cell reject_payload = ctx::body~load_maybe_ref();
         handle::deposit(
@@ -182,7 +182,7 @@
             asset0_amount,
             asset1_amount,
             min_lp_amount,
-            lp_receiver,
+            lp_recipient,
             fulfill_payload,
             reject_payload
         );
