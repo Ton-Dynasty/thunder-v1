@@ -103,7 +103,7 @@
     int ctx::fwd_fee,
     int jetton_amount,
     slice jetton_sender,
-    slice master_address,
+    slice other_asset_wallet,
     int asset_in,
     int min_amount_out,
     int deadline,
@@ -129,49 +129,46 @@
         reject_payload
     );
 
-    ;; Calculate recipient's wallet address
-    cell state_init = calculate_pool_state_init(jetton_sender, master_address);
-    slice pool_address = calculate_address(state_init);
+    slice pool_address = calculate_address(calculate_pool_state_init(ctx::sender, other_asset_wallet));
     send_bounceable_msg(pool_address, send_ton, swap_jetton_payload, SEND_MODE_REGULAR);
     return ();
 }
 
-;; () handle::swap_ton(
-;;     int query_id,
-;;     slice ctx::sender,  
-;;     int ctx::value,
-;;     int ctx::fwd_fee,
-;;     int ton_amount,
-;;     int min_amount_out,
-;;     int deadline,
-;;     slice recipient,
-;;     cell next,
-;;     cell extra_payload,
-;;     cell fulfill_payload,
-;;     cell reject_payload
-;; ) impure inline {
-;;     dex_router::load_data();
-;;     throw_unless(error::not_enough_ton, ctx::value > ctx::fwd_fee);
-;;     int send_ton = ctx::value - ctx::fwd_fee;
+() handle::swap_ton(
+    int query_id,
+    slice ctx::sender,  
+    int ctx::value,
+    int ctx::fwd_fee,
+    slice other_asset_wallet,
+    int ton_amount,
+    int min_amount_out,
+    int deadline,
+    slice recipient,
+    cell next,
+    cell extra_payload,
+    cell fulfill_payload,
+    cell reject_payload
+) impure inline {
+    int send_ton = ctx::value - GAS_CONSUMPTION;
 
-;;     cell swap_ton_payload = pack_swap_ton_data(
-;;         query_id,
-;;         ton_amount,
-;;         min_amount_out,
-;;         deadline,
-;;         recipient,
-;;         next,
-;;         extra_payload,
-;;         fulfill_payload,
-;;         reject_payload
-;;     );
+    cell swap_ton_payload = pack_swap_internal(
+        query_id,
+        ctx::sender,
+        0, ;; ton asset id is 0
+        ton_amount,
+        min_amount_out,
+        deadline,
+        recipient,
+        extra_payload,
+        fulfill_payload,
+        reject_payload
+    );
 
-;;     cell state_init = calculate_pool_state_init(dex_router::owner_address);
-;;     slice pool_address = calculate_address(state_init);
+    slice pool_address = calculate_address(calculate_pool_state_init(address_none(), other_asset_wallet));
 
-;;     send_bounceable_msg(pool_address, send_ton, swap_ton_payload, SEND_MODE_REGULAR);
-;;     return ();
-;; }
+    send_bounceable_msg(pool_address, send_ton, swap_ton_payload, SEND_MODE_REGULAR);
+    return ();
+}
 
 () handle::payout_from_pool(
     int query_id,
@@ -185,18 +182,14 @@
     cell payload
 ) impure inline {
     if (is_address_none(asset_address)){
-        ~strdump("swap out ton");
-        ;; TON transfer
-        ~dump(recipient);
-        ~dump(amount_out + ctx::value - GAS_CONSUMPTION);
-        ;; transfer_ton(
-        ;;     BOUNCEABLE, 
-        ;;     recipient, 
-        ;;     amount_out + ctx::value - GAS_CONSUMPTION,
-        ;;     payload, 
-        ;;     SEND_MODE_REGULAR
-        ;; );
-        ~strdump("swap out ton done");
+        transfer_ton(
+            BOUNCEABLE, 
+            query_id,
+            recipient, 
+            amount_out + ctx::value - GAS_CONSUMPTION,
+            payload, 
+            SEND_MODE_REGULAR
+        );
         return ();
     }
     int send_ton = ctx::value - FORWARD_FEE - GAS_CONSUMPTION;
@@ -259,7 +252,7 @@
         }
 
         if(op == op::swap_jetton) {
-            slice master_address = forward_payload~load_msg_addr();
+            slice other_asset_wallet = forward_payload~load_msg_addr();
             int asset_in = forward_payload~load_uint(1);
             int min_amount_out = forward_payload~load_coins();
             int deadline = forward_payload~load_uint(64);
@@ -275,7 +268,7 @@
                 ctx::fwd_fee,
                 jetton_amount,
                 jetton_sender,
-                master_address,
+                other_asset_wallet,
                 asset_in,
                 min_amount_out,
                 deadline,
@@ -289,7 +282,30 @@
     }
 
     if(op == op::swap_ton) {
-        return ();
+        slice other_asset_wallet = ctx::body~load_msg_addr();
+        int ton_amount = ctx::body~load_coins();
+        int min_amount_out = ctx::body~load_coins();
+        int deadline = ctx::body~load_uint(64);
+        slice recipient = ctx::body~load_msg_addr();
+        cell next = ctx::body~load_maybe_ref();
+        cell extra_payload = ctx::body~load_maybe_ref();
+        cell fulfill_payload = ctx::body~load_maybe_ref();
+        cell reject_payload = ctx::body~load_maybe_ref();
+        return handle::swap_ton(
+            query_id,
+            ctx::sender,
+            ctx::value,
+            ctx::fwd_fee,
+            other_asset_wallet,
+            ton_amount,
+            min_amount_out,
+            deadline,
+            recipient,
+            next,
+            extra_payload,
+            fulfill_payload,
+            reject_payload
+        );
     }
 
     if(op == op::payout_from_pool) {
