@@ -49,7 +49,7 @@
 () handle::claim_admin_fee(
     int query_id
 ) impure inline_ref {
-    int send_ton = master::fee - BUILD_POOL_GAS_FEE; ;; Remaining BUILD_POOL_GAS_FEE for building pool and farm
+    int send_ton = master::fee; ;; Remaining BUILD_POOL_GAS_FEE for building pool and farm
     transfer_ton(query_id, NON_BOUNCEABLE, master::admin_address, send_ton, SEND_MODE_REGULAR);
 
     master::fee = 0;

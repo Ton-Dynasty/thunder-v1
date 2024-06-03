@@ -9,8 +9,9 @@ import { loadJMBondFixture, buyToken } from './helper';
 import { collectCellStats, computedGeneric } from '../gasUtils';
 import { findTransactionRequired } from '@ton/test-utils';
 import { MockContract } from '../wrappers/MockContract';
+import { PoolV1 } from '../wrappers/PoolV1';
 
-describe('JettonMasterBondV1', () => {
+describe('JettonMasterBondV1 general testcases', () => {
     let blockchain: Blockchain;
     let deployer: SandboxContract<TreasuryContract>;
     let dexRouter: SandboxContract<DexRouter>;
@@ -708,5 +709,88 @@ describe('JettonMasterBondV1', () => {
             success: false,
             exitCode: 70,
         });
+    });
+});
+
+describe('JettonMasterBondV1 premint when deploying contract', () => {
+    let blockchain: Blockchain;
+    let deployer: SandboxContract<TreasuryContract>;
+    let dexRouter: SandboxContract<DexRouter>;
+    let jettonMasterBondV1: SandboxContract<JettonMasterBondV1>;
+
+    beforeEach(async () => {
+        blockchain = await Blockchain.create();
+        deployer = await blockchain.treasury('deployer', { workchain: 0, balance: toNano('100000000') });
+    });
+
+    const userWallet = async (address: Address, jettonMaster: SandboxContract<JettonMasterBondV1>) =>
+        blockchain.openContract(JettonWallet.createFromAddress(await jettonMaster.getWalletAddress(address)));
+
+    it('should deploy contract with premint', async () => {
+        const jettonMasterBondV1Code = await compile(JettonMasterBondV1.name);
+        const dexRouterCode = await compile(DexRouter.name);
+        const jettonWalletCode = await compile(JettonWallet.name);
+        const poolCode = await compile(PoolV1.name);
+
+        const dexRouter = blockchain.openContract(
+            DexRouter.createFromConfig(
+                {
+                    ownerAddress: deployer.address,
+                    poolCode: poolCode,
+                    lpWalletCode: jettonWalletCode,
+                },
+                dexRouterCode,
+            ),
+        );
+
+        const deployDexRouterResult = await dexRouter.sendDeploy(deployer.getSender(), toNano('0.05'));
+        expect(deployDexRouterResult.transactions).toHaveTransaction({
+            from: deployer.address,
+            to: dexRouter.address,
+            deploy: true,
+            success: true,
+        });
+
+        const jettonMasterBondV1 = blockchain.openContract(
+            JettonMasterBondV1.createFromConfig(
+                {
+                    totalSupply: toNano('100000000'),
+                    adminAddress: deployer.address,
+                    tonReserves: 0n,
+                    jettonReserves: toNano('100000000'),
+                    fee: 0n,
+                    onMoon: 0n,
+                    dexRouter: dexRouter.address,
+                    jettonWalletCode: jettonWalletCode,
+                    jettonContent: beginCell().endCell(),
+                },
+                jettonMasterBondV1Code,
+            ),
+        );
+
+        const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
+
+        let premintAmount = toNano('10');
+        let minAmount = 0n;
+        const deployJettonMasterResult = await buyToken(
+            jettonMasterBondV1,
+            deployer,
+            premintAmount,
+            minAmount,
+            buyer.address, // destination who will receive the premint meme token
+        );
+
+        let buyersMemeWallet = await userWallet(buyer.address, jettonMasterBondV1);
+        let buyerMemeTokenBalance = await buyersMemeWallet.getJettonBalance();
+
+        expect(deployJettonMasterResult.transactions).toHaveTransaction({
+            from: deployer.address,
+            to: jettonMasterBondV1.address,
+            deploy: true,
+            success: true,
+        });
+
+        // Expect buyer meme token balance is equal to 980295078720666n
+        expect(buyerMemeTokenBalance).toBe(980295078720666n);
     });
 });

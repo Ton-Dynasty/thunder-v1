@@ -230,7 +230,6 @@ describe('PoolV1', () => {
             body: message,
             sendMode: 1,
         });
-        printTransactionFees(sendNotEnoughResult.transactions);
 
         // Dex Router should send jetton transfer to Dex Router Wallet
         expect(sendNotEnoughResult.transactions).toHaveTransaction({
