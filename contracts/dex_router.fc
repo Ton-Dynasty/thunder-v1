@@ -191,16 +191,9 @@
     }
     int send_ton = ctx::value - FORWARD_FEE - GAS_CONSUMPTION;
     int forward_ton = FORWARD_FEE;
-    slice dex_router_jetton_wallet = calculate_jetton_wallet_address(
-        calculate_jetton_wallet_state_init(
-            my_address(), 
-            asset_address, 
-            dex_router::jetton_wallet_code
-        )
-    );
     transfer_jetton(
         BOUNCEABLE, 
-        dex_router_jetton_wallet, 
+        asset_address, 
         recipient, 
         amount_out, 
         send_ton, 
