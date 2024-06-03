@@ -160,7 +160,7 @@ export class DexRouter implements Contract {
 
     async getPoolAddress(
         provider: ContractProvider,
-        assetWallet0: Address,
+        assetWallet0: Address | null,
         assetWallet1: Address | null,
     ): Promise<Address> {
         const poolAddress = await provider.get('get_pool_address', [

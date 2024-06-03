@@ -1,9 +1,31 @@
 cell pack_pool_data(slice dex_router_wallet_0, slice dex_router_wallet_1, cell lp_jetton_content) inline {
 
+    slice main_wallet = address_none();
+    slice other_wallet = address_none();
+
+    if (equal_slices_bits(dex_router_wallet_0, address_none())) {
+        main_wallet = dex_router_wallet_0;
+        other_wallet = dex_router_wallet_1;
+    } 
+    elseif (equal_slices_bits(dex_router_wallet_1, address_none())) {
+        main_wallet = dex_router_wallet_1;
+        other_wallet = dex_router_wallet_0;
+    } 
+    else {
+        if (dex_router_wallet_0.slice_hash() > dex_router_wallet_1.slice_hash()) {
+            main_wallet = dex_router_wallet_0;
+            other_wallet = dex_router_wallet_1;
+        }
+        else {
+            main_wallet = dex_router_wallet_1;
+            other_wallet = dex_router_wallet_0;
+        }
+    }
+
     cell init_data = begin_cell()
         .store_slice(my_address())
-        .store_slice(dex_router_wallet_0)
-        .store_slice(dex_router_wallet_1)
+        .store_slice(main_wallet)
+        .store_slice(other_wallet)
     .end_cell();
 
     return begin_cell()
