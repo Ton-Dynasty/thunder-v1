@@ -2,7 +2,7 @@
 (slice, int) simulate::deposit(
     int asset0_amount,
     int asset1_amount,
-    slice lp_receiver
+    slice lp_recipient
 ) inline {
     int product = asset0_amount * asset1_amount;
 
@@ -13,7 +13,7 @@
     if(pool::lp_total_supply == 0) {
         ;; first deposit: lp amount = sqrt(asset0_amount * asset1_amount)
         lp_amount = math::sqrt(product) / const::required_min_liquidity;
-        lp_receiver = address_none(); ;; Lock the initial liquidity, so it will be impossible to fully drain the pool.
+        lp_recipient = address_none(); ;; Lock the initial liquidity, so it will be impossible to fully drain the pool.
     }
     else {
         int to_mint0 = muldiv(asset0_amount, pool::lp_total_supply, pool::reserve0);
@@ -24,7 +24,7 @@
     pool::reserve1 += asset1_amount;
     pool::lp_total_supply += lp_amount;
 
-    return (lp_receiver, lp_amount);
+    return (lp_recipient, lp_amount);
 }
 
 (int, int) simulate::get_amount_out(int asset_in_index, int amount_in) inline {
@@ -64,14 +64,14 @@
     deploy(BOUNCEABLE, to_wallet_address, send_ton, body.end_cell(), state_init, SEND_MODE_REGULAR);
 }
 
-cell pack_payout_from_pool(int query_id, slice sender, slice receipient, int asset_out, int amount_out, cell payload) inline {
+cell pack_payout_from_pool(int query_id, slice sender, slice recipient, int asset_out, int amount_out, cell payload) inline {
     var data = begin_cell()
         .store_op(op::payout_from_pool)
         .store_query_id(query_id)
-        .store_slice(receipient)
+        .store_slice(recipient)
         .store_coins(asset_out)
         .store_coins(amount_out)
-        .store_slice(receipient)
+        .store_slice(recipient)
         .store_maybe_ref(payload)
         .end_cell();
 

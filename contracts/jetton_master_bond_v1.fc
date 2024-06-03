@@ -133,13 +133,13 @@
     master::fee += fee;
 
     ;; If user didn't provide response address to receive ton, then send to from_address
-    slice receiver = from_address;
+    slice recipient = from_address;
     if (~ is_address_none(response_address)) {
-        receiver = response_address;
+        recipient = response_address;
     }
 
     ;; Transfer tons (from selling meme tokens) to user
-    transfer_ton(query_id, NON_BOUNCEABLE, receiver, amount_out + send_ton, SEND_MODE_REGULAR);
+    transfer_ton(query_id, NON_BOUNCEABLE, recipient, amount_out + send_ton, SEND_MODE_REGULAR);
 
     master::save_data();
     return ();

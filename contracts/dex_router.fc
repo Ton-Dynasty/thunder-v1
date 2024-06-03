@@ -2,6 +2,7 @@
 #include "common/workchain.fc";
 #include "common/opcodes.fc";
 #include "common/utils.fc";
+#include "pool/opcodes.fc";
 #include "dex_router/storages.fc";
 #include "dex_router/opcodes.fc";
 #include "dex_router/utils.fc";
@@ -15,7 +16,7 @@
     int asset0_amount, 
     int asset1_amount, 
     int min_lp_amount, 
-    slice lp_receiver, 
+    slice lp_recipient, 
     cell fulfill_payload, 
     cell reject_payload
 ) impure inline {
@@ -24,12 +25,12 @@
         asset0_amount, 
         asset1_amount, 
         min_lp_amount, 
-        lp_receiver, 
+        lp_recipient, 
         fulfill_payload, 
         reject_payload
     );
 
-    ;; Calculate receiver's wallet address
+    ;; Calculate recipient's wallet address
     cell state_init = calculate_pool_state_init(jetton_master_address);
     slice pool_address = calculate_address(state_init);
 
@@ -46,6 +47,7 @@
     int ton_amount,
     slice master_address
 ) impure inline {
+    ;; TODO: check if sender is jetton master bond
     (int total_fees, int gas_consumptoin) = cal_deploy_pool_fee(ctx::fwd_fee, 1);
     throw_unless(error::not_enough_ton, BUILD_POOL_GAS_FEE > total_fees);
     int send_ton = BUILD_POOL_GAS_FEE - gas_consumptoin;
@@ -56,7 +58,7 @@
         ton_amount, 
         jetton_amount, 
         0, 
-        dex_router::owner_address, ;; lp receiver but this is first time add liqudity so there will be no LP token
+        dex_router::owner_address, ;; lp recipient but this is first time add liqudity so there will be no LP token
         null(), ;; fulfill_payload
         null() ;; reject_payload
     );
@@ -102,7 +104,7 @@
         reject_payload
     );
 
-    ;; Calculate receiver's wallet address
+    ;; Calculate recipient's wallet address
     cell state_init = calculate_pool_state_init(master_address);
     slice pool_address = calculate_address(state_init);
     send_bounceable_msg(pool_address, send_ton, deposit_asset_payload, SEND_MODE_REGULAR);
@@ -143,7 +145,7 @@
         reject_payload
     );
 
-    ;; Calculate receiver's wallet address
+    ;; Calculate recipient's wallet address
     cell state_init = calculate_pool_state_init(master_address);
     slice pool_address = calculate_address(state_init);
     send_bounceable_msg(pool_address, send_ton, swap_jetton_payload, SEND_MODE_REGULAR);
@@ -271,6 +273,11 @@
         return ();
     }
 
+    if(op == op::payout_from_pool) {
+        
+        return ();
+    }
+
     if (op == op::top_up) {
         return ();
     }
@@ -296,7 +303,7 @@
 ;; ===== Getter =====
 (slice) get_pool_address(slice jetton_master_address) method_id {
     dex_router::load_data();
-    ;; Calculate receiver's wallet address
+    ;; Calculate recipient's wallet address
     cell state_init = calculate_pool_state_init(jetton_master_address);
     slice pool_address = calculate_address(state_init);
     return pool_address;
