@@ -48,7 +48,7 @@
     }
 
     mint_lp(query_id, lp_recipient, lp_amount, send_ton, fulfill_payload);
-    pool::save_data();0xf8a7ea5
+    pool::save_data();
     return ();
 }
 
