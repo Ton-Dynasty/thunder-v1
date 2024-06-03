@@ -146,7 +146,6 @@
         op = forward_payload~load_op(); ;; op MUST be the first 32 bits of the payload in this case
 
         if (op == op::withdraw) {
-            int lp_amount = ctx::body~load_coins();
             int asset0_min_amount = ctx::body~load_coins();
             int asset1_min_amount = ctx::body~load_coins();
             slice recipient = ctx::body~load_msg_addr();
@@ -157,7 +156,7 @@
                 ctx::sender,
                 ctx::value,
                 ctx::fwd_fee,
-                lp_amount,
+                jetton_amount,
                 asset0_min_amount,
                 asset1_min_amount,
                 recipient,

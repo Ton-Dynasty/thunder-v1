@@ -67,9 +67,9 @@
 cell pack_payout_from_pool(int query_id, slice sender, slice recipient, int asset_out, int amount_out, cell payload) inline {
     slice asset_address = address_none();
     if (asset_out == 0) {
-        asset_address = pool::asset0;
+        asset_address = pool::asset0_wallet_address;
     } else {
-        asset_address = pool::asset1;
+        asset_address = pool::asset1_wallet_address;
     }
     var data = begin_cell()
         .store_op(op::payout_from_pool)

@@ -1,7 +1,7 @@
 global slice pool::admin_address;
 global slice pool::dex_router;
-global slice pool::asset0;
-global slice pool::asset1;
+global slice pool::asset0_wallet_address;
+global slice pool::asset1_wallet_address;
 global int pool::reserve0;
 global int pool::reserve1;
 global cell pool::lp_jetton_wallet_code;
@@ -21,8 +21,8 @@ global int pool::swap_fee;
 
     slice init_data_slice = ds~load_ref().begin_parse();
     pool::dex_router = init_data_slice~load_msg_addr();
-    pool::asset0 = init_data_slice~load_msg_addr();
-    pool::asset1 = init_data_slice~load_msg_addr();
+    pool::asset0_wallet_address = init_data_slice~load_msg_addr();
+    pool::asset1_wallet_address = init_data_slice~load_msg_addr();
 
     pool::lp_jetton_wallet_code = ds~load_ref();
     pool::lp_jetton_content = ds~load_ref();
@@ -31,8 +31,8 @@ global int pool::swap_fee;
 () pool::save_data() impure inline_ref {
     cell init_data = begin_cell()
         .store_slice(pool::dex_router)
-        .store_slice(pool::asset0)
-        .store_slice(pool::asset1)
+        .store_slice(pool::asset0_wallet_address)
+        .store_slice(pool::asset1_wallet_address)
     .end_cell();
 
     set_data(
