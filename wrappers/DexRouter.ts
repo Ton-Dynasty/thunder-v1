@@ -40,6 +40,20 @@ export type SwapJettonFP = {
     rejectPayload: Maybe<Cell>;
 };
 
+export type SwapTon = {
+    $$type: 'SwapTon';
+    queryId: bigint;
+    otherAssetWallet: Maybe<Address>;
+    tonAmount: bigint;
+    minAmountOut: bigint;
+    deadline: bigint;
+    recipient: Maybe<Address>;
+    next: Maybe<Cell>;
+    extraPayload: Maybe<Cell>;
+    fulfillPayload: Maybe<Cell>;
+    rejectPayload: Maybe<Cell>;
+};
+
 export type JettonTransferPool = {
     $$type: 'JettonTransfer';
     queryId: bigint;
@@ -55,6 +69,7 @@ export const DexRouterOpcode = {
     TopUp: 0xd372158c,
     AddLiquidity: 0x3ebe5431,
     SwapJetton: 0x2d709ea7,
+    SwapTon: 0xdcb17fc0,
 };
 
 export function dexRouterConfigToCell(config: DexRouterConfig): Cell {
@@ -92,6 +107,22 @@ export function storeSwapJettonFP(value: SwapJettonFP) {
     };
 }
 
+export function storeSwapTon(value: SwapTon) {
+    return (b: Builder) => {
+        b.storeUint(DexRouterOpcode.SwapTon, 32);
+        b.storeUint(value.queryId, 64);
+        b.storeAddress(value.otherAssetWallet);
+        b.storeCoins(value.tonAmount);
+        b.storeCoins(value.minAmountOut);
+        b.storeUint(value.deadline, 64);
+        b.storeAddress(value.recipient);
+        b.storeMaybeRef(value.next);
+        b.storeMaybeRef(value.extraPayload);
+        b.storeMaybeRef(value.fulfillPayload);
+        b.storeMaybeRef(value.rejectPayload);
+    };
+}
+
 export class DexRouter implements Contract {
     constructor(
         readonly address: Address,
@@ -115,6 +146,10 @@ export class DexRouter implements Contract {
 
     static packSwapJettonFP(src: SwapJettonFP) {
         return beginCell().store(storeSwapJettonFP(src)).endCell();
+    }
+
+    static packSwapTon(src: SwapTon) {
+        return beginCell().store(storeSwapTon(src)).endCell();
     }
 
     static packJettonTransfer(src: JettonTransferPool) {

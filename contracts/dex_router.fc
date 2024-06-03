@@ -148,7 +148,7 @@
     cell fulfill_payload,
     cell reject_payload
 ) impure inline {
-    int send_ton = ctx::value - ton_amount - GAS_CONSUMPTION;
+    int send_ton = ctx::value - GAS_CONSUMPTION;
 
     cell swap_ton_payload = pack_swap_internal(
         query_id,

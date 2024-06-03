@@ -114,6 +114,43 @@ describe('PoolV1', () => {
         });
     };
 
+    const swapTon = async (
+        buyer: SandboxContract<TreasuryContract>,
+        dexRouter: SandboxContract<DexRouter>,
+        otherAssetWallet: Maybe<Address> = null,
+        tonAmount: bigint = toNano('10'),
+        minAmountOut: bigint = 0n,
+        deadline: bigint = BigInt(Math.floor(Date.now() / 1000 + 60)),
+        recipient: Maybe<Address> = null,
+        next: Maybe<Cell> = null,
+        extraPayload: Maybe<Cell> = null,
+        fulfillPayload: Maybe<Cell> = null,
+        rejectPayload: Maybe<Cell> = null,
+        queryId: bigint = 999n,
+    ) => {
+        const message = DexRouter.packSwapTon({
+            $$type: 'SwapTon',
+            queryId: queryId,
+            otherAssetWallet: otherAssetWallet,
+            tonAmount: tonAmount,
+            minAmountOut: minAmountOut,
+            deadline: deadline,
+            recipient: recipient,
+            next: next,
+            extraPayload: extraPayload,
+            fulfillPayload: fulfillPayload,
+            rejectPayload: rejectPayload,
+        });
+
+        return buyer.send({
+            to: dexRouter.address,
+            value: toNano('1') * 2n,
+            bounce: true,
+            body: message,
+            sendMode: 1,
+        });
+    };
+
     beforeAll(async () => {
         poolV1Code = await compile(PoolV1.name);
         jettonWalletCode = await compile(JettonWallet.name);
@@ -329,4 +366,21 @@ describe('PoolV1', () => {
         );
         printTransactionFees(result.transactions);
     });
+
+    // it('should swap ton to jetton', async () => {
+    //     const sendTonAmount = toNano('10');
+    //     const minAmountOut = 0n;
+    //     const deadline = BigInt(Math.floor(Date.now() / 1000 + 60));
+
+    //     // get buyer's Jetton wallet balance before
+    //     let buyerJettonWalletAddress = await jettonMasterBondV1.getWalletAddress(buyer.address);
+    //     let dexRouterWalletAddress = await jettonMasterBondV1.getWalletAddress(dexRouter.address);
+    //     let buyerJettonWallet = blockchain.openContract(JettonWallet.createFromAddress(buyerJettonWalletAddress));
+    //     let buyerJettonWalletBalanceBefore = await buyerJettonWallet.getJettonBalance();
+
+    //     const result = await swapTon(buyer, dexRouter, jettonMasterBondV1.address, sendTonAmount, minAmountOut, deadline);
+
+    //     printTransactionFees(result.transactions);
+
+    // });
 });
