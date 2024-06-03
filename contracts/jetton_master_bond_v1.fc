@@ -22,7 +22,15 @@
     ;; TODO: We should use this extra_jetton to do something, but for now we substract it in total supply
     master::total_supply -= extra_jetton;
 
-    cell add_liquidity_payload = begin_cell().store_uint(op::create_pool ,32).store_coins(send_ton_liquidity).store_slice(my_address()).end_cell();
+    cell add_liquidity_payload = begin_cell()
+        .store_uint(op::add_liquidity ,32)
+        .store_coins(send_ton_liquidity) ;; other asset amount
+        .store_slice(address_none()) ;; other asset wallet
+        .store_coins(0) ;; min_lp_amount
+        .store_slice(my_address()) ;; lp_receiver
+        .store_maybe_ref(null()) ;; fulfill payload
+        .store_maybe_ref(null()) ;; reject payload
+        .end_cell();
     send_ton_liquidity += BUILD_POOL_GAS_FEE; ;; build_pool_fee is for building pool and farm and is paid by thunder fi in line 16
     int ton_to_dex_router = send_ton_liquidity + fee_for_admin; ;; fee_for_admin will be transfer in excess msg. 
 

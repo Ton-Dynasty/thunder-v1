@@ -74,14 +74,19 @@
     int ctx::fwd_fee,
     int jetton_amount,
     slice jetton_sender,
-    int ton_amount,
+    slice other_asset_wallet,
+    int other_asset_amount,
     int min_lp_amount,
-    slice master_address,
     slice recipient,
     cell fulfill_payload,
     cell reject_payload
 ) impure inline {
-    (int total_fees, int gas_consumptoin) = cal_deploy_pool_fee(ctx::fwd_fee, 0);
+    int ton_amount = 0;
+    if(equal_slices_bits(address_none(), other_asset_wallet)) {
+        ton_amount = other_asset_amount;
+    }
+
+    (int total_fees, int gas_consumptoin) = cal_deploy_pool_fee(ctx::fwd_fee, 1);
     if(ctx::value < total_fees + ton_amount) {
         ;; When this happens, dex router will take gas_consumption / 2 from the jetton sender
         transfer_jetton(BOUNCEABLE, ctx::sender, jetton_sender, jetton_amount, ctx::value - gas_consumptoin / 2, query_id, FORWARD_FEE, reject_payload, SEND_MODE_REGULAR);
@@ -94,7 +99,7 @@
     }
 
     (slice pool_address, cell deposit_asset_payload, cell state_init) = internal::deposit_asset(
-        master_address,
+        other_asset_wallet,
         query_id, 
         ton_amount, 
         jetton_amount, 
@@ -105,7 +110,7 @@
     );
 
     ;; Calculate recipient's wallet address
-    cell state_init = calculate_pool_state_init(master_address);
+    cell state_init = calculate_pool_state_init(other_asset_wallet);
     slice pool_address = calculate_address(state_init);
     send_bounceable_msg(pool_address, send_ton, deposit_asset_payload, SEND_MODE_REGULAR);
 
@@ -250,38 +255,24 @@
 
         op = forward_payload~load_op(); ;; op MUST be the first 32 bits of the payload in this case
 
-        if(op == op::create_pool) {
-            int ton_amount = forward_payload~load_coins();
-            slice master_address = forward_payload~load_msg_addr();
-            return handle::create_pool(
-                query_id,
-                ctx::sender,  
-                ctx::fwd_fee,
-                jetton_amount,
-                jetton_sender,
-                ton_amount,
-                master_address
-            );
-        }
-
         if(op == op::add_liquidity) {
-            int ton_amount = forward_payload~load_coins();
+            int other_asset_amount = forward_payload~load_coins();
+            slice other_asset_wallet = forward_payload~load_msg_addr();
             int min_lp_amount = forward_payload~load_coins();
-            slice master_address = forward_payload~load_msg_addr();
             slice recipient = forward_payload~load_msg_addr();
             cell fulfill_payload = forward_payload~load_maybe_ref();
             cell reject_payload = forward_payload~load_maybe_ref();
 
             return handle::add_liquidity(
                 query_id,
-                ctx::sender,  
+                ctx::sender,   ;; dex router wallet address
                 ctx::value,
                 ctx::fwd_fee,
                 jetton_amount,
                 jetton_sender,
-                ton_amount,
+                other_asset_wallet,
+                other_asset_amount,
                 min_lp_amount,
-                master_address,
                 recipient,
                 fulfill_payload,
                 reject_payload
