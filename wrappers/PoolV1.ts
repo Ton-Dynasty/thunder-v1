@@ -10,6 +10,7 @@ import {
     SendMode,
 } from '@ton/core';
 import { Maybe } from '@ton/core/dist/utils/maybe';
+import { SwapTon } from './DexRouter';
 
 export type PoolV1Config = {
     adminAddress: Address;
@@ -52,7 +53,9 @@ export const PoolOpcodes = {
     Excess: 0xd53276db,
     JettonNotification: 0x7362d09c,
     Transfer: 0xf8a7ea5,
+    SwapInternal: 0xfcb1be1e,
     PayoutFromPool: 0x23a14fb2,
+    SwapTon: 0xdcb17fc0,
 };
 
 export type Deposit = {
