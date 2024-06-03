@@ -126,6 +126,8 @@
     msg_body = pack_payout_from_pool(query_id, ctx::sender, recipient, 1, asset1_amount, fulfill_payload);
     send_bounceable_msg(pool::dex_router, send_ton , msg_body, SEND_MODE_REGULAR);
 
+    ;; TODO: burn lp token
+
     pool::save_data();
     return ();
 }
