@@ -129,7 +129,8 @@
         reject_payload
     );
 
-    slice pool_address = calculate_address(calculate_pool_state_init(ctx::sender, other_asset_wallet));
+    (slice asset_0_wallet, slice asset_1_wallet, _, _) = cal_order(ctx::sender, other_asset_wallet, jetton_amount, 0);
+    slice pool_address = calculate_address(calculate_pool_state_init(asset_0_wallet, asset_1_wallet));
     send_bounceable_msg(pool_address, send_ton, swap_jetton_payload, SEND_MODE_REGULAR);
     return ();
 }
@@ -176,12 +177,18 @@
     int ctx::value,
     int ctx::fwd_fee,
     slice sender,
-    slice asset_address,
+    slice target_wallet_address,
+    slice other_wallet_address,
     int amount_out,
     slice recipient,
     cell payload
 ) impure inline {
-    if (is_address_none(asset_address)){
+    (slice asset_0_wallet, slice asset_1_wallet, _, _) = cal_order(other_wallet_address, target_wallet_address, 0, 0);
+    slice pool_address = calculate_address(calculate_pool_state_init(asset_0_wallet, asset_1_wallet));
+    ;; check if ctx::sender is the pool address
+    throw_unless(error::invalid_sender, equal_slices_bits(pool_address, ctx::sender));
+
+    if (is_address_none(target_wallet_address)){
         transfer_ton(
             BOUNCEABLE, 
             query_id,
@@ -196,7 +203,7 @@
     int send_ton = ctx::value - forward_ton - GAS_CONSUMPTION;
     transfer_jetton(
         BOUNCEABLE, 
-        asset_address, 
+        target_wallet_address, 
         recipient, 
         amount_out, 
         send_ton, 
@@ -303,7 +310,8 @@
 
     if(op == op::payout_from_pool) {
         slice sender = ctx::body~load_msg_addr();
-        slice asset_address = ctx::body~load_msg_addr();
+        slice target_wallet_address = ctx::body~load_msg_addr();
+        slice other_wallet_address = ctx::body~load_msg_addr();
         int amount_out = ctx::body~load_coins();
         slice recipient = ctx::body~load_msg_addr();
         cell payload = ctx::body~load_maybe_ref();
@@ -313,7 +321,8 @@
             ctx::value,
             ctx::fwd_fee,
             sender,
-            asset_address,
+            target_wallet_address,
+            other_wallet_address,
             amount_out,
             recipient,
             payload

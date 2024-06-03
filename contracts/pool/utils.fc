@@ -65,21 +65,26 @@
 }
 
 cell pack_payout_from_pool(int query_id, slice sender, slice recipient, int asset_out, int amount_out, cell payload) inline {
-    slice asset_address = address_none();
+    slice target_wallet_address = address_none();
+    slice other_wallet_address = address_none();
     if (asset_out == 0) {
-        asset_address = pool::asset0_wallet_address;
+        target_wallet_address = pool::asset0_wallet_address;
+        other_wallet_address = pool::asset1_wallet_address;
     } else {
-        asset_address = pool::asset1_wallet_address;
+        target_wallet_address = pool::asset1_wallet_address;
+        other_wallet_address = pool::asset0_wallet_address;
     }
-    var data = begin_cell()
-        .store_op(op::payout_from_pool)
-        .store_query_id(query_id)
-        .store_slice(sender)
-        .store_slice(asset_address)
-        .store_coins(amount_out)
-        .store_slice(recipient)
-        .store_maybe_ref(payload)
-        .end_cell();
+
+    cell data = begin_cell()
+    .store_op(op::payout_from_pool)
+    .store_query_id(query_id)
+    .store_slice(sender)
+    .store_slice(target_wallet_address)
+    .store_slice(other_wallet_address)
+    .store_coins(amount_out)
+    .store_slice(recipient)
+    .store_maybe_ref(payload)
+    .end_cell();
 
     return data;
 }
