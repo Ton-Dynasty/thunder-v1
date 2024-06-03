@@ -2,6 +2,7 @@
 #include "common/workchain.fc";
 #include "common/opcodes.fc";
 #include "common/utils.fc";
+#include "pool/opcodes.fc";
 #include "dex_router/storages.fc";
 #include "dex_router/opcodes.fc";
 #include "dex_router/utils.fc";
@@ -269,6 +270,10 @@
     }
 
     if(op == op::swap_ton) {
+        return ();
+    }
+
+    if(op == op::payout_from_pool) {
         return ();
     }
 

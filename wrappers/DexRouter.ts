@@ -19,12 +19,25 @@ export type DexRouterConfig = {
 
 export type AddLiquidityFP = {
     $$type: 'AddLiquidityFP';
-    ton_amount: bigint;
+    tonAmount: bigint;
     minLpAmount: bigint;
-    master_address: Address;
+    masterAddress: Address;
     recipient: Maybe<Address>;
-    fulfill_payload: Maybe<Cell>;
-    reject_payload: Maybe<Cell>;
+    fulfillPayload: Maybe<Cell>;
+    rejectPayload: Maybe<Cell>;
+};
+
+export type SwapJettonFP = {
+    $$type: 'SwapJettonFP';
+    masterAddress: Address;
+    assetIn: bigint;
+    minAmountOut: bigint;
+    deadline: bigint;
+    recipient: Maybe<Address>;
+    next: Maybe<Cell>;
+    extraPayload: Maybe<Cell>;
+    fulfillPayload: Maybe<Cell>;
+    rejectPayload: Maybe<Cell>;
 };
 
 export type JettonTransferPool = {
@@ -35,12 +48,13 @@ export type JettonTransferPool = {
     responseAddress: Maybe<Address>;
     customPayload: Maybe<Cell>;
     forwardTonAmount: bigint;
-    forwardPayload: Maybe<AddLiquidityFP>;
+    forwardPayload: Maybe<AddLiquidityFP | SwapJettonFP>;
 };
 
 export const DexRouterOpcode = {
     TopUp: 0xd372158c,
     AddLiquidity: 0x3ebe5431,
+    SwapJetton: 0x2d709ea7,
 };
 
 export function dexRouterConfigToCell(config: DexRouterConfig): Cell {
@@ -54,12 +68,27 @@ export function dexRouterConfigToCell(config: DexRouterConfig): Cell {
 export function storeAddLiquidityFP(value: AddLiquidityFP) {
     return (b: Builder) => {
         b.storeUint(DexRouterOpcode.AddLiquidity, 32);
-        b.storeCoins(value.ton_amount);
+        b.storeCoins(value.tonAmount);
         b.storeCoins(value.minLpAmount);
-        b.storeAddress(value.master_address);
+        b.storeAddress(value.masterAddress);
         b.storeAddress(value.recipient);
-        b.storeMaybeRef(value.fulfill_payload);
-        b.storeMaybeRef(value.reject_payload);
+        b.storeMaybeRef(value.fulfillPayload);
+        b.storeMaybeRef(value.rejectPayload);
+    };
+}
+
+export function storeSwapJettonFP(value: SwapJettonFP) {
+    return (b: Builder) => {
+        b.storeUint(DexRouterOpcode.SwapJetton, 32);
+        b.storeAddress(value.masterAddress);
+        b.storeUint(value.assetIn, 1);
+        b.storeCoins(value.minAmountOut);
+        b.storeUint(value.deadline, 64);
+        b.storeAddress(value.recipient);
+        b.storeMaybeRef(value.next);
+        b.storeMaybeRef(value.extraPayload);
+        b.storeMaybeRef(value.fulfillPayload);
+        b.storeMaybeRef(value.rejectPayload);
     };
 }
 
@@ -84,6 +113,10 @@ export class DexRouter implements Contract {
         return beginCell().store(storeAddLiquidityFP(src)).endCell();
     }
 
+    static packSwapJettonFP(src: SwapJettonFP) {
+        return beginCell().store(storeSwapJettonFP(src)).endCell();
+    }
+
     static packJettonTransfer(src: JettonTransferPool) {
         let c = null;
 
@@ -93,6 +126,13 @@ export class DexRouter implements Contract {
             src.forwardPayload.$$type === 'AddLiquidityFP'
         ) {
             c = DexRouter.packAddLiquidityFP(src.forwardPayload);
+        }
+        if (
+            src.forwardPayload &&
+            typeof src.forwardPayload === 'object' &&
+            src.forwardPayload.$$type === 'SwapJettonFP'
+        ) {
+            c = DexRouter.packSwapJettonFP(src.forwardPayload);
         }
         return beginCell()
             .storeUint(0xf8a7ea5, 32)

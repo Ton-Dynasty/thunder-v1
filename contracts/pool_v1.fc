@@ -59,7 +59,7 @@
     cell extra_payload,
     cell fulfill_payload,
     cell reject_payload
-) {
+) impure inline {
     throw_unless(error::invalid_sender, equal_slices(ctx::sender, pool::dex_router));
     int send_ton = ctx::value - gas::gas_consumption;
     if ((deadline == 0) | (now() > deadline)) {
@@ -94,7 +94,6 @@
         asset_out = 0;
     }
 
-
     cell msg_body = pack_payout_from_pool(query_id, sender, recipient, asset_out, amount_out, fulfill_payload);
     send_bounceable_msg(pool::dex_router, send_ton , msg_body, SEND_MODE_REGULAR);
 
@@ -113,7 +112,7 @@
     slice recipient,
     cell fulfill_payload,
     cell reject_payload
-) {
+) impure inline {
     int send_ton = ctx::value - gas::gas_consumption;
     (int asset0_amount, int asset1_amount) = simulate::withdraw(lp_amount);
 

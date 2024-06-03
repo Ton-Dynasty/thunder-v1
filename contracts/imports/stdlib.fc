@@ -29,7 +29,7 @@
 {-
   # Lisp-style lists
 
-  Lists can be represented as nested 2-elements tuples.
+  Lists can be represented as nexted 2-elements tuples.
   Empty list is conventionally represented as TVM `null` value (it can be obtained by calling [null()]).
   For example, tuple `(1, (2, (3, null)))` represents list `[1, 2, 3]`. Elements of a list can be of different types.
 -}
