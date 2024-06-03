@@ -113,6 +113,7 @@
     slice ctx::sender,
     int ctx::value,
     int ctx::fwd_fee,
+    slice jetton_sender,
     int lp_amount,
     int asset0_min_amount,
     int asset1_min_amount,
@@ -120,6 +121,13 @@
     cell fulfill_payload,
     cell reject_payload
 ) impure inline {
+    if(is_address_none(recipient)) {
+        recipient = jetton_sender;
+    }
+
+    slice pool_jetton_wallet = calculate_jetton_wallet_address(calculate_jetton_wallet_state_init(my_address(),my_address(),pool::lp_jetton_wallet_code));
+    throw_unless(error::invalid_sender, equal_slices(ctx::sender, pool_jetton_wallet));
+
     int send_ton = ctx::value - gas::gas_consumption;
     (int asset0_amount, int asset1_amount) = simulate::withdraw(lp_amount);
 
@@ -127,15 +135,16 @@
     throw_unless(error::insufficient_out_amount, asset0_amount >= asset0_min_amount);
     throw_unless(error::insufficient_out_amount, asset1_amount >= asset1_min_amount);
 
-    cell msg_body = pack_payout_from_pool(query_id, ctx::sender, recipient, 0, asset0_amount, fulfill_payload);
-    send_bounceable_msg(pool::dex_router, send_ton , msg_body, SEND_MODE_REGULAR);
+    cell msg_body = pack_payout_from_pool(query_id, jetton_sender, recipient, 0, asset0_amount, fulfill_payload);
+    send_bounceable_msg(pool::dex_router, send_ton / 2 , msg_body, SEND_MODE_REGULAR);
 
-    msg_body = pack_payout_from_pool(query_id, ctx::sender, recipient, 1, asset1_amount, fulfill_payload);
-    send_bounceable_msg(pool::dex_router, send_ton , msg_body, SEND_MODE_REGULAR);
+    msg_body = pack_payout_from_pool(query_id, jetton_sender, recipient, 1, asset1_amount, fulfill_payload);
+    send_bounceable_msg(pool::dex_router, send_ton / 2 , msg_body, SEND_MODE_REGULAR);
 
     ;; TODO: burn lp token
 
     pool::save_data();
+    ~strdump("Done");
     return ();
 }
 
@@ -155,16 +164,18 @@
         op = forward_payload~load_op(); ;; op MUST be the first 32 bits of the payload in this case
 
         if (op == op::withdraw) {
-            int asset0_min_amount = ctx::body~load_coins();
-            int asset1_min_amount = ctx::body~load_coins();
-            slice recipient = ctx::body~load_msg_addr();
-            cell fulfill_payload = ctx::body~load_maybe_ref();
-            cell reject_payload = ctx::body~load_maybe_ref();
+            int asset0_min_amount = forward_payload~load_coins();
+            int asset1_min_amount = forward_payload~load_coins();
+            slice recipient = forward_payload~load_msg_addr();
+            cell fulfill_payload = forward_payload~load_maybe_ref();
+            cell reject_payload = forward_payload~load_maybe_ref();
+            ~strdump("load data success");
             return handle::withdraw(
                 query_id,
                 ctx::sender,
                 ctx::value,
                 ctx::fwd_fee,
+                jetton_sender,
                 jetton_amount,
                 asset0_min_amount,
                 asset1_min_amount,
