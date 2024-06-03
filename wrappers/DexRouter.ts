@@ -158,11 +158,19 @@ export class DexRouter implements Contract {
 
     /* Getters */
 
-    async getPoolAddress(provider: ContractProvider, jettonMaster: Address): Promise<Address> {
+    async getPoolAddress(
+        provider: ContractProvider,
+        assetWallet0: Address,
+        assetWallet1: Address | null,
+    ): Promise<Address> {
         const poolAddress = await provider.get('get_pool_address', [
             {
                 type: 'slice',
-                cell: beginCell().storeAddress(jettonMaster).endCell(),
+                cell: beginCell().storeAddress(assetWallet0).endCell(),
+            },
+            {
+                type: 'slice',
+                cell: beginCell().storeAddress(assetWallet1).endCell(),
             },
         ]);
         return poolAddress.stack.readAddress();

@@ -354,7 +354,8 @@ describe('JettonMasterBondV1 general testcases', () => {
         let onMoon = (await jettonMasterBondV1.getMasterData()).onMoon;
         expect(onMoon).toEqual(-1n);
 
-        let poolAddress = await dexRouter.getPoolAddress(jettonMasterBondV1.address);
+        let dexRouterMemeWallet = await userWallet(dexRouter.address, jettonMasterBondV1);
+        let poolAddress = await dexRouter.getPoolAddress(dexRouterMemeWallet.address, null);
         // Expect that Dex Router send deposit asset to Pool
         expect(toTheMoonResult.transactions).toHaveTransaction({
             op: MasterOpocde.DepositAsset,
@@ -407,7 +408,8 @@ describe('JettonMasterBondV1 general testcases', () => {
         expect(onMoon).toEqual(-1n);
 
         // Expect that Dex Router send deposit asset to Pool
-        let poolAddress = await dexRouter.getPoolAddress(jettonMasterBondV1.address);
+        let dexRouterMemeWallet = await userWallet(dexRouter.address, jettonMasterBondV1);
+        let poolAddress = await dexRouter.getPoolAddress(dexRouterMemeWallet.address, null);
         expect(toTheMoonResult.transactions).toHaveTransaction({
             op: MasterOpocde.DepositAsset,
             from: dexRouter.address,
