@@ -14,7 +14,7 @@ cell pack_pool_data(slice jetton_master_address, cell lp_jetton_content) inline 
             .store_coins(1) ;; admin_fees
             .store_coins(1) ;; swap_fees
             .store_ref(init_data)
-            .store_ref(dex_router::lp_wallet_code)
+            .store_ref(dex_router::jetton_wallet_code)
             .store_ref(lp_jetton_content)
         .end_cell();
 }
@@ -128,4 +128,22 @@ slice calculate_address(cell state_init) inline {
 	.end_cell();
 
     send_raw_message(msg, mode); 
+}
+
+() transfer_ton( ;; transfer TON with body
+    int bounce_flag,
+    slice recipient,
+    int value,
+    cell body,
+    int mode
+) impure inline_ref {
+    ~strdump("in transafer ton");
+    var msg = begin_cell()
+        .store_msg_flags_and_address_none(bounce_flag)
+        .store_slice(recipient)
+        .store_coins(value)
+        .store_only_body_ref(body);
+    ~strdump("send message");
+    
+    send_raw_message(msg.end_cell(), mode);
 }

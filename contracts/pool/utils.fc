@@ -65,11 +65,17 @@
 }
 
 cell pack_payout_from_pool(int query_id, slice sender, slice recipient, int asset_out, int amount_out, cell payload) inline {
+    slice asset_address = address_none();
+    if (asset_out == 0) {
+        asset_address = pool::asset0;
+    } else {
+        asset_address = pool::asset1;
+    }
     var data = begin_cell()
         .store_op(op::payout_from_pool)
         .store_query_id(query_id)
-        .store_slice(recipient)
-        .store_coins(asset_out)
+        .store_slice(sender)
+        .store_slice(asset_address)
         .store_coins(amount_out)
         .store_slice(recipient)
         .store_maybe_ref(payload)
