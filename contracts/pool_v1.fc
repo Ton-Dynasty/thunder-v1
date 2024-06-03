@@ -79,7 +79,7 @@
         recipient = sender;
     }
 
-    (int amount_out, int trade_fee) = simulate::get_amount_out(asset_in, amount_in);
+    (int amount_out, int trade_fee, int admin_fee) = simulate::get_amount_out(asset_in, amount_in);
 
     if(amount_out < min_amount_out) {
         cell msg_body = pack_payout_from_pool(query_id, sender, sender, asset_in, amount_in, reject_payload);
@@ -89,11 +89,13 @@
 
     int asset_out = 0;
     if (asset_in == 0) {
-        pool::reserve0 += amount_in;
+        pool::admin_fee0 += admin_fee;
+        pool::reserve0 += amount_in - admin_fee;
         pool::reserve1 -= amount_out;
         asset_out = 1;
     } else {
-        pool::reserve1 += amount_in;
+        pool::admin_fee1 += admin_fee;
+        pool::reserve1 += amount_in - admin_fee;
         pool::reserve0 -= amount_out;
         asset_out = 0;
     }

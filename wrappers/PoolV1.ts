@@ -19,6 +19,8 @@ export type PoolV1Config = {
     asset1: Address;
     reserve0: bigint;
     reserve1: bigint;
+    adminFee0: bigint;
+    adminFee1: bigint;
     lpTotalSupply: bigint;
     adminFee: bigint;
     swapFee: bigint;
@@ -33,14 +35,20 @@ export function poolV1ConfigToCell(config: PoolV1Config): Cell {
         .storeAddress(config.asset1)
         .endCell();
 
-    return beginCell()
-        .storeAddress(config.adminAddress)
+    let poolData = beginCell()
         .storeCoins(config.reserve0)
         .storeCoins(config.reserve1)
+        .storeCoins(config.adminFee0)
+        .storeCoins(config.adminFee1)
         .storeCoins(config.lpTotalSupply)
+        .endCell();
+
+    return beginCell()
+        .storeAddress(config.adminAddress)
         .storeCoins(config.adminFee)
         .storeCoins(config.swapFee)
         .storeRef(initData)
+        .storeRef(poolData)
         .storeRef(config.lpJettonWalletCode)
         .storeRef(config.lpJettonContent)
         .endCell();

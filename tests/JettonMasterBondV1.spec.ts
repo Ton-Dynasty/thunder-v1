@@ -403,6 +403,8 @@ describe('JettonMasterBondV1 general testcases', () => {
         const toTheMoonResult = await buyToken(jettonMasterBondV1, buyer, buyTontoMoon);
         let deployerTonBalanceAfter = await deployer.getBalance();
 
+        printTransactionFees(toTheMoonResult.transactions);
+
         // Epext that onMoon = 1n
         let onMoon = (await jettonMasterBondV1.getMasterData()).onMoon;
         expect(onMoon).toEqual(-1n);

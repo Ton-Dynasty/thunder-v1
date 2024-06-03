@@ -45,14 +45,20 @@ cell pack_pool_data(slice dex_router_wallet_0, slice dex_router_wallet_1, cell l
         .store_slice(dex_router_wallet_1)
     .end_cell();
 
+    cell pool_data = begin_cell()
+        .store_coins(0)
+        .store_coins(0)
+        .store_coins(0)
+        .store_coins(0)
+        .store_coins(0)
+    .end_cell();
+
     return begin_cell()
             .store_slice(dex_router::owner_address)
-            .store_coins(0) ;; reserve 0
-            .store_coins(0) ;; reserve 1
-            .store_coins(0) ;; total_supply
-            .store_coins(1) ;; admin_fees
-            .store_coins(1) ;; swap_fees
+            .store_coins(5000000000) ;; admin_fees (50%)
+            .store_coins(100000000) ;; swap_fees (1%)
             .store_ref(init_data)
+            .store_ref(pool_data)
             .store_ref(dex_router::jetton_wallet_code)
             .store_ref(lp_jetton_content)
         .end_cell();
