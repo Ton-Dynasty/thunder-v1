@@ -144,7 +144,6 @@
     ;; TODO: burn lp token
 
     pool::save_data();
-    ~strdump("Done");
     return ();
 }
 
@@ -169,7 +168,6 @@
             slice recipient = forward_payload~load_msg_addr();
             cell fulfill_payload = forward_payload~load_maybe_ref();
             cell reject_payload = forward_payload~load_maybe_ref();
-            ~strdump("load data success");
             return handle::withdraw(
                 query_id,
                 ctx::sender,

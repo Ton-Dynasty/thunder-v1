@@ -309,7 +309,6 @@
     }
 
     if(op == op::payout_from_pool) {
-        ~strdump("payout_from_pool");
         slice sender = ctx::body~load_msg_addr();
         slice target_wallet_address = ctx::body~load_msg_addr();
         slice other_wallet_address = ctx::body~load_msg_addr();
