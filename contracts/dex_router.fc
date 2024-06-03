@@ -11,6 +11,7 @@
 
 ;; ===== Internal =====
 (slice, cell, cell) internal::deposit_asset(
+    slice provider,
     slice main_wallet,
     slice other_asset_wallet,
     int send_ton,
@@ -25,6 +26,7 @@
 
     cell deposit_asset_payload = pack_deposit_asset_data(
         query_id, 
+        provider,
         asset0_amount, 
         asset1_amount, 
         min_lp_amount, 
@@ -59,7 +61,7 @@
     cell reject_payload
 ) impure inline {
     int ton_amount = 0;
-    if(equal_slices_bits(address_none(), other_asset_wallet)) {
+    if(is_address_none(other_asset_wallet)) {
         ton_amount = other_asset_amount;
     }
 
@@ -78,6 +80,7 @@
     (slice asset_0_wallet, slice asset_1_wallet, int asset_0_amount, int asset_1_amount) = cal_order(main_asset_wallet, other_asset_wallet, jetton_amount, other_asset_amount);
 
     (slice pool_address, cell deposit_asset_payload, cell state_init) = internal::deposit_asset(
+        jetton_sender,
         asset_0_wallet,
         asset_1_wallet,
         send_ton,
@@ -189,18 +192,11 @@
         );
         return ();
     }
-    int send_ton = ctx::value - FORWARD_FEE - GAS_CONSUMPTION;
-    int forward_ton = FORWARD_FEE;
-    slice dex_router_jetton_wallet = calculate_jetton_wallet_address(
-        calculate_jetton_wallet_state_init(
-            my_address(), 
-            asset_address, 
-            dex_router::jetton_wallet_code
-        )
-    );
+    int forward_ton = cell_null?(payload) ? 0 : FORWARD_FEE;
+    int send_ton = ctx::value - forward_ton - GAS_CONSUMPTION;
     transfer_jetton(
         BOUNCEABLE, 
-        dex_router_jetton_wallet, 
+        asset_address, 
         recipient, 
         amount_out, 
         send_ton, 
