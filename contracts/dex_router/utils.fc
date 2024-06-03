@@ -155,18 +155,23 @@ slice calculate_address(cell state_init) inline {
 
 () transfer_ton( ;; transfer TON with body
     int bounce_flag,
+    int query_id,
     slice recipient,
     int value,
     cell body,
     int mode
 ) impure inline_ref {
-    ~strdump("in transafer ton");
+    if (body.cell_null?()) {
+        body = begin_cell()
+        .store_op(op::excesses)
+        .store_query_id(query_id)
+        .end_cell();
+    };
     var msg = begin_cell()
         .store_msg_flags_and_address_none(bounce_flag)
         .store_slice(recipient)
         .store_coins(value)
         .store_only_body_ref(body);
-    ~strdump("send message");
     
     send_raw_message(msg.end_cell(), mode);
 }

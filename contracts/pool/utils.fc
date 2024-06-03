@@ -31,10 +31,10 @@
     int trade_fee = amount_in * pool::swap_fee / const::fee_precision;
     int amount_in_after_fee = amount_in - trade_fee;
     if (asset_in_index == 0) {
-        int amount_out = pool::reserve1 - pool::reserve1 * pool::reserve0 / (pool::reserve0 + amount_in_after_fee);
+        int amount_out = pool::reserve1 - muldiv(pool::reserve0, pool::reserve1, (pool::reserve0 + amount_in_after_fee));
         return (amount_out, trade_fee);
     } else {
-        int amount_out = pool::reserve0 - pool::reserve0 * pool::reserve1 / (pool::reserve1 + amount_in_after_fee);
+        int amount_out = pool::reserve0 - muldiv(pool::reserve1, pool::reserve0, (pool::reserve1 + amount_in_after_fee));
         return (amount_out, trade_fee);
     }
 }

@@ -184,18 +184,14 @@
     cell payload
 ) impure inline {
     if (is_address_none(asset_address)){
-        ~strdump("swap out ton");
-        ;; TON transfer
-        ~dump(recipient);
-        ~dump(amount_out + ctx::value - GAS_CONSUMPTION);
-        ;; transfer_ton(
-        ;;     BOUNCEABLE, 
-        ;;     recipient, 
-        ;;     amount_out + ctx::value - GAS_CONSUMPTION,
-        ;;     payload, 
-        ;;     SEND_MODE_REGULAR
-        ;; );
-        ~strdump("swap out ton done");
+        transfer_ton(
+            BOUNCEABLE, 
+            query_id,
+            recipient, 
+            amount_out + ctx::value - GAS_CONSUMPTION,
+            payload, 
+            SEND_MODE_REGULAR
+        );
         return ();
     }
     int send_ton = ctx::value - FORWARD_FEE - GAS_CONSUMPTION;
