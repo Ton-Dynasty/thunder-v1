@@ -526,8 +526,8 @@ describe('PoolV1', () => {
 
         // get buyer's Ton balance after
         let buyerTonBalanceAfter = await buyer.getBalance();
-        // TODO: calculate actual value
-        expect(buyerTonBalanceAfter).toBeGreaterThan(buyerTonBalanceBefore + minAmountOut);
+        let gas_fee = toNano('0.1');
+        expect(buyerTonBalanceAfter).toBeGreaterThan(buyerTonBalanceBefore + 1197740580n - gas_fee);
 
         // get buyer's Jetton wallet balance after
         let buyerJettonWalletBalanceAfter = await buyerJettonWallet.getJettonBalance();
@@ -536,9 +536,8 @@ describe('PoolV1', () => {
         // get pool data after
         let poolDataAfter = await poolV1.getPoolData();
         expect(poolDataAfter.totalSupply).toEqual(poolDataBefore.totalSupply);
-        expect(poolDataAfter.reserve1).toBeLessThan(poolDataBefore.reserve1 + sendJettonAmount);
-        // TODO: calculate actual value
-        expect(poolDataAfter.reserve0).toBeLessThan(poolDataBefore.reserve0 - minAmountOut);
+        expect(poolDataAfter.reserve0).toEqual(8998802259419n);
+        expect(poolDataAfter.reserve1).toEqual(7439011528925619n);
 
         // Expect that buyer Jetton Wallet send Jetton Transfer to Dex Router Jetton Wallet
         expect(result.transactions).toHaveTransaction({
@@ -667,19 +666,18 @@ describe('PoolV1', () => {
 
         // get buyer's Ton balance after
         let buyerTonBalanceAfter = await buyer.getBalance();
-        expect(buyerTonBalanceAfter).toBeLessThan(buyerTonBalanceBefore - sendTonAmount);
+        let gas_fee = toNano('0.2');
+        expect(buyerTonBalanceAfter).toBeGreaterThan(buyerTonBalanceBefore - sendTonAmount - gas_fee);
 
         // get buyer's Jetton wallet balance after
         let buyerJettonWalletBalanceAfter = await buyerJettonWallet.getJettonBalance();
-        // TODO: calculate actual value
-        expect(buyerJettonWalletBalanceAfter).toBeGreaterThan(buyerJettonWalletBalanceBefore + minAmountOut);
+        expect(buyerJettonWalletBalanceAfter).toEqual(buyerJettonWalletBalanceBefore + 8172828070941n);
 
         // get pool data after
         let poolDataAfter = await poolV1.getPoolData();
         expect(poolDataAfter.totalSupply).toEqual(poolDataBefore.totalSupply);
-        expect(poolDataAfter.reserve0).toBeLessThan(poolDataBefore.reserve0 + sendTonAmount);
-        // TODO: calculate actual value
-        expect(poolDataAfter.reserve1).toBeLessThan(poolDataBefore.reserve1 - minAmountOut);
+        expect(poolDataAfter.reserve0).toEqual(9009950000000n);
+        expect(poolDataAfter.reserve1).toEqual(7429843700854678n);
 
         // Expect that buyer send Swap Ton to Dex Router
         expect(result.transactions).toHaveTransaction({
@@ -891,7 +889,7 @@ describe('PoolV1', () => {
 
         await provideJettonLiquidity(buyer, dexRouter, jettonMasterBondV1, null, 999n, sendTonAmount, sendJettonAmount);
 
-        const lpAmount = 1n * 10n ** 9n;
+        const lpAmount = 20n * 10n ** 9n;
         const asset0MinAmount = 0n;
         const asset1MinAmount = 0n;
 
@@ -921,20 +919,20 @@ describe('PoolV1', () => {
 
         // get buyer's Ton balance after
         let buyerTonBalanceAfter = await buyer.getBalance();
-        // TODO: calculate actual value
-        expect(buyerTonBalanceAfter).toBeGreaterThan(buyerTonBalanceBefore);
+        let gas_fee = toNano('0.5');
+        expect(buyerTonBalanceAfter).toBeGreaterThan(buyerTonBalanceBefore + 695701085239n - gas_fee);
 
         // get buyer's Jetton wallet balance after
         let buyerJettonWalletBalanceAfter = await buyerJettonWallet.getJettonBalance();
         // TODO: calculate actual value
-        expect(buyerJettonWalletBalanceAfter).toBeGreaterThan(buyerJettonWalletBalanceBefore);
+        expect(buyerJettonWalletBalanceAfter).toEqual(buyerJettonWalletBalanceBefore + 587033725644278n);
 
         // get pool data after
         let poolDataAfter = await poolV1.getPoolData();
         expect(poolDataAfter.totalSupply).toEqual(poolDataBefore.totalSupply - lpAmount);
         // TODO: calculate actual value
-        expect(poolDataAfter.reserve0).toBeLessThanOrEqual(poolDataBefore.reserve0 - asset0MinAmount);
-        expect(poolDataAfter.reserve1).toBeLessThanOrEqual(poolDataBefore.reserve1 - asset1MinAmount);
+        expect(poolDataAfter.reserve0).toEqual(9304298914761n);
+        expect(poolDataAfter.reserve1).toEqual(7850982803281341n);
 
         // Expect that buyer send Jetton Transfer to buyer LP wallet
         expect(result.transactions).toHaveTransaction({
