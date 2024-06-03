@@ -52,6 +52,7 @@ export const PoolOpcodes = {
     Excess: 0xd53276db,
     JettonNotification: 0x7362d09c,
     Transfer: 0xf8a7ea5,
+    PayoutFromPool: 0x23a14fb2,
 };
 
 export type Deposit = {
@@ -132,5 +133,20 @@ export class PoolV1 implements Contract {
             },
         ]);
         return walletAddress.stack.readAddress();
+    }
+
+    async getPoolData(provider: ContractProvider) {
+        // get_pool_data
+        const res = await provider.get('get_pool_data', []);
+        const reserve0 = res.stack.readBigNumber();
+
+        const reserve1 = res.stack.readBigNumber();
+
+        const totalSupply = res.stack.readBigNumber();
+        return {
+            reserve0,
+            reserve1,
+            totalSupply,
+        };
     }
 }

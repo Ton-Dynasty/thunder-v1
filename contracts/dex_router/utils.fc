@@ -6,14 +6,14 @@
     int main_amount = 0;
     int other_amount = 0;
 
-    if (equal_slices_bits(dex_router_wallet_0, address_none())) {
+    if (is_address_none(dex_router_wallet_0)) {
         main_wallet = dex_router_wallet_0;
         main_amount = asset0_amount;
 
         other_wallet = dex_router_wallet_1;
         other_amount = asset1_amount;
     } 
-    elseif (equal_slices_bits(dex_router_wallet_1, address_none())) {
+    elseif (is_address_none(dex_router_wallet_1)) { 
         main_wallet = dex_router_wallet_1;
         main_amount = asset1_amount;
         other_wallet = dex_router_wallet_0;
@@ -60,6 +60,7 @@ cell pack_pool_data(slice dex_router_wallet_0, slice dex_router_wallet_1, cell l
 
 (cell) pack_deposit_asset_data(
     int query_id, 
+    slice provider,
     int asset0_amount, 
     int asset1_amount, 
     int min_lp_amount, 
@@ -71,6 +72,7 @@ cell pack_pool_data(slice dex_router_wallet_0, slice dex_router_wallet_1, cell l
     cell msg_body = begin_cell()
         .store_op(op::deposit)
         .store_query_id(query_id)
+        .store_slice(provider)
         .store_coins(asset0_amount)
         .store_coins(asset1_amount)
         .store_coins(min_lp_amount)

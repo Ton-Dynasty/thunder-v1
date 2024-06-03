@@ -21,6 +21,7 @@
     slice ctx::sender,  
     int ctx::value,
     int ctx::fwd_fee,
+    slice provider,
     int asset0_amount,
     int asset1_amount,
     int min_lp_amount,
@@ -37,11 +38,17 @@
     int send_ton = ctx::value - gas_consumption;
 
     (lp_recipient, int lp_amount) = simulate::deposit(asset0_amount, asset1_amount, lp_recipient);
-    ;; TODO: refund and reject_payload
-    throw_unless(error::insufficient_liquidity, lp_amount >= min_lp_amount);
+    if(min_lp_amount > lp_amount) {
+        cell msg_body = pack_payout_from_pool(query_id, provider, provider, 0, asset0_amount, reject_payload);
+        send_bounceable_msg(pool::dex_router, send_ton / 2 , msg_body, SEND_MODE_REGULAR);
+
+        cell msg_body2 = pack_payout_from_pool(query_id, provider, provider, 1, asset1_amount, reject_payload);
+        send_bounceable_msg(pool::dex_router, send_ton / 2 , msg_body2, SEND_MODE_REGULAR);
+        return ();
+    }
 
     mint_lp(query_id, lp_recipient, lp_amount, send_ton, fulfill_payload);
-    pool::save_data();
+    pool::save_data();0xf8a7ea5
     return ();
 }
 
@@ -168,7 +175,9 @@
         }
         return ();
     }
+
     if (op == op::deposit) {
+        slice provider = ctx::body~load_msg_addr();
         int asset0_amount = ctx::body~load_coins();
         int asset1_amount = ctx::body~load_coins();
         int min_lp_amount = ctx::body~load_coins();
@@ -180,6 +189,7 @@
             ctx::sender,
             ctx::value,
             ctx::fwd_fee,
+            provider,
             asset0_amount,
             asset1_amount,
             min_lp_amount,
@@ -245,3 +255,7 @@ slice get_wallet_address(slice owner_address) method_id {
     return calculate_jetton_wallet_address(calculate_jetton_wallet_state_init(owner_address, my_address(), pool::lp_jetton_wallet_code));
 }
 
+(int, int, int) get_pool_data() method_id {
+    pool::load_data();
+    return (pool::reserve0, pool::reserve1, pool::lp_total_supply);
+}

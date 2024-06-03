@@ -158,6 +158,10 @@ describe('PoolV1', () => {
         const minLPAmount = 0n;
         const recipient = null;
 
+        // After ton the moon, the lp amount should be 258731808559n
+        let totalSupplyBefore = (await poolV1.getPoolData()).totalSupply;
+        expect(totalSupplyBefore).toEqual(258731808559n);
+
         // get buyer's LP wallet balance before
         let buyerLpWalletAddress = await poolV1.getWalletAddress(buyer.address);
         let buyerLpWallet = blockchain.openContract(JettonWallet.createFromAddress(buyerLpWalletAddress));
@@ -223,13 +227,72 @@ describe('PoolV1', () => {
             success: true,
         });
 
-        // Expect that buyer LP wallet balance increased
+        // Expect that buyer LP wallet balance increased totalSupplyAfter - totalSupplyBefore
         let buyerLpWalletBalanceAfter = await buyerLpWallet.getJettonBalance();
-        expect(buyerLpWalletBalanceAfter).toBeGreaterThan(buyerLpWalletBalanceBefore);
+        let totalSupplyAfter = (await poolV1.getPoolData()).totalSupply;
+        expect(buyerLpWalletBalanceAfter).toEqual(totalSupplyAfter - totalSupplyBefore);
+
+        // totalSupply after should be 258732156409
+        expect(totalSupplyAfter).toEqual(258732156409n);
 
         // Expect that buyer Jetton wallet balance decreased
         let buyerJettonWalletBalanceAfter = await buyerJettonWallet.getJettonBalance();
         expect(buyerJettonWalletBalanceAfter + sendJettonAmount).toEqual(buyerJettonWalletBalanceBefore);
+
+        // Expect pool reserve 0 should be 9010000000000
+        let reserve0After = (await poolV1.getPoolData()).reserve0;
+        expect(reserve0After).toEqual(9010000000000n);
+
+        // Expect pool reserve 1 should be 7438026528925619
+        let reserve1After = (await poolV1.getPoolData()).reserve1;
+        expect(reserve1After).toEqual(7438026528925619n);
+    });
+
+    it('should add liquidity but min lp amount does not meet', async () => {
+        const sendTonAmount = toNano('10');
+        const sendJettonAmount = 10n * 10n ** 9n;
+        const forwardAmount = toNano('1');
+        const minLPAmount = 10n * 10n ** 9n;
+        const recipient = null;
+
+        // After ton the moon, the lp amount should be 258731808559n
+        let totalSupplyBefore = (await poolV1.getPoolData()).totalSupply;
+        expect(totalSupplyBefore).toEqual(258731808559n);
+
+        // get buyer's LP wallet balance before
+        let buyerLpWalletAddress = await poolV1.getWalletAddress(buyer.address);
+        let buyerLpWallet = blockchain.openContract(JettonWallet.createFromAddress(buyerLpWalletAddress));
+        let buyerLpWalletBalanceBefore = await buyerLpWallet.getJettonBalance();
+
+        // get buyer's Jetton wallet balance before
+        let buyerJettonWalletAddress = await jettonMasterBondV1.getWalletAddress(buyer.address);
+        let dexRouterWalletAddress = await jettonMasterBondV1.getWalletAddress(dexRouter.address);
+        let buyerJettonWallet = blockchain.openContract(JettonWallet.createFromAddress(buyerJettonWalletAddress));
+        let buyerJettonWalletBalanceBefore = await buyerJettonWallet.getJettonBalance();
+
+        const queryId = 0n;
+        const result = await provideJettonLiquidity(
+            buyer,
+            dexRouter,
+            jettonMasterBondV1,
+            null,
+            queryId,
+            sendTonAmount,
+            sendJettonAmount,
+            forwardAmount,
+            minLPAmount,
+            recipient,
+        );
+
+        printTransactionFees(result.transactions);
+
+        // Expect that pool send PayoutFromPool to Dex Router
+        expect(result.transactions).toHaveTransaction({
+            op: PoolOpcodes.PayoutFromPool,
+            from: poolV1.address,
+            to: dexRouter.address,
+            success: true,
+        });
     });
 
     it('should not add liquidity when sending not enough ton', async () => {
