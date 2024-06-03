@@ -93,4 +93,63 @@ slice calculate_address(cell state_init) inline {
     .begin_parse();
 }
 
+(cell) pack_deposit_asset_data(
+    int query_id, 
+    int asset0_amount, 
+    int asset1_amount, 
+    int min_lp_amount, 
+    slice lp_receiver, 
+    cell fulfill_payload, 
+    cell reject_payload
+) {
+    ;; deposit asset payload
+    cell msg_body = begin_cell()
+        .store_op(op::deposit)
+        .store_query_id(query_id)
+        .store_coins(asset0_amount)
+        .store_coins(asset1_amount)
+        .store_coins(min_lp_amount)
+        .store_slice(lp_receiver)
+        .store_maybe_ref(null())
+        .store_maybe_ref(null())
+        .end_cell();
+    return msg_body;
+}
 
+
+() transfer_jetton(
+    int bounce_flag,
+    slice jetton_wallet, 
+    slice receiver, 
+    int jetton_amount, 
+    int ton_amount, 
+    int query_id, 
+    int forward_ton,
+    cell payload, 
+    int mode
+) impure inline_ref {
+    if(payload.cell_null?()) {
+        forward_ton = 0;
+    }
+
+    ;; send jetton transfer to jetton wallet
+    cell msg_body = begin_cell()
+	.store_uint(op::transfer, 32)
+	.store_uint(query_id, 64)
+	.store_coins(jetton_amount)
+	.store_slice(receiver)
+	.store_slice(receiver)
+	.store_uint(0, 1)
+	.store_coins(forward_ton)
+	.store_maybe_ref(payload)
+	.end_cell();
+
+    cell msg = begin_cell()
+	.store_msg_flags_and_address_none(bounce_flag)
+	.store_slice(jetton_wallet)
+	.store_coins(ton_amount)
+	.store_only_body_ref(msg_body)
+	.end_cell();
+
+    send_raw_message(msg, mode); 
+}

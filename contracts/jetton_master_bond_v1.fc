@@ -9,7 +9,7 @@
 #include "jetton_master_bond/utils.fc";
 #include "jetton_master_bond/gas.fc";
 
-() handle::ton_the_moon(int query_id, int ctx:fwd_fee) impure inline {
+() internal::ton_the_moon(int query_id, int ctx:fwd_fee) impure inline {
     master::on_moon = TRUE;
     ;; Calculate jetton reserves send to dex router and thunder fi admin fee
     int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision; ;; Only send 90% of ton_reserves to liquidity pool
@@ -46,7 +46,7 @@
     return ();
 }
 
-() internal::claim_admin_fee(
+() handle::claim_admin_fee(
     int query_id
 ) impure inline_ref {
     int send_ton = master::fee - BUILD_POOL_GAS_FEE; ;; Remaining BUILD_POOL_GAS_FEE for building pool and farm
@@ -56,7 +56,7 @@
     master::save_data();
 }
 
-() internal::mint_token(
+() handle::mint_token(
     int query_id,
     slice ctx::sender, 
     int ctx::value, 
@@ -85,7 +85,7 @@
 
     ;; If ton_reserves reach to the moon threshold, then send to dex router to deploy liquidity pool
     if(master::ton_reserves == const::ton_the_moon) {
-        handle::ton_the_moon(query_id, ctx::fwd_fee);
+        internal::ton_the_moon(query_id, ctx::fwd_fee);
     }
 
     ;; Mint tokens to user
@@ -104,7 +104,7 @@
     return ();
 }
 
-() internal::burn_token(
+() handle::burn_token(
     int query_id,
     slice ctx::sender,
     int ctx::value,
@@ -169,7 +169,7 @@
         ;; Throw error if token amount is equal to 0. it will send back ton to user by bounce
         throw_unless(error::invalid_amount, ton_amount > 0);
 
-        internal::mint_token(
+        handle::mint_token(
             query_id, 
             ctx::sender, 
             ctx::value, 
@@ -192,7 +192,7 @@
         slice from_address = ctx::body~load_msg_addr();
         slice response_address = ctx::body~load_msg_addr();
         ctx::body.end_parse();
-        internal::burn_token(query_id, ctx::sender, ctx::value, ctx::fwd_fee, jetton_amount, from_address, response_address);
+        handle::burn_token(query_id, ctx::sender, ctx::value, ctx::fwd_fee, jetton_amount, from_address, response_address);
 
         return ();
     }
@@ -247,7 +247,7 @@
 
     if op == op::claim_admin_fee {
         throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
-        internal::claim_admin_fee(query_id);
+        handle::claim_admin_fee(query_id);
         return ();
     }
 
@@ -292,8 +292,4 @@ slice get_wallet_address(slice owner_address) method_id {
     cell jetton_wallet_code = master::jetton_wallet_code;
     int mintable = TRUE;
     return (total_supply, mintable, admin_address, master::jetton_content, jetton_wallet_code);
-}
-
-(int) get_contract_balance() method_id {
-    return get_data().begin_parse().preload_uint(64);
 }

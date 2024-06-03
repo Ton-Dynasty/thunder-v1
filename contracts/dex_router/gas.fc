@@ -18,6 +18,7 @@ const SEND_TRANSFER_GAS_CONSUMPTION    = 9255;
 const RECEIVE_TRANSFER_GAS_CONSUMPTION = 10355;
 const BUILD_POOL_GAS_FEE = 100000000; ;; 0.1 TON
 const GAS_CONSUMPTION = 100000000; ;; 0.1 TON
+const FORWARD_FEE = 30000000; ;; 0.03 TON
 
 
 
@@ -47,12 +48,15 @@ int get_jetton_transfer_fee() inline {
         deploy_pool_gas_consumption = null?(pool_gas_consumption) ? DEPLOY_POOL_GAS : pool_gas_consumption;
     }
 
+    int deposit_asset_gas_consumption = null?(pool_gas_consumption) ? POOL_DEPOSIT_GAS : pool_gas_consumption;
+
     int gas_comp = get_compute_fee(MY_WORKCHAIN, send_to_dex_router_consumption) + 
-    get_compute_fee(MY_WORKCHAIN, deploy_pool_gas_consumption) + 
     calculate_dex_router_min_storage_fee();
     
     int total_fee = gas_comp + 
     get_jetton_transfer_fee() + 
+    get_compute_fee(MY_WORKCHAIN, deposit_asset_gas_consumption) +
+    get_compute_fee(MY_WORKCHAIN, deploy_pool_gas_consumption) + 
     fwd_fee * 3;
 
     return (total_fee, gas_comp);

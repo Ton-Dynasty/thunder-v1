@@ -40,7 +40,6 @@
 () handle::create_pool(
     int query_id,
     slice ctx::sender,  
-    int ctx::value,
     int ctx::fwd_fee,
     int jetton_amount,
     slice jetton_sender,
@@ -48,8 +47,8 @@
     slice master_address
 ) impure inline {
     (int total_fees, int gas_consumptoin) = cal_deploy_pool_fee(ctx::fwd_fee, 1);
-    throw_unless(error::not_enough_ton, ctx::value > total_fees);
-    int send_ton = ctx::value - gas_consumptoin;
+    throw_unless(error::not_enough_ton, BUILD_POOL_GAS_FEE > total_fees);
+    int send_ton = BUILD_POOL_GAS_FEE - gas_consumptoin;
 
     (slice pool_address, cell deposit_asset_payload, cell state_init) = internal::deposit_asset(
         master_address,
@@ -81,10 +80,13 @@
     cell reject_payload
 ) impure inline {
     (int total_fees, int gas_consumptoin) = cal_deploy_pool_fee(ctx::fwd_fee, 0);
-    throw_unless(error::not_enough_ton, ctx::value > total_fees + ton_amount);
+    if(ctx::value < total_fees + ton_amount) {
+        ;; When this happens, dex router will take gas_consumption / 2 from the jetton sender
+        transfer_jetton(BOUNCEABLE, ctx::sender, jetton_sender, jetton_amount, ctx::value - gas_consumptoin / 2, query_id, FORWARD_FEE, reject_payload, SEND_MODE_REGULAR);
+        return();
+    }
     int send_ton = ctx::value - ton_amount - gas_consumptoin;
     
-
     if (is_address_none(recipient)) {
         recipient = jetton_sender;
     }
@@ -203,7 +205,6 @@
             return handle::create_pool(
                 query_id,
                 ctx::sender,  
-                ctx::value,
                 ctx::fwd_fee,
                 jetton_amount,
                 jetton_sender,

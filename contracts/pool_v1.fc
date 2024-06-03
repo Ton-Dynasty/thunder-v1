@@ -28,12 +28,17 @@
     cell fulfill_payload,
     cell reject_payload
 ) impure inline {
+    ;; Only dex router can send deposit message
     throw_unless(error::invalid_sender, equal_slices(ctx::sender, pool::dex_router));
-    int send_ton = ctx::value - gas::gas_consumption;
+
+    ;; Make sure that sending ton is enough to complete the whole transaction
+    (int total_fees, int gas_consumption) = cal_deposit_asset_fee(ctx::fwd_fee);
+    throw_unless(error::not_enough_ton, ctx::value > total_fees);
+    int send_ton = ctx::value - gas_consumption;
+
     (lp_receiver, int lp_amount) = simulate::deposit(asset0_amount, asset1_amount, lp_receiver);
     ;; TODO: refund and reject_payload
     throw_unless(error::insufficient_liquidity, lp_amount >= min_lp_amount);
-
 
     mint_lp(query_id, lp_receiver, lp_amount, send_ton, fulfill_payload);
     pool::save_data();
@@ -135,7 +140,6 @@
 
     ;; dispatch
     if (op == op::transfer_notification) {
-        ;; ~strdump("transfer_notification");
         int jetton_amount = ctx::body~load_coins();
         slice jetton_sender = ctx::body~load_msg_addr();
         slice forward_payload = ctx::body~load_ref().begin_parse();
@@ -143,7 +147,6 @@
         op = forward_payload~load_op(); ;; op MUST be the first 32 bits of the payload in this case
 
         if (op == op::withdraw) {
-            ;; ~strdump("withdraw");
             int lp_amount = ctx::body~load_coins();
             int asset0_min_amount = ctx::body~load_coins();
             int asset1_min_amount = ctx::body~load_coins();
@@ -215,7 +218,6 @@
     }
 
     if (op == op::top_up) {
-        ;; ~strdump("top_up");
         return ();
     }
 

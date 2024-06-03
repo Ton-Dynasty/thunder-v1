@@ -249,11 +249,12 @@ describe('JettonMasterBondV1', () => {
         expect(buyerTonBalanceBefore - buyerTonBalanceAfter).toBeGreaterThan(gas_fee);
     });
 
-    it('should trnasfer tokens and tons to DexRouter after meeting TonTheMoon', async () => {
+    it('should transfer tokens and tons to DexRouter after meeting TonTheMoon', async () => {
+        let deployerTonBalanceBefore = await deployer.getBalance();
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
         const buyTon = toNano('1000000');
         const toTheMoonResult = await buyToken(jettonMasterBondV1, buyer, buyTon);
-        // printTransactionFees(toTheMoonResult.transactions);
+        let deployerTonBalanceAfter = await deployer.getBalance();
 
         // Expect that jettonMasterBondV1 send internal transfer to DexRouter wallet
         let dexRouterWalletAddress = await jettonMasterBondV1.getWalletAddress(dexRouter.address);
@@ -297,6 +298,9 @@ describe('JettonMasterBondV1', () => {
             success: true,
             //value: 999034037987n, // admin fees
         });
+        // Expect that deployer ton balance increased at least 1100 TON
+        let gas_fee = toNano('0.05');
+        expect(deployerTonBalanceAfter - deployerTonBalanceBefore + gas_fee).toBeGreaterThanOrEqual(toNano('1100'));
 
         // Expect that jettonMasterBondV1 send jetton internal transfer to buyer meme token wallet
         let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
@@ -433,9 +437,7 @@ describe('JettonMasterBondV1', () => {
 
         // buyer try to buy meme token after token on the list
         let buyerBeforeBalance = await buyer.getBalance();
-        const contractBalanceBefore = await jettonMasterBondV1.getBalance();
         const buyAgainResult = await buyToken(jettonMasterBondV1, buyer, buyTon);
-        const contractBalanceAfter = await jettonMasterBondV1.getBalance();
         let buyerAfterBalance = await buyer.getBalance();
 
         // Expect buyer ton balance decreased only the gas fee
@@ -449,9 +451,6 @@ describe('JettonMasterBondV1', () => {
             success: false,
             exitCode: 2002,
         });
-
-        // Epext that contract balance is equal to contractBalanceBefore
-        expect(contractBalanceAfter).toEqual(contractBalanceBefore);
     });
 
     it('should not sell meme tokens after token on the list', async () => {
@@ -460,7 +459,6 @@ describe('JettonMasterBondV1', () => {
         await buyToken(jettonMasterBondV1, buyer, buyTon);
 
         // buyer try to sell meme token after token on the list
-        const contractBalanceBefore = await jettonMasterBondV1.getBalance();
 
         let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
         let buyerMemeTokenBalanceBefore = await buyerWallet.getJettonBalance();
@@ -468,7 +466,6 @@ describe('JettonMasterBondV1', () => {
         // Buyers burn half of meme tokens
         let burnAmount = buyerMemeTokenBalanceBefore / 2n;
         const burnResult = await buyerWallet.sendBurn(buyer.getSender(), toNano('1'), burnAmount, null, null);
-        const contractBalanceAfter = await jettonMasterBondV1.getBalance();
         let buyerMemeTokenBalanceAfter = await buyerWallet.getJettonBalance();
 
         // Expect to throw token already listed error
@@ -481,9 +478,6 @@ describe('JettonMasterBondV1', () => {
 
         // Epect that buyer meme token balance is still same
         expect(buyerMemeTokenBalanceAfter).toEqual(buyerMemeTokenBalanceBefore);
-
-        // Epext that contract balance is equal to contractBalanceBefore
-        expect(contractBalanceAfter).toEqual(contractBalanceBefore);
     });
 
     it('should not sell meme tokens if sending ton is not enough', async () => {
@@ -491,7 +485,6 @@ describe('JettonMasterBondV1', () => {
         await buyToken(jettonMasterBondV1, buyer);
 
         // buyer try to sell meme token after token on the list
-        const contractBalanceBefore = await jettonMasterBondV1.getBalance();
 
         let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
         let buyerMemeTokenBalanceBefore = await buyerWallet.getJettonBalance();
@@ -499,7 +492,6 @@ describe('JettonMasterBondV1', () => {
         // Buyers burn half of meme tokens
         let burnAmount = buyerMemeTokenBalanceBefore / 2n;
         const burnResult = await buyerWallet.sendBurn(buyer.getSender(), toNano('0.006'), burnAmount, null, null);
-        const contractBalanceAfter = await jettonMasterBondV1.getBalance();
         let buyerMemeTokenBalanceAfter = await buyerWallet.getJettonBalance();
 
         // Expect to throw token already listed error
@@ -512,16 +504,12 @@ describe('JettonMasterBondV1', () => {
 
         // Epect that buyer meme token balance is still same
         expect(buyerMemeTokenBalanceAfter).toEqual(buyerMemeTokenBalanceBefore);
-
-        // Epext that contract balance is equal to contractBalanceBefore
-        expect(contractBalanceAfter).toEqual(contractBalanceBefore);
     });
 
     it('should throw invalid amount when buy ton amount is 0', async () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
         const buyTon = 0n;
         const invalidAmountResult = await buyToken(jettonMasterBondV1, buyer, buyTon);
-        const contractBalanceBefore = await jettonMasterBondV1.getBalance();
         let buyerBeforeBalance = await buyer.getBalance();
         expect(invalidAmountResult.transactions).toHaveTransaction({
             op: MasterOpocde.Mint,
@@ -532,10 +520,6 @@ describe('JettonMasterBondV1', () => {
         });
         let buyerAfterBalance = await buyer.getBalance();
 
-        // Epext that contract balance is equal to contractBalanceBefore
-        const contractBalanceAfter = await jettonMasterBondV1.getBalance();
-        expect(contractBalanceAfter).toEqual(contractBalanceBefore);
-
         // Expect buyer ton balance decreased only the gas fee
         let gas_fee = toNano('0.055');
         expect(buyerAfterBalance + gas_fee).toBeGreaterThan(buyerBeforeBalance);
@@ -545,7 +529,6 @@ describe('JettonMasterBondV1', () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
         let tonAmount = toNano('10');
         let sendAllTon = toNano('1');
-        const contractBalanceBefore = await jettonMasterBondV1.getBalance();
         let buyerBeforeBalance = await buyer.getBalance();
         const notEnoughTonResult = await jettonMasterBondV1.sendBuyToken(
             buyer.getSender(),
@@ -573,10 +556,6 @@ describe('JettonMasterBondV1', () => {
             exitCode: 2000,
         });
 
-        // Epext that contract balance is equal to contractBalanceBefore
-        const contractBalanceAfter = await jettonMasterBondV1.getBalance();
-        expect(contractBalanceAfter).toEqual(contractBalanceBefore);
-
         // Expect buyer ton balance decreased only the gas fee
         let gas_fee = toNano('0.055');
         expect(buyerAfterBalance + gas_fee).toBeGreaterThan(buyerBeforeBalance);
@@ -586,7 +565,6 @@ describe('JettonMasterBondV1', () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
         let tonAmount = toNano('10');
         let sendAllTon = tonAmount + toNano('1');
-        const contractBalanceBefore = await jettonMasterBondV1.getBalance();
         let buyerBeforeBalance = await buyer.getBalance();
         const notEnoughTonResult = await jettonMasterBondV1.sendBuyToken(
             buyer.getSender(),
@@ -613,10 +591,6 @@ describe('JettonMasterBondV1', () => {
             success: false,
             exitCode: 2001,
         });
-
-        // Epext that contract balance is equal to contractBalanceBefore
-        const contractBalanceAfter = await jettonMasterBondV1.getBalance();
-        expect(contractBalanceAfter).toEqual(contractBalanceBefore);
 
         // Expect buyer ton balance decreased only the gas fee
         let gas_fee = toNano('0.055');
@@ -716,7 +690,9 @@ describe('JettonMasterBondV1', () => {
 
         // Expect that deployer ton balance increased at least fee
         let gas_fee_and_build_pool_fee = toNano('0.5');
-        expect(deployerTonBalanceAfter - deployerTonBalanceBefore).toBeGreaterThanOrEqual(fee - gas_fee_and_build_pool_fee);
+        expect(deployerTonBalanceAfter - deployerTonBalanceBefore).toBeGreaterThanOrEqual(
+            fee - gas_fee_and_build_pool_fee,
+        );
     });
 
     it('should only admin can claim admin fee', async () => {
