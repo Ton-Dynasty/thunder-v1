@@ -298,14 +298,11 @@ describe('PoolV1', () => {
         let totalSupplyBefore = (await poolV1.getPoolData()).totalSupply;
         expect(totalSupplyBefore).toEqual(258731808559n);
 
-        // get buyer's LP wallet balance before
-        let buyerLpWalletAddress = await poolV1.getWalletAddress(buyer.address);
-        let buyerLpWallet = blockchain.openContract(JettonWallet.createFromAddress(buyerLpWalletAddress));
-        let buyerLpWalletBalanceBefore = await buyerLpWallet.getJettonBalance();
+        // get buyer's TON balance before
+        let buyerTonBalanceBefore = await buyer.getBalance();
 
         // get buyer's Jetton wallet balance before
         let buyerJettonWalletAddress = await jettonMasterBondV1.getWalletAddress(buyer.address);
-        let dexRouterWalletAddress = await jettonMasterBondV1.getWalletAddress(dexRouter.address);
         let buyerJettonWallet = blockchain.openContract(JettonWallet.createFromAddress(buyerJettonWalletAddress));
         let buyerJettonWalletBalanceBefore = await buyerJettonWallet.getJettonBalance();
 
@@ -323,14 +320,68 @@ describe('PoolV1', () => {
             recipient,
         );
 
-        printTransactionFees(result.transactions);
-
         // Expect that pool send PayoutFromPool to Dex Router
         expect(result.transactions).toHaveTransaction({
             op: PoolOpcodes.PayoutFromPool,
             from: poolV1.address,
             to: dexRouter.address,
             success: true,
+        });
+
+        // Expect that dex router send excess message to buyer
+        expect(result.transactions).toHaveTransaction({
+            op: PoolOpcodes.Excess,
+            from: dexRouter.address,
+            to: buyer.address,
+            success: true,
+        });
+
+        // Expect that buyer receive refund ton
+        let gas_fee = toNano('1');
+        let buyerTonBalanceAfter = await buyer.getBalance();
+        expect(buyerTonBalanceAfter).toBeGreaterThan(buyerTonBalanceBefore - gas_fee);
+
+        // Expect that dex router meme wallet send jetton internal transfer to buyer jetton wallet
+        let dexRouterWalletAddress = await jettonMasterBondV1.getWalletAddress(dexRouter.address);
+        expect(result.transactions).toHaveTransaction({
+            op: PoolOpcodes.InternalTransfer,
+            from: dexRouterWalletAddress,
+            to: buyerJettonWalletAddress,
+            success: true,
+        });
+
+        // Expect that buyer meme jetton balance is still the same
+        let buyerJettonWalletBalanceAfter = await buyerJettonWallet.getJettonBalance();
+        expect(buyerJettonWalletBalanceAfter).toEqual(buyerJettonWalletBalanceBefore);
+    });
+
+    it('should throw error when wrong sender send packout form pool to dex router', async () => {
+        let dexRouterMemeWallet = await userWallet(dexRouter.address, jettonMasterBondV1);
+        let body = beginCell()
+            .storeUint(0x23a14fb2, 32)
+            .storeUint(0, 64)
+            .storeAddress(buyer.address)
+            .storeAddress(dexRouterMemeWallet.address)
+            .storeAddress(null)
+            .storeCoins(10n)
+            .storeAddress(buyer.address)
+            .storeMaybeRef(null)
+            .endCell();
+
+        let invalidSenderResult = await buyer.send({
+            to: dexRouter.address,
+            value: toNano('1'),
+            bounce: true,
+            body: body,
+            sendMode: 0,
+        });
+
+        // Expect that throw invalid sender error
+        expect(invalidSenderResult.transactions).toHaveTransaction({
+            from: buyer.address,
+            to: dexRouter.address,
+            success: false,
+            exitCode: 2001,
         });
     });
 
