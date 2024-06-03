@@ -102,7 +102,7 @@
     int ctx::fwd_fee,
     int jetton_amount,
     slice jetton_sender,
-    slice master_address,
+    slice other_asset_wallet,
     int asset_in,
     int min_amount_out,
     int deadline,
@@ -129,7 +129,7 @@
     );
 
     ;; Calculate recipient's wallet address
-    cell state_init = calculate_pool_state_init(jetton_sender, master_address);
+    cell state_init = calculate_pool_state_init(ctx::sender, other_asset_wallet);
     slice pool_address = calculate_address(state_init);
     send_bounceable_msg(pool_address, send_ton, swap_jetton_payload, SEND_MODE_REGULAR);
     return ();
@@ -258,7 +258,7 @@
         }
 
         if(op == op::swap_jetton) {
-            slice master_address = forward_payload~load_msg_addr();
+            slice other_asset_wallet = forward_payload~load_msg_addr();
             int asset_in = forward_payload~load_uint(1);
             int min_amount_out = forward_payload~load_coins();
             int deadline = forward_payload~load_uint(64);
@@ -274,7 +274,7 @@
                 ctx::fwd_fee,
                 jetton_amount,
                 jetton_sender,
-                master_address,
+                other_asset_wallet,
                 asset_in,
                 min_amount_out,
                 deadline,
