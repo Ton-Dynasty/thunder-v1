@@ -1000,4 +1000,105 @@ describe('PoolV1', () => {
         });
     });
 
+    it('should throw error when withdraw wrong lp to to pool', async () => {
+        // Need to add liquidity first
+        const sendTonAmount = toNano('1000');
+        const sendJettonAmount = 1000000n * 10n ** 9n;
+
+        await provideJettonLiquidity(buyer, dexRouter, jettonMasterBondV1, null, 999n, sendTonAmount, sendJettonAmount);
+
+        const lpAmount = 1n * 10n ** 9n;
+        const asset0MinAmount = 0n;
+        const asset1MinAmount = 0n;
+
+        // get buyer's Jetton wallet balance before
+        let buyerJettonWalletAddress = await jettonMasterBondV1.getWalletAddress(buyer.address);
+
+        const message = PoolV1.packJettonTransfer({
+            $$type: 'JettonTransfer',
+            queryId: 0n,
+            jettonAmount: lpAmount,
+            to: poolV1.address,
+            responseAddress: buyer.address,
+            customPayload: null,
+            forwardTonAmount: toNano('1'),
+            forwardPayload: {
+                $$type: 'WithdrawFP',
+                asset0MinAmount: asset0MinAmount,
+                asset1MinAmount: asset1MinAmount,
+                recipient: buyer.address,
+                fulfillPayload: null,
+                rejectPayload: null,
+            },
+        });
+
+        const result = await buyer.send({
+            to: buyerJettonWalletAddress,
+            value: toNano('1') * 2n,
+            bounce: true,
+            body: message,
+            sendMode: 1,
+        });
+
+        // Expect throw invalid sender error 2022
+        let poolJetttonWalletAddress = await jettonMasterBondV1.getWalletAddress(poolV1.address);
+        expect(result.transactions).toHaveTransaction({
+            from: poolJetttonWalletAddress,
+            to: poolV1.address,
+            success: false,
+            exitCode: 2022,
+        });
+    });
+
+    it('should send lp back to sender when min asset out did not meet', async () => {
+        // Need to add liquidity first
+        const sendTonAmount = toNano('1000');
+        const sendJettonAmount = 1000000n * 10n ** 9n;
+
+        await provideJettonLiquidity(buyer, dexRouter, jettonMasterBondV1, null, 999n, sendTonAmount, sendJettonAmount);
+
+        const lpAmount = 1n * 10n ** 9n;
+        const asset0MinAmount = toNano('1000000');
+        const asset1MinAmount = toNano('1000000');
+
+        // get buyer's LP wallet balance before
+        let buyerLpWalletAddress = await poolV1.getWalletAddress(buyer.address);
+        let poolLpWalletAddress = await poolV1.getWalletAddress(poolV1.address);
+        let buyerLpWallet = blockchain.openContract(JettonWallet.createFromAddress(buyerLpWalletAddress));
+        let buyerLpWalletBalanceBefore = await buyerLpWallet.getJettonBalance();
+
+        // get buyer's Ton balance before
+        let buyerTonBalanceBefore = await buyer.getBalance();
+
+        // get buyer's Jetton wallet balance before
+        let buyerJettonWalletAddress = await jettonMasterBondV1.getWalletAddress(buyer.address);
+        let dexRouterWalletAddress = await jettonMasterBondV1.getWalletAddress(dexRouter.address);
+        let buyerJettonWallet = blockchain.openContract(JettonWallet.createFromAddress(buyerJettonWalletAddress));
+        let buyerJettonWalletBalanceBefore = await buyerJettonWallet.getJettonBalance();
+
+        // get pool data before
+        let poolDataBefore = await poolV1.getPoolData();
+
+        const result = await withdraw(buyer, poolV1, lpAmount, asset0MinAmount, asset1MinAmount);
+
+        // Expect that pool send transfer to pool's lp wallet
+        expect(result.transactions).toHaveTransaction({
+            op: PoolOpcodes.Transfer,
+            from: poolV1.address,
+            to: poolLpWalletAddress,
+            success: true,
+        });
+
+        // Expect that pool lp wallet send internal transfer to buyer lp wallet
+        expect(result.transactions).toHaveTransaction({
+            op: PoolOpcodes.InternalTransfer,
+            from: poolLpWalletAddress,
+            to: buyerLpWalletAddress,
+            success: true,
+        });
+
+        // Expect that buyer lp wallet balance is still the same
+        let buyerLpWalletBalanceAfter = await buyerLpWallet.getJettonBalance();
+        expect(buyerLpWalletBalanceAfter).toEqual(buyerLpWalletBalanceBefore);
+    });
 });
