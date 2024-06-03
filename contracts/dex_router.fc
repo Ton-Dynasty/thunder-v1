@@ -46,6 +46,7 @@
     int ton_amount,
     slice master_address
 ) impure inline {
+    ;; TODO: check if sender is jetton master bond
     (int total_fees, int gas_consumptoin) = cal_deploy_pool_fee(ctx::fwd_fee, 1);
     throw_unless(error::not_enough_ton, BUILD_POOL_GAS_FEE > total_fees);
     int send_ton = BUILD_POOL_GAS_FEE - gas_consumptoin;
