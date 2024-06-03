@@ -151,6 +151,45 @@ describe('PoolV1', () => {
         });
     };
 
+    const withdraw = async (
+        buyer: SandboxContract<TreasuryContract>,
+        pool: SandboxContract<PoolV1>,
+        lpAmount: bigint,
+        asset0MinAmount: bigint,
+        asset1MinAmount: bigint,
+        recipient: Maybe<Address> = null,
+        fulfillPayload: Maybe<Cell> = null,
+        rejectPayload: Maybe<Cell> = null,
+        queryId: bigint = 1111n,
+    ) => {
+        let buyerLpWalletAddress = await poolV1.getWalletAddress(buyer.address);
+        const message = PoolV1.packJettonTransfer({
+            $$type: 'JettonTransfer',
+            queryId: queryId,
+            jettonAmount: lpAmount,
+            to: pool.address,
+            responseAddress: buyer.address,
+            customPayload: null,
+            forwardTonAmount: toNano('1'),
+            forwardPayload: {
+                $$type: 'WithdrawFP',
+                asset0MinAmount: asset0MinAmount,
+                asset1MinAmount: asset1MinAmount,
+                recipient: recipient,
+                fulfillPayload: fulfillPayload,
+                rejectPayload: rejectPayload,
+            },
+        });
+
+        return buyer.send({
+            to: buyerLpWalletAddress,
+            value: toNano('1') * 2n,
+            bounce: true,
+            body: message,
+            sendMode: 1,
+        });
+    };
+
     beforeAll(async () => {
         poolV1Code = await compile(PoolV1.name);
         jettonWalletCode = await compile(JettonWallet.name);

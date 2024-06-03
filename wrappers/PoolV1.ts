@@ -56,29 +56,38 @@ export const PoolOpcodes = {
     SwapInternal: 0xfcb1be1e,
     PayoutFromPool: 0x23a14fb2,
     SwapTon: 0xdcb17fc0,
+    Withdraw: 0xb5de5f9e,
 };
 
-export type Deposit = {
-    $$type: 'Deposit';
-    queryId: bigint;
-    asset0Amount: bigint;
-    asset1Amount: bigint;
-    minLpAmount: bigint;
-    lpRecipient: Maybe<Address>;
+export type WithdrawFP = {
+    $$type: 'WithdrawFP';
+    asset0MinAmount: bigint;
+    asset1MinAmount: bigint;
+    recipient: Maybe<Address>;
     fulfillPayload: Maybe<Cell>;
     rejectPayload: Maybe<Cell>;
 };
 
-export function storeDeposit(src: Deposit) {
+export type JettonTransferPool = {
+    $$type: 'JettonTransfer';
+    queryId: bigint;
+    jettonAmount: bigint;
+    to: Address;
+    responseAddress: Maybe<Address>;
+    customPayload: Maybe<Cell>;
+    forwardTonAmount: bigint;
+    forwardPayload: Maybe<WithdrawFP>;
+};
+
+/* Store */
+export function storeWithdrawFP(value: WithdrawFP) {
     return (b: Builder) => {
-        b.storeUint(PoolOpcodes.Deposit, 32);
-        b.storeUint(src.queryId, 64);
-        b.storeCoins(src.asset0Amount);
-        b.storeCoins(src.asset1Amount);
-        b.storeCoins(src.minLpAmount);
-        b.storeAddress(src.lpRecipient);
-        b.storeMaybeRef(src.fulfillPayload);
-        b.storeMaybeRef(src.rejectPayload);
+        b.storeUint(PoolOpcodes.Withdraw, 32);
+        b.storeCoins(value.asset0MinAmount);
+        b.storeCoins(value.asset1MinAmount);
+        b.storeAddress(value.recipient);
+        b.storeMaybeRef(value.fulfillPayload);
+        b.storeMaybeRef(value.rejectPayload);
     };
 }
 
@@ -99,8 +108,30 @@ export class PoolV1 implements Contract {
     }
 
     /* Pack */
-    static packDeposit(src: Deposit) {
-        return beginCell().store(storeDeposit(src)).endCell();
+    static packWithdrawFP(value: WithdrawFP) {
+        return beginCell().store(storeWithdrawFP(value)).endCell();
+    }
+
+    static packJettonTransfer(src: JettonTransferPool) {
+        let c = null;
+
+        if (
+            src.forwardPayload &&
+            typeof src.forwardPayload === 'object' &&
+            src.forwardPayload.$$type === 'WithdrawFP'
+        ) {
+            c = PoolV1.packWithdrawFP(src.forwardPayload);
+        }
+        return beginCell()
+            .storeUint(0xf8a7ea5, 32)
+            .storeUint(src.queryId, 64)
+            .storeCoins(src.jettonAmount)
+            .storeAddress(src.to)
+            .storeAddress(src.responseAddress)
+            .storeMaybeRef(src.customPayload)
+            .storeCoins(src.forwardTonAmount)
+            .storeMaybeRef(c)
+            .endCell();
     }
 
     /* Send */
@@ -109,21 +140,6 @@ export class PoolV1 implements Contract {
             value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell().storeUint(PoolOpcodes.TopUp, 32).storeUint(0, 64).endCell(),
-        });
-    }
-
-    async sendDeposit(
-        provider: ContractProvider,
-        via: Sender,
-        args: { value: bigint; bounce?: boolean },
-        body: Deposit,
-        sendMode?: SendMode,
-    ) {
-        await provider.internal(via, {
-            value: args.value,
-            bounce: args.bounce,
-            sendMode: sendMode,
-            body: PoolV1.packDeposit(body),
         });
     }
 
