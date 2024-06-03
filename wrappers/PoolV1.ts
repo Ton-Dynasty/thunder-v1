@@ -51,6 +51,7 @@ export const PoolOpcodes = {
     InternalTransfer: 0x178d4519,
     Excess: 0xd53276db,
     JettonNotification: 0x7362d09c,
+    Transfer: 0xf8a7ea5,
 };
 
 export type Deposit = {
