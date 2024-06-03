@@ -1,9 +1,9 @@
-cell pack_pool_data(slice jetton_master_address, cell lp_jetton_content) inline {
+cell pack_pool_data(slice dex_router_wallet_0, slice dex_router_wallet_1, cell lp_jetton_content) inline {
 
     cell init_data = begin_cell()
         .store_slice(my_address())
-        .store_slice(begin_cell().store_uint(0, 2).end_cell().begin_parse())
-        .store_slice(jetton_master_address)
+        .store_slice(dex_router_wallet_0)
+        .store_slice(dex_router_wallet_1)
     .end_cell();
 
     return begin_cell()
@@ -70,13 +70,14 @@ cell pack_pool_data(slice jetton_master_address, cell lp_jetton_content) inline 
     return msg_body;
 }
 
-cell calculate_pool_state_init(slice jetton_master_address) inline {
+cell calculate_pool_state_init(slice dex_router_wallet_0, slice dex_router_wallet_1) inline {
     return begin_cell()
     .store_uint(0, 2) ;; 0b00 - No split_depth; No special
     .store_maybe_ref(dex_router::pool_code)
     .store_maybe_ref(
         pack_pool_data(
-            jetton_master_address,
+            dex_router_wallet_0,
+            dex_router_wallet_1,
             begin_cell().end_cell() ;; TODO: This should replaced with real LP jetton content
         )
     )

@@ -19,9 +19,9 @@ export type DexRouterConfig = {
 
 export type AddLiquidityFP = {
     $$type: 'AddLiquidityFP';
-    tonAmount: bigint;
+    otherAssetAmount: bigint;
+    otherAssetWallet: Maybe<Address>;
     minLpAmount: bigint;
-    masterAddress: Address;
     recipient: Maybe<Address>;
     fulfillPayload: Maybe<Cell>;
     rejectPayload: Maybe<Cell>;
@@ -68,9 +68,9 @@ export function dexRouterConfigToCell(config: DexRouterConfig): Cell {
 export function storeAddLiquidityFP(value: AddLiquidityFP) {
     return (b: Builder) => {
         b.storeUint(DexRouterOpcode.AddLiquidity, 32);
-        b.storeCoins(value.tonAmount);
+        b.storeCoins(value.otherAssetAmount);
+        b.storeAddress(value.otherAssetWallet);
         b.storeCoins(value.minLpAmount);
-        b.storeAddress(value.masterAddress);
         b.storeAddress(value.recipient);
         b.storeMaybeRef(value.fulfillPayload);
         b.storeMaybeRef(value.rejectPayload);
@@ -158,11 +158,19 @@ export class DexRouter implements Contract {
 
     /* Getters */
 
-    async getPoolAddress(provider: ContractProvider, jettonMaster: Address): Promise<Address> {
+    async getPoolAddress(
+        provider: ContractProvider,
+        assetWallet0: Address,
+        assetWallet1: Address | null,
+    ): Promise<Address> {
         const poolAddress = await provider.get('get_pool_address', [
             {
                 type: 'slice',
-                cell: beginCell().storeAddress(jettonMaster).endCell(),
+                cell: beginCell().storeAddress(assetWallet0).endCell(),
+            },
+            {
+                type: 'slice',
+                cell: beginCell().storeAddress(assetWallet1).endCell(),
             },
         ]);
         return poolAddress.stack.readAddress();
