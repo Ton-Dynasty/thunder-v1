@@ -1,31 +1,48 @@
-cell pack_pool_data(slice dex_router_wallet_0, slice dex_router_wallet_1, cell lp_jetton_content) inline {
-
+(slice, slice, int, int) cal_order(slice dex_router_wallet_0, slice dex_router_wallet_1, int asset0_amount, int asset1_amount) inline {
+    
     slice main_wallet = address_none();
     slice other_wallet = address_none();
 
+    int main_amount = 0;
+    int other_amount = 0;
+
     if (equal_slices_bits(dex_router_wallet_0, address_none())) {
         main_wallet = dex_router_wallet_0;
+        main_amount = asset0_amount;
+
         other_wallet = dex_router_wallet_1;
+        other_amount = asset1_amount;
     } 
     elseif (equal_slices_bits(dex_router_wallet_1, address_none())) {
         main_wallet = dex_router_wallet_1;
+        main_amount = asset1_amount;
         other_wallet = dex_router_wallet_0;
+        other_amount = asset0_amount;
     } 
     else {
         if (dex_router_wallet_0.slice_hash() > dex_router_wallet_1.slice_hash()) {
             main_wallet = dex_router_wallet_0;
+            main_amount = asset0_amount;
             other_wallet = dex_router_wallet_1;
+            other_amount = asset1_amount;
         }
         else {
             main_wallet = dex_router_wallet_1;
+            main_amount = asset1_amount;
             other_wallet = dex_router_wallet_0;
+            other_amount = asset0_amount;
         }
     }
 
+    return (main_wallet, other_wallet, main_amount, other_amount);
+
+}
+
+cell pack_pool_data(slice dex_router_wallet_0, slice dex_router_wallet_1, cell lp_jetton_content) inline {
     cell init_data = begin_cell()
         .store_slice(my_address())
-        .store_slice(main_wallet)
-        .store_slice(other_wallet)
+        .store_slice(dex_router_wallet_0)
+        .store_slice(dex_router_wallet_1)
     .end_cell();
 
     return begin_cell()
@@ -93,6 +110,7 @@ cell pack_pool_data(slice dex_router_wallet_0, slice dex_router_wallet_1, cell l
 }
 
 cell calculate_pool_state_init(slice dex_router_wallet_0, slice dex_router_wallet_1) inline {
+
     return begin_cell()
     .store_uint(0, 2) ;; 0b00 - No split_depth; No special
     .store_maybe_ref(dex_router::pool_code)

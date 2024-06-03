@@ -11,7 +11,7 @@
 
 ;; ===== Internal =====
 (slice, cell, cell) internal::deposit_asset(
-    slice ctx::sender,
+    slice main_wallet,
     slice other_asset_wallet,
     int send_ton,
     int query_id, 
@@ -22,6 +22,7 @@
     cell fulfill_payload, 
     cell reject_payload
 ) impure inline {
+
     cell deposit_asset_payload = pack_deposit_asset_data(
         query_id, 
         asset0_amount, 
@@ -33,7 +34,7 @@
     );
 
     ;; Calculate recipient's wallet address
-    cell state_init = calculate_pool_state_init(ctx::sender, other_asset_wallet);
+    cell state_init = calculate_pool_state_init(main_wallet, other_asset_wallet);
     slice pool_address = calculate_address(state_init);
 
 
@@ -45,7 +46,7 @@
 ;; ===== Handle =====
 () handle::add_liquidity(
     int query_id,
-    slice ctx::sender,  
+    slice main_asset_wallet,  
     int ctx::value,
     int ctx::fwd_fee,
     int jetton_amount,
@@ -65,7 +66,7 @@
     (int total_fees, int gas_consumptoin) = cal_deploy_pool_fee(ctx::fwd_fee, 1);
     if(ctx::value < total_fees + ton_amount) {
         ;; When this happens, dex router will take gas_consumption / 2 from the jetton sender
-        transfer_jetton(BOUNCEABLE, ctx::sender, jetton_sender, jetton_amount, ctx::value - gas_consumptoin / 2, query_id, FORWARD_FEE, reject_payload, SEND_MODE_REGULAR);
+        transfer_jetton(BOUNCEABLE, main_asset_wallet, jetton_sender, jetton_amount, ctx::value - gas_consumptoin / 2, query_id, FORWARD_FEE, reject_payload, SEND_MODE_REGULAR);
         return();
     }
     int send_ton = ctx::value - ton_amount - gas_consumptoin;
@@ -74,23 +75,20 @@
         recipient = jetton_sender;
     }
 
+    (slice asset_0_wallet, slice asset_1_wallet, int asset_0_amount, int asset_1_amount) = cal_order(main_asset_wallet, other_asset_wallet, jetton_amount, other_asset_amount);
+
     (slice pool_address, cell deposit_asset_payload, cell state_init) = internal::deposit_asset(
-        ctx::sender,
-        other_asset_wallet,
+        asset_0_wallet,
+        asset_1_wallet,
         send_ton,
         query_id, 
-        jetton_amount, 
-        other_asset_amount, 
+        asset_0_amount, 
+        asset_1_amount, 
         min_lp_amount, 
         recipient,
         fulfill_payload,
         reject_payload
     );
-
-    ;; Calculate recipient's wallet address
-    ;; cell state_init = calculate_pool_state_init(jetton_sender, other_asset_wallet);
-    ;; slice pool_address = calculate_address(state_init);
-    ;; send_bounceable_msg(pool_address, send_ton, deposit_asset_payload, SEND_MODE_REGULAR);
 
     return ();
 }
@@ -333,10 +331,11 @@
 }
 
 ;; ===== Getter =====
-(slice) get_pool_address(slice asset_wallet_0, slice asset_wallet_1) method_id {
+(slice) get_pool_address(slice asset_0, slice asset_1) method_id {
     dex_router::load_data();
+    (slice asset_0_wallet, slice asset_1_wallet, _, _) = cal_order(asset_0, asset_1, 0, 0);
     ;; Calculate recipient's wallet address
-    cell state_init = calculate_pool_state_init(asset_wallet_0, asset_wallet_1);
+    cell state_init = calculate_pool_state_init(asset_0_wallet, asset_1_wallet);
     slice pool_address = calculate_address(state_init);
     return pool_address;
 }
