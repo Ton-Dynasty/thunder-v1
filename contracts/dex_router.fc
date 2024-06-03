@@ -43,35 +43,6 @@
 }
 
 ;; ===== Handle =====
-;; () handle::create_pool(
-;;     int query_id,
-;;     slice ctx::sender,  
-;;     int ctx::fwd_fee,
-;;     int jetton_amount,
-;;     slice jetton_sender,
-;;     int ton_amount,
-;;     slice master_address
-;; ) impure inline {
-;;     ;; TODO: check if sender is jetton master bond
-;;     (int total_fees, int gas_consumptoin) = cal_deploy_pool_fee(ctx::fwd_fee, 1);
-;;     throw_unless(error::not_enough_ton, BUILD_POOL_GAS_FEE > total_fees);
-;;     int send_ton = BUILD_POOL_GAS_FEE - gas_consumptoin;
-
-;;     (slice pool_address, cell deposit_asset_payload, cell state_init) = internal::deposit_asset(
-;;         master_address,
-;;         query_id, 
-;;         ton_amount, 
-;;         jetton_amount, 
-;;         0, 
-;;         dex_router::owner_address, ;; lp recipient but this is first time add liqudity so there will be no LP token
-;;         null(), ;; fulfill_payload
-;;         null() ;; reject_payload
-;;     );
-
-;;     deploy(BOUNCEABLE, pool_address, send_ton, deposit_asset_payload, state_init, SEND_MODE_REGULAR);
-;;     return ();
-;; }
-
 () handle::add_liquidity(
     int query_id,
     slice ctx::sender,  

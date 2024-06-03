@@ -19,9 +19,9 @@ export type DexRouterConfig = {
 
 export type AddLiquidityFP = {
     $$type: 'AddLiquidityFP';
-    tonAmount: bigint;
+    otherAssetAmount: bigint;
+    otherAssetWallet: Maybe<Address>;
     minLpAmount: bigint;
-    masterAddress: Address;
     recipient: Maybe<Address>;
     fulfillPayload: Maybe<Cell>;
     rejectPayload: Maybe<Cell>;
@@ -68,9 +68,9 @@ export function dexRouterConfigToCell(config: DexRouterConfig): Cell {
 export function storeAddLiquidityFP(value: AddLiquidityFP) {
     return (b: Builder) => {
         b.storeUint(DexRouterOpcode.AddLiquidity, 32);
-        b.storeCoins(value.tonAmount);
+        b.storeCoins(value.otherAssetAmount);
+        b.storeAddress(value.otherAssetWallet);
         b.storeCoins(value.minLpAmount);
-        b.storeAddress(value.masterAddress);
         b.storeAddress(value.recipient);
         b.storeMaybeRef(value.fulfillPayload);
         b.storeMaybeRef(value.rejectPayload);
