@@ -2,10 +2,10 @@ const gas::gas_consumption = 20000000; ;; 0.2 gas
 const gas::forward_ton = 100000000; ;; 0.1 gas
 
 const MIN_STORAGE_DURATION = 72 * 3600; ;; 3 days
-const POOL_DEPOSIT_GAS = 12495;
+const POOL_DEPOSIT_GAS = 14901;
 
-const POOL_BITS = 14268;
-const POOL_CELLS = 28;
+const POOL_BITS = 21950;
+const POOL_CELLS = 47;
 
 ;; Jetton transfer fees
 const JETTON_NOTIFY_GAS_CONSUMPTION = 16721;

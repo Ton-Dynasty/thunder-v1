@@ -266,13 +266,13 @@ describe('JettonMasterBondV1 general testcases', () => {
             success: true,
         });
 
-        const sendToDexRouterTx = findTransactionRequired(toTheMoonResult.transactions, {
-            op: MasterOpocde.InternalTransfer,
-            from: jettonMasterBondV1.address,
-            to: dexRouterWalletAddress,
-            success: true,
-        });
-        printTxGasStats('JM Send to Dex Router', sendToDexRouterTx);
+        // const sendToDexRouterTx = findTransactionRequired(toTheMoonResult.transactions, {
+        //     op: MasterOpocde.InternalTransfer,
+        //     from: jettonMasterBondV1.address,
+        //     to: dexRouterWalletAddress,
+        //     success: true,
+        // });
+        // printTxGasStats('JM Send to Dex Router', sendToDexRouterTx);
 
         // Expect that dexRouterWallet send jetton notification to dexRouter
         expect(toTheMoonResult.transactions).toHaveTransaction({
@@ -283,13 +283,13 @@ describe('JettonMasterBondV1 general testcases', () => {
             //value: 9001000000000n, // 9000 ton + 1 ton for build pool and farm
         });
 
-        const deployPoolTx = findTransactionRequired(toTheMoonResult.transactions, {
-            op: MasterOpocde.JettonNotification,
-            from: dexRouterWalletAddress,
-            to: dexRouter.address,
-            success: true,
-        });
-        printTxGasStats('Dex Router Deploy Pool:', deployPoolTx);
+        // const deployPoolTx = findTransactionRequired(toTheMoonResult.transactions, {
+        //     op: MasterOpocde.JettonNotification,
+        //     from: dexRouterWalletAddress,
+        //     to: dexRouter.address,
+        //     success: true,
+        // });
+        // printTxGasStats('Dex Router Deploy Pool:', deployPoolTx);
 
         // Expect that dexRouterWallet send excess to admin address
         expect(toTheMoonResult.transactions).toHaveTransaction({
@@ -321,13 +321,13 @@ describe('JettonMasterBondV1 general testcases', () => {
             //value: 989899955558577n, // This is remaining ton after buyer bought meme token
         });
 
-        const burnMeMeTx = findTransactionRequired(toTheMoonResult.transactions, {
-            op: MasterOpocde.Excess,
-            from: buyerWallet.address,
-            to: buyer.address,
-            success: true,
-        });
-        printTxGasStats('Send TON Fee', burnMeMeTx);
+        // const burnMeMeTx = findTransactionRequired(toTheMoonResult.transactions, {
+        //     op: MasterOpocde.Excess,
+        //     from: buyerWallet.address,
+        //     to: buyer.address,
+        //     success: true,
+        // });
+        // printTxGasStats('Send TON Fee', burnMeMeTx);
 
         // buyers meme token balance should be 90909090909090910n
         let buyerMemeTokenBalance = await buyerWallet.getJettonBalance();

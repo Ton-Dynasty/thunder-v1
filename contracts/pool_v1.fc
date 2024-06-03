@@ -35,7 +35,7 @@
     ;; Make sure that sending ton is enough to complete the whole transaction
     (int total_fees, int gas_consumption) = cal_deposit_asset_fee(ctx::fwd_fee);
     throw_unless(error::not_enough_ton, ctx::value > total_fees);
-    int send_ton = ctx::value - 34295667;
+    int send_ton = ctx::value - gas_consumption;
 
     (lp_recipient, int lp_amount) = simulate::deposit(asset0_amount, asset1_amount, lp_recipient);
     if(min_lp_amount > lp_amount) {
