@@ -189,6 +189,55 @@
 ;;     return ();
 ;; }
 
+() handle::payout_from_pool(
+    int query_id,
+    slice ctx::sender,
+    int ctx::value,
+    int ctx::fwd_fee,
+    slice sender,
+    slice asset_address,
+    int amount_out,
+    slice recipient,
+    cell payload
+) impure inline {
+    if (is_address_none(asset_address)){
+        ~strdump("swap out ton");
+        ;; TON transfer
+        ~dump(recipient);
+        ~dump(amount_out + ctx::value - GAS_CONSUMPTION);
+        ;; transfer_ton(
+        ;;     BOUNCEABLE, 
+        ;;     recipient, 
+        ;;     amount_out + ctx::value - GAS_CONSUMPTION,
+        ;;     payload, 
+        ;;     SEND_MODE_REGULAR
+        ;; );
+        ~strdump("swap out ton done");
+        return ();
+    }
+    int send_ton = ctx::value - FORWARD_FEE - GAS_CONSUMPTION;
+    int forward_ton = FORWARD_FEE;
+    slice dex_router_jetton_wallet = calculate_jetton_wallet_address(
+        calculate_jetton_wallet_state_init(
+            my_address(), 
+            asset_address, 
+            dex_router::jetton_wallet_code
+        )
+    );
+    transfer_jetton(
+        BOUNCEABLE, 
+        dex_router_jetton_wallet, 
+        recipient, 
+        amount_out, 
+        send_ton, 
+        query_id, 
+        forward_ton, 
+        payload, 
+        SEND_MODE_REGULAR
+    );
+    return ();
+}
+
 () route_internal(slice ctx::sender, int ctx::value, int ctx::fwd_fee, slice ctx::body) impure inline {
     dex_router::load_data();
     ;; load op and query id
@@ -274,8 +323,22 @@
     }
 
     if(op == op::payout_from_pool) {
-        
-        return ();
+        slice sender = ctx::body~load_msg_addr();
+        slice asset_address = ctx::body~load_msg_addr();
+        int amount_out = ctx::body~load_coins();
+        slice recipient = ctx::body~load_msg_addr();
+        cell payload = ctx::body~load_maybe_ref();
+        return handle::payout_from_pool(
+            query_id,
+            ctx::sender,
+            ctx::value,
+            ctx::fwd_fee,
+            sender,
+            asset_address,
+            amount_out,
+            recipient,
+            payload
+        );
     }
 
     if (op == op::top_up) {
