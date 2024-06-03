@@ -100,10 +100,90 @@
         reject_payload
     );
 
+    ;; Calculate receiver's wallet address
+    cell state_init = calculate_pool_state_init(master_address);
+    slice pool_address = calculate_address(state_init);
     send_bounceable_msg(pool_address, send_ton, deposit_asset_payload, SEND_MODE_REGULAR);
 
     return ();
 }
+
+() handle::swap_jetton(
+    int query_id,
+    slice ctx::sender,  
+    int ctx::value,
+    int ctx::fwd_fee,
+    int jetton_amount,
+    slice jetton_sender,
+    slice master_address,
+    int asset_in,
+    int min_amount_out,
+    int deadline,
+    slice recipient,
+    cell next,
+    cell extra_payload,
+    cell fulfill_payload,
+    cell reject_payload
+) impure inline {
+    throw_unless(error::not_enough_ton, ctx::value > ctx::fwd_fee);
+    int send_ton = ctx::value - ctx::fwd_fee;
+
+    cell swap_jetton_payload = pack_swap_internal(
+        query_id,
+        jetton_sender,
+        asset_in,
+        jetton_amount,
+        min_amount_out,
+        deadline,
+        recipient,
+        extra_payload,
+        fulfill_payload,
+        reject_payload
+    );
+
+    ;; Calculate receiver's wallet address
+    cell state_init = calculate_pool_state_init(master_address);
+    slice pool_address = calculate_address(state_init);
+    send_bounceable_msg(pool_address, send_ton, swap_jetton_payload, SEND_MODE_REGULAR);
+    return ();
+}
+
+;; () handle::swap_ton(
+;;     int query_id,
+;;     slice ctx::sender,  
+;;     int ctx::value,
+;;     int ctx::fwd_fee,
+;;     int ton_amount,
+;;     int min_amount_out,
+;;     int deadline,
+;;     slice recipient,
+;;     cell next,
+;;     cell extra_payload,
+;;     cell fulfill_payload,
+;;     cell reject_payload
+;; ) impure inline {
+;;     dex_router::load_data();
+;;     throw_unless(error::not_enough_ton, ctx::value > ctx::fwd_fee);
+;;     int send_ton = ctx::value - ctx::fwd_fee;
+
+;;     cell swap_ton_payload = pack_swap_ton_data(
+;;         query_id,
+;;         ton_amount,
+;;         min_amount_out,
+;;         deadline,
+;;         recipient,
+;;         next,
+;;         extra_payload,
+;;         fulfill_payload,
+;;         reject_payload
+;;     );
+
+;;     cell state_init = calculate_pool_state_init(dex_router::owner_address);
+;;     slice pool_address = calculate_address(state_init);
+
+;;     send_bounceable_msg(pool_address, send_ton, swap_ton_payload, SEND_MODE_REGULAR);
+;;     return ();
+;; }
 
 () route_internal(slice ctx::sender, int ctx::value, int ctx::fwd_fee, slice ctx::body) impure inline {
     dex_router::load_data();
@@ -157,7 +237,32 @@
         }
 
         if(op == op::swap_jetton) {
-            return ();
+            slice master_address = forward_payload~load_msg_addr();
+            int asset_in = forward_payload~load_uint(1);
+            int min_amount_out = forward_payload~load_coins();
+            int deadline = forward_payload~load_uint(64);
+            slice recipient = forward_payload~load_msg_addr();
+            cell next = forward_payload~load_maybe_ref();
+            cell extra_payload = forward_payload~load_maybe_ref();
+            cell fulfill_payload = forward_payload~load_maybe_ref();
+            cell reject_payload = forward_payload~load_maybe_ref();
+            return handle::swap_jetton(
+                query_id,
+                ctx::sender,
+                ctx::value,
+                ctx::fwd_fee,
+                jetton_amount,
+                jetton_sender,
+                master_address,
+                asset_in,
+                min_amount_out,
+                deadline,
+                recipient,
+                next,
+                extra_payload,
+                fulfill_payload,
+                reject_payload
+            );
         }
     }
 
@@ -187,6 +292,7 @@
     route_internal(ctx::sender, ctx::value, ctx::fwd_fee, ctx::body);
 }
 
+;; ===== Getter =====
 (slice) get_pool_address(slice jetton_master_address) method_id {
     dex_router::load_data();
     ;; Calculate receiver's wallet address

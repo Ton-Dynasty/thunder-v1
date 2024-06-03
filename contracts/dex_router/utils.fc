@@ -17,29 +17,6 @@ cell pack_pool_data(slice jetton_master_address, cell lp_jetton_content) inline 
             .store_ref(dex_router::lp_wallet_code)
             .store_ref(lp_jetton_content)
         .end_cell();
-    }
-
-cell calculate_pool_state_init(slice jetton_master_address) inline {
-    return begin_cell()
-    .store_uint(0, 2) ;; 0b00 - No split_depth; No special
-    .store_maybe_ref(dex_router::pool_code)
-    .store_maybe_ref(
-        pack_pool_data(
-            jetton_master_address,
-            begin_cell().end_cell() ;; TODO: This should replaced with real LP jetton content
-        )
-    )
-    .store_uint(0, 1) ;; Empty libraries
-    .end_cell();
-}
-
-slice calculate_address(cell state_init) inline {
-    return begin_cell()
-    .store_uint(4, 3) ;; 0b100 = addr_std$10 tag; No anycast
-    .store_int(MY_WORKCHAIN, 8)
-    .store_uint(cell_hash(state_init), 256)
-    .end_cell()
-    .begin_parse();
 }
 
 (cell) pack_deposit_asset_data(
@@ -64,3 +41,56 @@ slice calculate_address(cell state_init) inline {
         .end_cell();
     return msg_body;
 }
+
+(cell) pack_swap_internal(
+    int query_id, 
+    slice sender,
+    int asset_in,
+    int amount_in, 
+    int min_amount_out,
+    int deadline, 
+    slice recipient,
+    cell extra_payload,
+    cell fulfill_payload, 
+    cell reject_payload
+) {
+    cell msg_body = begin_cell()
+        .store_op(op::swap_internal)
+        .store_query_id(query_id)
+        .store_slice(sender)
+        .store_uint(asset_in, 1)
+        .store_coins(amount_in)
+        .store_coins(min_amount_out)
+        .store_uint(deadline, 64)
+        .store_slice(recipient)
+        .store_maybe_ref(extra_payload)
+        .store_maybe_ref(fulfill_payload)
+        .store_maybe_ref(reject_payload)
+        .end_cell();
+    return msg_body;
+}
+
+cell calculate_pool_state_init(slice jetton_master_address) inline {
+    return begin_cell()
+    .store_uint(0, 2) ;; 0b00 - No split_depth; No special
+    .store_maybe_ref(dex_router::pool_code)
+    .store_maybe_ref(
+        pack_pool_data(
+            jetton_master_address,
+            begin_cell().end_cell() ;; TODO: This should replaced with real LP jetton content
+        )
+    )
+    .store_uint(0, 1) ;; Empty libraries
+    .end_cell();
+}
+
+slice calculate_address(cell state_init) inline {
+    return begin_cell()
+    .store_uint(4, 3) ;; 0b100 = addr_std$10 tag; No anycast
+    .store_int(MY_WORKCHAIN, 8)
+    .store_uint(cell_hash(state_init), 256)
+    .end_cell()
+    .begin_parse();
+}
+
+
