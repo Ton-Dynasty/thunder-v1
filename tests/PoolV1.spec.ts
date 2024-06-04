@@ -193,12 +193,12 @@ describe('PoolV1', () => {
     beforeAll(async () => {
         poolV1Code = await compile(PoolV1.name);
         jettonWalletCode = await compile(JettonWallet.name);
-        printTxGasStats = (name, transaction) => {
-            const txComputed = computedGeneric(transaction);
-            console.log(`${name} used ${txComputed.gasUsed} gas`);
-            console.log(`${name} gas cost: ${txComputed.gasFees}`);
-            return txComputed.gasFees;
-        };
+        // printTxGasStats = (name, transaction) => {
+        //     const txComputed = computedGeneric(transaction);
+        //     console.log(`${name} used ${txComputed.gasUsed} gas`);
+        //     console.log(`${name} gas cost: ${txComputed.gasFees}`);
+        //     return txComputed.gasFees;
+        // };
     });
 
     beforeEach(async () => {
@@ -292,13 +292,13 @@ describe('PoolV1', () => {
             success: true,
         });
 
-        const depositAssetTx = findTransactionRequired(result.transactions, {
-            op: PoolOpcodes.Deposit,
-            from: dexRouter.address,
-            to: poolV1.address,
-            success: true,
-        });
-        printTxGasStats('depositAssetTx', depositAssetTx);
+        // const depositAssetTx = findTransactionRequired(result.transactions, {
+        //     op: PoolOpcodes.Deposit,
+        //     from: dexRouter.address,
+        //     to: poolV1.address,
+        //     success: true,
+        // });
+        // printTxGasStats('depositAssetTx', depositAssetTx);
 
         // Expect that pool send LP token to buyer LP wallet
         expect(result.transactions).toHaveTransaction({
@@ -553,13 +553,13 @@ describe('PoolV1', () => {
             success: true,
         });
 
-        const SwapInternalToRouter = findTransactionRequired(result.transactions, {
-            op: PoolOpcodes.JettonNotification,
-            from: dexRouterWalletAddress,
-            to: dexRouter.address,
-            success: true,
-        });
-        printTxGasStats('SwapInternalToRouter', SwapInternalToRouter);
+        // const SwapInternalToRouter = findTransactionRequired(result.transactions, {
+        //     op: PoolOpcodes.JettonNotification,
+        //     from: dexRouterWalletAddress,
+        //     to: dexRouter.address,
+        //     success: true,
+        // });
+        // printTxGasStats('SwapInternalToRouter', SwapInternalToRouter);
 
         // Expect that Dex Router send Swap Internal to Pool
         expect(result.transactions).toHaveTransaction({
@@ -569,13 +569,13 @@ describe('PoolV1', () => {
             success: true,
         });
 
-        const SwapInternalToPool = findTransactionRequired(result.transactions, {
-            op: PoolOpcodes.SwapInternal,
-            from: dexRouter.address,
-            to: poolV1.address,
-            success: true,
-        });
-        printTxGasStats('SwapInternalToPool', SwapInternalToPool);
+        // const SwapInternalToPool = findTransactionRequired(result.transactions, {
+        //     op: PoolOpcodes.SwapInternal,
+        //     from: dexRouter.address,
+        //     to: poolV1.address,
+        //     success: true,
+        // });
+        // printTxGasStats('SwapInternalToPool', SwapInternalToPool);
 
         // Expect that Pool send Ton PayoutFromPool to Dex Router
         expect(result.transactions).toHaveTransaction({
@@ -585,13 +585,13 @@ describe('PoolV1', () => {
             success: true,
         });
 
-        const PackoutFromPool = findTransactionRequired(result.transactions, {
-            op: PoolOpcodes.PayoutFromPool,
-            from: poolV1.address,
-            to: dexRouter.address,
-            success: true,
-        });
-        printTxGasStats('PackoutFromPool', PackoutFromPool);
+        // const PackoutFromPool = findTransactionRequired(result.transactions, {
+        //     op: PoolOpcodes.PayoutFromPool,
+        //     from: poolV1.address,
+        //     to: dexRouter.address,
+        //     success: true,
+        // });
+        // printTxGasStats('PackoutFromPool', PackoutFromPool);
 
         // Expect that Dex Router send Excess to buyer
         expect(result.transactions).toHaveTransaction({
@@ -713,13 +713,13 @@ describe('PoolV1', () => {
             success: true,
         });
 
-        const SwapInternalTon = findTransactionRequired(result.transactions, {
-            op: PoolOpcodes.SwapTon,
-            from: buyer.address,
-            to: dexRouter.address,
-            success: true,
-        });
-        printTxGasStats('SwapInternalTon', SwapInternalTon);
+        // const SwapInternalTon = findTransactionRequired(result.transactions, {
+        //     op: PoolOpcodes.SwapTon,
+        //     from: buyer.address,
+        //     to: dexRouter.address,
+        //     success: true,
+        // });
+        // printTxGasStats('SwapInternalTon', SwapInternalTon);
 
         // Expect that Dex Router send Swap Internal to Pool
         expect(result.transactions).toHaveTransaction({
@@ -737,13 +737,13 @@ describe('PoolV1', () => {
             success: true,
         });
 
-        const SwapInternalToPool = findTransactionRequired(result.transactions, {
-            op: PoolOpcodes.SwapInternal,
-            from: dexRouter.address,
-            to: poolV1.address,
-            success: true,
-        });
-        printTxGasStats('SwapInternalToPool', SwapInternalToPool);
+        // const SwapInternalToPool = findTransactionRequired(result.transactions, {
+        //     op: PoolOpcodes.SwapInternal,
+        //     from: dexRouter.address,
+        //     to: poolV1.address,
+        //     success: true,
+        // });
+        // printTxGasStats('SwapInternalToPool', SwapInternalToPool);
 
         // Pool send packout from pool to dex router
         expect(result.transactions).toHaveTransaction({
@@ -753,13 +753,13 @@ describe('PoolV1', () => {
             success: true,
         });
 
-        const PackoutFromPool = findTransactionRequired(result.transactions, {
-            op: PoolOpcodes.PayoutFromPool,
-            from: poolV1.address,
-            to: dexRouter.address,
-            success: true,
-        });
-        printTxGasStats('PackoutFromPool', PackoutFromPool);
+        // const PackoutFromPool = findTransactionRequired(result.transactions, {
+        //     op: PoolOpcodes.PayoutFromPool,
+        //     from: poolV1.address,
+        //     to: dexRouter.address,
+        //     success: true,
+        // });
+        // printTxGasStats('PackoutFromPool', PackoutFromPool);
 
         // Expect that Dex Router send Jetton Transfer to Dex Router Jetton Wallet
         expect(result.transactions).toHaveTransaction({
@@ -1021,13 +1021,13 @@ describe('PoolV1', () => {
             success: true,
         });
 
-        const WithdrawAsset = findTransactionRequired(result.transactions, {
-            op: PoolOpcodes.JettonNotification,
-            from: poolLpWalletAddress,
-            to: poolV1.address,
-            success: true,
-        });
-        printTxGasStats('WithdrawAsset', WithdrawAsset);
+        // const WithdrawAsset = findTransactionRequired(result.transactions, {
+        //     op: PoolOpcodes.JettonNotification,
+        //     from: poolLpWalletAddress,
+        //     to: poolV1.address,
+        //     success: true,
+        // });
+        // printTxGasStats('WithdrawAsset', WithdrawAsset);
 
         // Expect that Pool send payout from pool to Dex Router
         expect(result.transactions).toHaveTransaction({
@@ -1077,13 +1077,13 @@ describe('PoolV1', () => {
             success: true,
         });
 
-        const BurnLp = findTransactionRequired(result.transactions, {
-            op: PoolOpcodes.Burn,
-            from: poolV1.address,
-            to: poolLpWalletAddress,
-            success: true,
-        });
-        printTxGasStats('BurnLp', BurnLp);
+        // const BurnLp = findTransactionRequired(result.transactions, {
+        //     op: PoolOpcodes.Burn,
+        //     from: poolV1.address,
+        //     to: poolLpWalletAddress,
+        //     success: true,
+        // });
+        // printTxGasStats('BurnLp', BurnLp);
 
         // Expect that pool lp wallet balance should be remain the same
         expect(poolLpWalletBalanceAfter).toEqual(poolLpWalletBalanceBefore);

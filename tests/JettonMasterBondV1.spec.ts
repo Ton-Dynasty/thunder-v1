@@ -22,19 +22,19 @@ describe('JettonMasterBondV1 general testcases', () => {
 
     beforeEach(async () => {
         ({ blockchain, deployer, dexRouter, jettonMasterBondV1 } = await loadJMBondFixture());
-        printTxGasStats = (name, transaction) => {
-            const txComputed = computedGeneric(transaction);
-            console.log(`${name} used ${txComputed.gasUsed} gas`);
-            console.log(`${name} gas cost: ${txComputed.gasFees}`);
-            return txComputed.gasFees;
-        };
+        // printTxGasStats = (name, transaction) => {
+        //     const txComputed = computedGeneric(transaction);
+        //     console.log(`${name} used ${txComputed.gasUsed} gas`);
+        //     console.log(`${name} gas cost: ${txComputed.gasFees}`);
+        //     return txComputed.gasFees;
+        // };
     });
 
     const userWallet = async (address: Address, jettonMaster: SandboxContract<JettonMasterBondV1>) =>
         blockchain.openContract(JettonWallet.createFromAddress(await jettonMaster.getWalletAddress(address)));
 
     it('should deploy', async () => {
-        // Calculate Jetton Master Bond contract gas fee
+        // // Calculate Jetton Master Bond contract gas fee
         // const smc = await blockchain.getContract(jettonMasterBondV1.address);
         // if (smc.accountState === undefined) throw new Error("Can't access wallet account state");
         // if (smc.accountState.type !== 'active') throw new Error('Wallet account is not active');
@@ -44,16 +44,16 @@ describe('JettonMasterBondV1 general testcases', () => {
         // const state = smc.accountState.state;
         // const stateCell = beginCell().store(storeStateInit(state)).endCell();
         // console.log('State init stats:', collectCellStats(stateCell, []));
-        // Calculate Dex Router contract gas fee
-        const smc = await blockchain.getContract(dexRouter.address);
-        if (smc.accountState === undefined) throw new Error("Can't access wallet account state");
-        if (smc.accountState.type !== 'active') throw new Error('Wallet account is not active');
-        if (smc.account.account === undefined || smc.account.account === null)
-            throw new Error("Can't access wallet account!");
-        console.log('dexRouter max storage stats:', smc.account.account.storageStats.used);
-        const state = smc.accountState.state;
-        const stateCell = beginCell().store(storeStateInit(state)).endCell();
-        console.log('State init stats:', collectCellStats(stateCell, []));
+        // // Calculate Dex Router contract gas fee
+        // const smc2 = await blockchain.getContract(dexRouter.address);
+        // if (smc2.accountState === undefined) throw new Error("Can't access wallet account state");
+        // if (smc2.accountState.type !== 'active') throw new Error('Wallet account is not active');
+        // if (smc2.account.account === undefined || smc2.account.account === null)
+        //     throw new Error("Can't access wallet account!");
+        // console.log('dexRouter max storage stats:', smc2.account.account.storageStats.used);
+        // const state2 = smc.accountState.state;
+        // const stateCell2 = beginCell().store(storeStateInit(state2)).endCell();
+        // console.log('State init stats:', collectCellStats(stateCell2, []));
     });
 
     it('should buy token with 10 tons', async () => {

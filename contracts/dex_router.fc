@@ -10,7 +10,7 @@
 #include "dex_router/gas.fc";
 
 ;; ===== Internal =====
-(slice, cell, cell) internal::deposit_asset(
+() internal::deposit_asset(
     slice provider,
     slice main_wallet,
     slice other_asset_wallet,
@@ -39,10 +39,7 @@
     cell state_init = calculate_pool_state_init(main_wallet, other_asset_wallet);
     slice pool_address = calculate_address(state_init);
 
-
     deploy(BOUNCEABLE, pool_address, send_ton, deposit_asset_payload, state_init, SEND_MODE_REGULAR);
-
-    return (pool_address, deposit_asset_payload, state_init);
 }
 
 ;; ===== Handle =====
@@ -60,10 +57,7 @@
     cell fulfill_payload,
     cell reject_payload
 ) impure inline {
-    int ton_amount = 0;
-    if(is_address_none(other_asset_wallet)) {
-        ton_amount = other_asset_amount;
-    }
+    int ton_amount = is_address_none(other_asset_wallet) ? other_asset_amount : 0;
 
     (int total_fees, int gas_consumptoin) = cal_deploy_pool_fee(ctx::fwd_fee);
     if(ctx::value < total_fees + ton_amount) {
@@ -79,7 +73,7 @@
 
     (slice asset_0_wallet, slice asset_1_wallet, int asset_0_amount, int asset_1_amount) = cal_order(main_asset_wallet, other_asset_wallet, jetton_amount, other_asset_amount);
 
-    (slice pool_address, cell deposit_asset_payload, cell state_init) = internal::deposit_asset(
+    internal::deposit_asset(
         jetton_sender,
         asset_0_wallet,
         asset_1_wallet,
@@ -130,7 +124,7 @@
         reject_payload
     );
 
-    (slice asset_0_wallet, slice asset_1_wallet, _, _) = cal_order(ctx::sender, other_asset_wallet, jetton_amount, 0);
+    (slice asset_0_wallet, slice asset_1_wallet, _, _) = cal_order(ctx::sender, other_asset_wallet, 0, 0);
     slice pool_address = calculate_address(calculate_pool_state_init(asset_0_wallet, asset_1_wallet));
     send_bounceable_msg(pool_address, send_ton, swap_jetton_payload, SEND_MODE_REGULAR);
     return ();

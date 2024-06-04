@@ -93,6 +93,7 @@
     cell fulfill_payload,
     cell reject_payload
 ) impure inline {
+    ;; Make sure that only dex router can send swap message
     throw_unless(error::invalid_sender, equal_slices(ctx::sender, pool::dex_router));
 
     (int total_fees, int gas_consumption) = cal_swap_internal(ctx::fwd_fee);
@@ -255,7 +256,6 @@
     }
 
     if (op == op::deposit) {
-        (_, int hashpart) = parse_std_addr(my_address());
         slice provider = ctx::body~load_msg_addr();
         int asset0_amount = ctx::body~load_coins();
         int asset1_amount = ctx::body~load_coins();
