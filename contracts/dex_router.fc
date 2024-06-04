@@ -225,6 +225,7 @@
 
         int jetton_amount = ctx::body~load_coins();
         slice jetton_sender = ctx::body~load_msg_addr();
+        ctx::body~skip_bits(1);
         slice forward_payload = ctx::body~load_ref().begin_parse();
 
         op = forward_payload~load_op(); ;; op MUST be the first 32 bits of the payload in this case
@@ -236,6 +237,7 @@
             slice recipient = forward_payload~load_msg_addr();
             cell fulfill_payload = forward_payload~load_maybe_ref();
             cell reject_payload = forward_payload~load_maybe_ref();
+            ctx::body.end_parse();
 
             return handle::add_liquidity(
                 query_id,
@@ -263,6 +265,7 @@
             cell extra_payload = forward_payload~load_maybe_ref();
             cell fulfill_payload = forward_payload~load_maybe_ref();
             cell reject_payload = forward_payload~load_maybe_ref();
+            ctx::body.end_parse();
             return handle::swap_jetton(
                 query_id,
                 ctx::sender,
@@ -293,6 +296,7 @@
         cell extra_payload = ctx::body~load_maybe_ref();
         cell fulfill_payload = ctx::body~load_maybe_ref();
         cell reject_payload = ctx::body~load_maybe_ref();
+        ctx::body.end_parse();
         return handle::swap_ton(
             query_id,
             ctx::sender,
@@ -317,6 +321,7 @@
         int amount_out = ctx::body~load_coins();
         slice recipient = ctx::body~load_msg_addr();
         cell payload = ctx::body~load_maybe_ref();
+        ctx::body.end_parse();
         return handle::payout_from_pool(
             query_id,
             ctx::sender,
@@ -335,7 +340,7 @@
         return ();
     }
 
-    throw(0xffffff);
+    throw(error::invalid_op);
 }
 
 () main(int ctx::value, cell in_msg_full, slice ctx::body) impure {

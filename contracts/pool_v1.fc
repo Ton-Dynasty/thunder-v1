@@ -227,17 +227,17 @@
     if (op == op::transfer_notification) {
         int jetton_amount = ctx::body~load_coins();
         slice jetton_sender = ctx::body~load_msg_addr();
+        ctx::body~skip_bits(1);
         slice forward_payload = ctx::body~load_ref().begin_parse();
 
         op = forward_payload~load_op(); ;; op MUST be the first 32 bits of the payload in this case
-
         if (op == op::withdraw) {
             int asset0_min_amount = forward_payload~load_coins();
             int asset1_min_amount = forward_payload~load_coins();
-
             slice recipient = forward_payload~load_msg_addr();
             cell fulfill_payload = forward_payload~load_maybe_ref();
             cell reject_payload = forward_payload~load_maybe_ref();
+            ctx::body.end_parse();
             return handle::withdraw(
                 query_id,
                 ctx::sender,
@@ -263,6 +263,8 @@
         slice lp_recipient = ctx::body~load_msg_addr();
         cell fulfill_payload = ctx::body~load_maybe_ref();
         cell reject_payload = ctx::body~load_maybe_ref();
+        ctx::body.end_parse();
+        
         handle::deposit(
             query_id,
             ctx::sender,
@@ -288,6 +290,7 @@
         cell extra_payload = ctx::body~load_maybe_ref();
         cell fulfill_payload = ctx::body~load_maybe_ref();
         cell reject_payload = ctx::body~load_maybe_ref();
+        ctx::body.end_parse();
 
         return handle::swap_internal(
             query_id,
@@ -306,7 +309,45 @@
         );
     }
 
-    if (op == op::top_up) {
+    if op == op::upgrade {
+        throw_unless(error::invalid_sender, equal_slices_bits(ctx::sender, pool::admin_address));
+        (cell new_data, cell new_code) = (ctx::body~load_ref(), ctx::body~load_ref());
+        ctx::body.end_parse();
+        set_data(new_data);
+        if(~ null?(new_code)){
+            set_code(new_code);
+        }
+        return ();
+    }
+
+    if op == op::provide_wallet_address {
+        ;; see provide_wallet_address TL-B layout in jetton.tlb
+        slice owner_address = ctx::body~load_msg_addr();
+        int include_address? = ctx::body~load_bool();
+        ctx::body.end_parse();
+
+        cell included_address = include_address?
+        ? begin_cell().store_slice(owner_address).end_cell()
+        : null();
+
+        ;; build MessageRelaxed, see TL-B layout in stdlib.fc#L733
+        var msg = begin_cell()
+        .store_msg_flags_and_address_none(NON_BOUNCEABLE)
+        .store_slice(ctx::sender)
+        .store_coins(0)
+        .store_prefix_only_body()
+        .store_op(op::take_wallet_address)
+        .store_query_id(query_id);
+
+        if (is_same_workchain(owner_address)) {
+            msg = msg.store_slice(calculate_jetton_wallet_address(calculate_jetton_wallet_state_init(owner_address, my_address(), pool::lp_jetton_wallet_code)));
+        } else {
+            msg = msg.store_address_none();
+        }
+
+        cell msg_cell = msg.store_maybe_ref(included_address).end_cell();
+
+        send_raw_message(msg_cell, SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE | SEND_MODE_BOUNCE_ON_ACTION_FAIL);
         return ();
     }
 

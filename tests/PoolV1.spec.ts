@@ -974,6 +974,7 @@ describe('PoolV1', () => {
         let poolDataBefore = await poolV1.getPoolData();
 
         const result = await withdraw(buyer, poolV1, lpAmount, asset0MinAmount, asset1MinAmount);
+        printTransactionFees(result.transactions)
 
         // get pool lp wallet balance after
         let poolLpWalletBalanceAfter = await poolLpWallet.getJettonBalance();

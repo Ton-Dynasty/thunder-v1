@@ -25,8 +25,6 @@ const SWAP_INTERNAL_DR_GAS = 12099; ;; Dex Router Jetton Wallet -> Dex Router (J
 const POOL_BITS = 27187;
 const POOL_CELLS = 61;
 const BUILD_POOL_GAS_FEE = 100000000; ;; 0.1 TON
-
-;; Pool Related
 const POOL_DEPOSIT_GAS = 18209;
 const SWAP_INTERNAL_POOL_GAS = 14987;
 const PACKOUT_FROM_POOL_GAS = 11579;
