@@ -37,3 +37,14 @@ const WITHDRAW_GAS = 15508;
 ;; Others
 const FORWARD_FEE = 30000000; ;; 0.03 TON
 const EMIT_GAS = 2800000;
+
+int get_jetton_transfer_fee() inline {
+    int pool_gas_consumption = get_precompiled_gas_consumption();
+    int send_transfer_gas_consumption = null?(pool_gas_consumption) ? SEND_TRANSFER_GAS_CONSUMPTION : pool_gas_consumption;
+    int receive_transfer_gas_consumption = null?(pool_gas_consumption) ? RECEIVE_TRANSFER_GAS_CONSUMPTION : pool_gas_consumption;
+    return get_compute_fee(MY_WORKCHAIN, send_transfer_gas_consumption) + get_compute_fee(MY_WORKCHAIN, receive_transfer_gas_consumption);
+}
+
+int forward_wallet_init_state_overhead() inline {
+    return get_simple_forward_fee(MY_WORKCHAIN, JETTON_WALLET_INITSTATE_BITS, JETTON_WALLET_INITSTATE_CELLS);
+}

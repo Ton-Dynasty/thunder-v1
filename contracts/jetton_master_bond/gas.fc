@@ -8,17 +8,6 @@ int forward_pool_init_state_overhead() inline {
     return get_simple_forward_fee(MY_WORKCHAIN, POOL_BITS, POOL_CELLS);
 }
 
-int forward_wallet_init_state_overhead() inline {
-    return get_simple_forward_fee(MY_WORKCHAIN, JETTON_WALLET_INITSTATE_BITS, JETTON_WALLET_INITSTATE_CELLS);
-}
-
-int get_jetton_transfer_fee() inline {
-    int pool_gas_consumption = get_precompiled_gas_consumption();
-    int send_transfer_gas_consumption = null?(pool_gas_consumption) ? SEND_TRANSFER_GAS_CONSUMPTION : pool_gas_consumption;
-    int receive_transfer_gas_consumption = null?(pool_gas_consumption) ? RECEIVE_TRANSFER_GAS_CONSUMPTION : pool_gas_consumption;
-    return get_compute_fee(MY_WORKCHAIN, send_transfer_gas_consumption) + get_compute_fee(MY_WORKCHAIN, receive_transfer_gas_consumption);
-}
-
 (int, int) cal_buy_fee(int fwd_fee) inline {
     int pool_gas_consumption = get_precompiled_gas_consumption();
     int buy_meme_gas_consumption = null?(pool_gas_consumption) ? BUY_MEME_GAS : pool_gas_consumption;
