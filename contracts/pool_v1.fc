@@ -6,6 +6,7 @@
 #include "pool/constants.fc";
 #include "pool/opcodes.fc";
 #include "pool/errors.fc";
+#include "pool/logs.fc";
 #include "pool/gas.fc";
 #include "imports/math.fc";
 #include "pool/utils.fc";
