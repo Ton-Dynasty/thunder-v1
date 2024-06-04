@@ -927,3 +927,5 @@ cell create_token_onchain_metadata(cell content_dict) inline {
   send_raw_message(msg, 0);
 }
 
+;; This is for jetton content 
+slice preload_bits_offset(slice s, int offset, int len) asm "SDSUBSTR";

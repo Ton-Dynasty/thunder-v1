@@ -126,3 +126,47 @@ cell pack_payout_from_pool(int query_id, slice sender, slice recipient, int asse
 
     send_raw_message(msg, mode); 
 }
+
+slice address_to_hex_string(int value) inline {
+    if (value == 0) {
+        builder buffer = begin_cell();
+        int i = 0;
+        while (i < 64){
+        buffer = buffer.store_uint("0"u, 8);
+        i += 1;
+        }
+        return buffer.end_cell().begin_parse().preload_bits(i * 8);
+    } else {
+
+        int j = value;
+        int length = 0;
+        while (j != 0) {
+        length += 1;
+        j = j >> 4;
+        }
+        
+        int mask = 15;
+        builder buffer = begin_cell();
+
+        while (value != 0) {
+        int curr = (value & mask);
+        if(curr > 9){
+            buffer = buffer.store_uint(55 + curr, 8);
+        } else {
+            buffer = buffer.store_uint(48 + curr, 8);
+        }
+        value = value >> 4;
+        }
+
+        builder final_cell = begin_cell();
+
+        slice reversed_buffer = buffer.end_cell().begin_parse();
+        int i = 64;
+        while(i > 0){
+        i -= 1;
+        slice chr = reversed_buffer.preload_bits_offset(i * 8, 8);
+        final_cell = final_cell.store_slice(chr);
+        }
+        return final_cell.end_cell().begin_parse().preload_bits(512);
+    }
+}

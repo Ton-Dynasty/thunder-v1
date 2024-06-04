@@ -198,6 +198,7 @@
     }
 
     if (op == op::deposit) {
+        (_, int hashpart) = parse_std_addr(my_address());
         slice provider = ctx::body~load_msg_addr();
         int asset0_amount = ctx::body~load_coins();
         int asset1_amount = ctx::body~load_coins();
@@ -279,4 +280,18 @@ slice get_wallet_address(slice owner_address) method_id {
 (int, int, int) get_pool_data() method_id {
     pool::load_data();
     return (pool::reserve0, pool::reserve1, pool::lp_total_supply);
+}
+
+(int, int, slice, cell, cell) get_jetton_data() method_id {
+    pool::load_data();
+    (_, int hashpart) = parse_std_addr(my_address());
+
+    cell content_lp = begin_cell()
+        .store_uint(0x01, 8)
+        .store_slice(URI_BASE)
+        .store_slice(address_to_hex_string(hashpart))
+        .store_slice(URI_END)
+    .end_cell();
+
+    return (pool::lp_total_supply, -1, pool::admin_address, content_lp, pool::lp_jetton_wallet_code);
 }

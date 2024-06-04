@@ -1,6 +1,6 @@
 import { Blockchain, printTransactionFees, SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { Address, beginCell, Cell, storeStateInit, toNano, Transaction } from '@ton/core';
-import { PoolV1, PoolOpcodes } from '../wrappers/PoolV1';
+import { PoolV1, PoolOpcodes, parseUri } from '../wrappers/PoolV1';
 import { JettonWallet } from '../wrappers/JettonWallet';
 import '@ton/test-utils';
 import { compile } from '@ton/blueprint';
@@ -227,6 +227,9 @@ describe('PoolV1', () => {
         // const state = smc.accountState.state;
         // const stateCell = beginCell().store(storeStateInit(state)).endCell();
         // console.log('State init stats:', collectCellStats(stateCell, []));
+        // const contentCell = await (await poolV1.getJettonData()).contentLp;
+        // // expect(parseUri(call2.result[3] as Cell)).to.be.equal("https://lp.ston.fi/" + anotherAddress.toString().toUpperCase() + ".json");
+        // console.log(parseUri(contentCell));
     });
 
     it('should add liquidity', async () => {

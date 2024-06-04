@@ -8,6 +8,7 @@ import {
     ContractProvider,
     Sender,
     SendMode,
+    Slice,
 } from '@ton/core';
 import { Maybe } from '@ton/core/dist/utils/maybe';
 import { SwapTon } from './DexRouter';
@@ -176,4 +177,30 @@ export class PoolV1 implements Contract {
             totalSupply,
         };
     }
+
+    async getJettonData(provider: ContractProvider) {
+        const res = await provider.get('get_jetton_data', []);
+        const totalSupply = res.stack.readBigNumber();
+
+        const mintable = res.stack.readBoolean();
+
+        const adminAddress = res.stack.readAddress();
+
+        const contentLp = res.stack.readCell();
+
+        const jettonWalletCode = res.stack.readCell();
+        Slice
+        return {
+            totalSupply,
+            mintable,
+            adminAddress,
+            contentLp,
+            jettonWalletCode,
+        };
+    }
+}
+
+export function parseUri(cell: Cell) {
+    const s = cell.beginParse();
+    return new TextDecoder().decode(s.loadBuffer(s.remainingBits / 8)); // skip prefix
 }
