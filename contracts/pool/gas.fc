@@ -20,6 +20,7 @@ int get_jetton_transfer_fee() inline {
     int pool_deposit_consumption = null?(pool_gas_consumption) ? POOL_DEPOSIT_GAS : pool_gas_consumption;    
 
     int gas_comp = get_compute_fee(MY_WORKCHAIN, pool_deposit_consumption) + 
+    EMIT_GAS +
     calculate_pool_min_storage_fee() + 
     forward_wallet_init_state_overhead();
     
@@ -35,6 +36,7 @@ int get_jetton_transfer_fee() inline {
     int pool_swap_internal_consumption = null?(pool_gas_consumption) ? SWAP_INTERNAL_POOL_GAS : pool_gas_consumption;    
 
     int gas_comp = get_compute_fee(MY_WORKCHAIN, pool_swap_internal_consumption) + 
+    EMIT_GAS +
     calculate_pool_min_storage_fee();
     
     int total_fee = gas_comp + 
@@ -50,6 +52,7 @@ int get_jetton_transfer_fee() inline {
     int pool_withdraw_gas = null?(pool_gas_consumption) ? WITHDRAW_GAS : pool_gas_consumption;    
 
     int gas_comp = get_compute_fee(MY_WORKCHAIN, pool_withdraw_gas) + 
+    EMIT_GAS +
     calculate_pool_min_storage_fee();
     
     int total_fee = gas_comp + 
