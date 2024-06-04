@@ -90,12 +90,12 @@
     int asset_out = 0;
     if (asset_in == 0) {
         pool::admin_fee0 += admin_fee;
-        pool::reserve0 += amount_in - admin_fee;
+        pool::reserve0 += (amount_in - admin_fee);
         pool::reserve1 -= amount_out;
         asset_out = 1;
     } else {
         pool::admin_fee1 += admin_fee;
-        pool::reserve1 += amount_in - admin_fee;
+        pool::reserve1 += (amount_in - admin_fee);
         pool::reserve0 -= amount_out;
         asset_out = 0;
     }
