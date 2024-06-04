@@ -49,6 +49,31 @@
     }
 
     mint_lp(query_id, lp_recipient, lp_amount, send_ton, fulfill_payload);
+
+    if (is_address_none(lp_recipient)) {
+        ;; create pool
+        emit::create_pool(
+            pool::admin_address,
+            pool::asset0_wallet_address,
+            pool::asset1_wallet_address,
+            pool::reserve0,
+            pool::reserve1,
+            pool::lp_total_supply
+        );
+    } else {
+        ;; deposit to existing pool
+        emit::deposit(
+            provider,
+            lp_recipient,
+            asset0_amount,
+            asset1_amount,
+            lp_amount,
+            pool::reserve0,
+            pool::reserve1,
+            pool::lp_total_supply
+        );
+    }
+
     pool::save_data();
     return ();
 }
@@ -107,6 +132,17 @@
     cell msg_body = pack_payout_from_pool(query_id, sender, recipient, asset_out, amount_out, fulfill_payload);
     send_bounceable_msg(pool::dex_router, send_ton , msg_body, SEND_MODE_REGULAR);
 
+    emit::swap(
+        sender,
+        recipient,
+        asset_in,
+        amount_in,
+        amount_out,
+        pool::reserve0,
+        pool::reserve1,
+        pool::lp_total_supply
+    );
+
     pool::save_data();
     return ();
 }
@@ -159,6 +195,17 @@
     send_bounceable_msg(pool::dex_router, send_ton / 2 , msg_body, SEND_MODE_REGULAR);
 
     ;; TODO: burn lp token
+
+    emit::withdraw(
+        jetton_sender,
+        recipient,
+        lp_amount,
+        asset0_amount,
+        asset1_amount,
+        pool::reserve0,
+        pool::reserve1,
+        pool::lp_total_supply
+    );
 
     pool::save_data();
     return ();
