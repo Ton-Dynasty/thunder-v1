@@ -16,36 +16,29 @@ export async function run(provider: NetworkProvider) {
     const queryId = 0n;
 
     // Input the amount of liquidity to add
-    const jettonSwapAmount = await promptAmount('Enter the amount of jetton to swap:', 9, provider.ui());
+    const tonSwapAmount = await promptAmount('Enter the amount of ton to swap:', 9, provider.ui());
 
     const jettonMaster = provider.open(JettonMasterBondV1.createFromAddress(jettonMasterAddress));
+    let dexRouterWalletAddress = await jettonMaster.getWalletAddress(dexRouter.address);
     const buyerJettonWalletAddress = await jettonMaster.getWalletAddress(provider.sender().address!);
 
-    const message = DexRouter.packJettonTransfer({
-        $$type: 'JettonTransfer',
+    const message = DexRouter.packSwapTon({
+        $$type: 'SwapTon',
         queryId: queryId,
-        jettonAmount: jettonSwapAmount,
-        to: dexRouter.address,
-        responseAddress: provider.sender().address!,
-        customPayload: null,
-        forwardTonAmount: toNano('1'),
-        forwardPayload: {
-            $$type: 'SwapJettonFP',
-            otherAssetWallet: null,
-            assetIn: 1n,
-            minAmountOut: 0n,
-            deadline: BigInt(Math.floor(Date.now() / 1000 + 60)),
-            recipient: null,
-            next: null,
-            extraPayload: null,
-            fulfillPayload: null,
-            rejectPayload: null,
-        },
+        otherAssetWallet: dexRouterWalletAddress,
+        tonAmount: tonSwapAmount,
+        minAmountOut: 0n,
+        deadline: BigInt(Math.floor(Date.now() / 1000 + 60)),
+        recipient: null,
+        next: null,
+        extraPayload: null,
+        fulfillPayload: null,
+        rejectPayload: null,
     });
 
     return provider.sender().send({
-        to: buyerJettonWalletAddress,
-        value: toNano('1') * 2n,
+        to: dexRouter.address,
+        value: tonSwapAmount + toNano('1'),
         bounce: true,
         body: message,
         sendMode: 1,

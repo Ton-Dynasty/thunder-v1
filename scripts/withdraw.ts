@@ -10,41 +10,38 @@ export async function run(provider: NetworkProvider) {
     const filePath = './scripts/config/address.json';
     const data = await fs.readFile(filePath, 'utf8');
     const config = JSON.parse(data);
-    const dexRouterAddress = Address.parse(config.DexRouter);
-    const dexRouter = provider.open(PoolV1.createFromAddress(dexRouterAddress));
+    const poolAddress = Address.parse(config.Pool);
+    const pool = provider.open(PoolV1.createFromAddress(poolAddress));
     const jettonMasterAddress = Address.parse(config.MeMe);
     const queryId = 0n;
 
     // Input the amount of liquidity to add
-    const jettonSwapAmount = await promptAmount('Enter the amount of jetton to swap:', 9, provider.ui());
+    const withdrawLpAmount = await promptAmount('Enter the amount of liquidity to remove:', 9, provider.ui());
 
     const jettonMaster = provider.open(JettonMasterBondV1.createFromAddress(jettonMasterAddress));
+    let buyerLpWalletAddress = await pool.getWalletAddress(provider.sender().address!);
     const buyerJettonWalletAddress = await jettonMaster.getWalletAddress(provider.sender().address!);
 
-    const message = DexRouter.packJettonTransfer({
+    const message = PoolV1.packJettonTransfer({
         $$type: 'JettonTransfer',
         queryId: queryId,
-        jettonAmount: jettonSwapAmount,
-        to: dexRouter.address,
+        jettonAmount: withdrawLpAmount,
+        to: pool.address,
         responseAddress: provider.sender().address!,
         customPayload: null,
         forwardTonAmount: toNano('1'),
         forwardPayload: {
-            $$type: 'SwapJettonFP',
-            otherAssetWallet: null,
-            assetIn: 1n,
-            minAmountOut: 0n,
-            deadline: BigInt(Math.floor(Date.now() / 1000 + 60)),
+            $$type: 'WithdrawFP',
+            asset0MinAmount: 0n,
+            asset1MinAmount: 0n,
             recipient: null,
-            next: null,
-            extraPayload: null,
             fulfillPayload: null,
             rejectPayload: null,
         },
     });
 
     return provider.sender().send({
-        to: buyerJettonWalletAddress,
+        to: buyerLpWalletAddress,
         value: toNano('1') * 2n,
         bounce: true,
         body: message,
