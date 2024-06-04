@@ -1,0 +1,116 @@
+#include "../imports/stdlib.fc";
+
+;; logs
+const log::create_pool = "log::create_pool"c; ;;bf166e2
+const log::deposit = "log::deposit"c; ;;13fddaf
+const log::swap = "log::swap"c; ;;512378f3
+const log::withdraw = "log::withdraw"c; ;;ac268daf
+
+
+() emit::create_pool(
+    slice admin,
+    slice asset0_wallet_address,
+    slice asset1_wallet_address,
+    int reserve0,
+    int reserve1,
+    int total_supply
+) impure inline_ref {
+    cell coins_data = begin_cell()
+        .store_coins(reserve0)
+        .store_coins(reserve1)
+        .store_coins(total_supply)
+    .end_cell();
+
+    builder log = begin_cell()
+        .store_op(op::event_log)
+        .store_slice(admin)
+        .store_slice(asset0_wallet_address)
+        .store_slice(asset1_wallet_address)
+        .store_ref(coins_data);
+
+    emit_log(log::create_pool, log);
+}
+
+() emit::deposit(
+    slice provider,
+    slice recipient,
+    int amount0,
+    int amount1,
+    int lp_amount,
+    int reserve0,
+    int reserve1,
+    int total_supply
+) impure inline_ref {
+    cell coins_data = begin_cell()
+        .store_coins(amount0)
+        .store_coins(amount1)
+        .store_coins(lp_amount)
+        .store_coins(reserve0)
+        .store_coins(reserve1)
+        .store_coins(total_supply)
+    .end_cell();
+
+    builder log = begin_cell()
+        .store_op(op::event_log)
+        .store_slice(provider)
+        .store_slice(recipient)
+        .store_ref(coins_data);
+
+    emit_log(log::deposit, log);
+}
+
+() emit::swap(
+    slice swaper,
+    slice recipient,
+    int asset_in_index,
+    int amount_in,
+    int amount_out,
+    int reserve0,
+    int reserve1,
+    int total_supply
+) impure inline_ref {
+    cell coins_data = begin_cell()
+        .store_uint(asset_in_index, 1)
+        .store_coins(amount_in)
+        .store_coins(amount_out)
+        .store_coins(reserve0)
+        .store_coins(reserve1)
+        .store_coins(total_supply)
+    .end_cell();
+
+    builder log = begin_cell()
+        .store_op(op::event_log)
+        .store_slice(swaper)
+        .store_slice(recipient)
+        .store_ref(coins_data);
+
+    emit_log(log::swap, log);
+}
+
+() emit::withdraw(
+    slice remover,
+    slice recipient,
+    int lp_amount,
+    int amount0,
+    int amount1,
+    int reserve0,
+    int reserve1,
+    int total_supply
+) impure inline_ref {
+    cell coins_data = begin_cell()
+        .store_coins(lp_amount)
+        .store_coins(amount0)
+        .store_coins(amount1)
+        .store_coins(reserve0)
+        .store_coins(reserve1)
+        .store_coins(total_supply)
+    .end_cell();
+
+    builder log = begin_cell()
+        .store_op(op::event_log)
+        .store_slice(remover)
+        .store_slice(recipient)
+        .store_ref(coins_data);
+
+    emit_log(log::withdraw, log);
+}
