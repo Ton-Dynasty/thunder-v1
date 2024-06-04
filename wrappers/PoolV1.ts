@@ -67,6 +67,7 @@ export const PoolOpcodes = {
     SwapTon: 0xdcb17fc0,
     Withdraw: 0xb5de5f9e,
     Burn: 0x595f07bc,
+    ClaimAdminFee: 0x913e42af,
 };
 
 export type WithdrawFP = {
@@ -153,6 +154,15 @@ export class PoolV1 implements Contract {
         });
     }
 
+    /* Claim Admin Fee */
+    async sendClaimAdminFee(provider: ContractProvider, via: Sender, value: bigint) {
+        await provider.internal(via, {
+            value,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
+            body: beginCell().storeUint(PoolOpcodes.ClaimAdminFee, 32).storeUint(0, 64).endCell(),
+        });
+    }
+
     /* Get */
     async getWalletAddress(provider: ContractProvider, owner: Address): Promise<Address> {
         const walletAddress = await provider.get('get_wallet_address', [
@@ -168,14 +178,16 @@ export class PoolV1 implements Contract {
         // get_pool_data
         const res = await provider.get('get_pool_data', []);
         const reserve0 = res.stack.readBigNumber();
-
         const reserve1 = res.stack.readBigNumber();
-
         const totalSupply = res.stack.readBigNumber();
+        const adminFee0 = res.stack.readBigNumber();
+        const adminFee1 = res.stack.readBigNumber();
         return {
             reserve0,
             reserve1,
             totalSupply,
+            adminFee0,
+            adminFee1,
         };
     }
 

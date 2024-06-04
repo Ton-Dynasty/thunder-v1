@@ -351,6 +351,26 @@
         return ();
     }
 
+    if op::claim_admin_fee {
+        throw_unless(error::invalid_sender, equal_slices_bits(ctx::sender, pool::admin_address));
+
+        (int total_fees, int gas_consumption) = cal_claim_admin_fee(ctx::fwd_fee);
+        throw_unless(error::not_enough_ton, ctx::value > total_fees);
+        
+        int send_ton = (ctx::value - gas_consumption) / 2;
+        cell msg_body = pack_payout_from_pool(query_id, ctx::sender, ctx::sender, 0, pool::admin_fee0, null());
+        send_bounceable_msg(pool::dex_router, send_ton / 2 , msg_body, SEND_MODE_REGULAR);
+
+        msg_body = pack_payout_from_pool(query_id, ctx::sender, ctx::sender, 1, pool::admin_fee1, null());
+        send_bounceable_msg(pool::dex_router, send_ton / 2 , msg_body, SEND_MODE_REGULAR);
+
+        pool::admin_fee0 = 0;
+        pool::admin_fee1 = 0;
+        pool::save_data();
+
+        return ();
+    }
+
     throw(error::invalid_op);
 }
 
@@ -375,9 +395,9 @@ slice get_wallet_address(slice owner_address) method_id {
     return calculate_jetton_wallet_address(calculate_jetton_wallet_state_init(owner_address, my_address(), pool::lp_jetton_wallet_code));
 }
 
-(int, int, int) get_pool_data() method_id {
+(int, int, int, int, int) get_pool_data() method_id {
     pool::load_data();
-    return (pool::reserve0, pool::reserve1, pool::lp_total_supply);
+    return (pool::reserve0, pool::reserve1, pool::lp_total_supply, pool::admin_fee0, pool::admin_fee1);
 }
 
 (int, int, slice, cell, cell) get_jetton_data() method_id {

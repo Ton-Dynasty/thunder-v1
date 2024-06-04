@@ -193,12 +193,12 @@ describe('PoolV1', () => {
     beforeAll(async () => {
         poolV1Code = await compile(PoolV1.name);
         jettonWalletCode = await compile(JettonWallet.name);
-        // printTxGasStats = (name, transaction) => {
-        //     const txComputed = computedGeneric(transaction);
-        //     console.log(`${name} used ${txComputed.gasUsed} gas`);
-        //     console.log(`${name} gas cost: ${txComputed.gasFees}`);
-        //     return txComputed.gasFees;
-        // };
+        printTxGasStats = (name, transaction) => {
+            const txComputed = computedGeneric(transaction);
+            // console.log(`${name} used ${txComputed.gasUsed} gas`);
+            // console.log(`${name} gas cost: ${txComputed.gasFees}`);
+            return txComputed.gasFees;
+        };
     });
 
     beforeEach(async () => {
@@ -974,7 +974,6 @@ describe('PoolV1', () => {
         let poolDataBefore = await poolV1.getPoolData();
 
         const result = await withdraw(buyer, poolV1, lpAmount, asset0MinAmount, asset1MinAmount);
-        printTransactionFees(result.transactions)
 
         // get pool lp wallet balance after
         let poolLpWalletBalanceAfter = await poolLpWallet.getJettonBalance();
@@ -1190,5 +1189,120 @@ describe('PoolV1', () => {
         // Expect that buyer lp wallet balance is still the same
         let buyerLpWalletBalanceAfter = await buyerLpWallet.getJettonBalance();
         expect(buyerLpWalletBalanceAfter).toEqual(buyerLpWalletBalanceBefore);
+    });
+
+    it('should admin claim admin fee', async () => {
+        // Buyer provide liquidity
+        const sendTonAmount = toNano('1000');
+        const sendJettonAmount = 1000n * 10n ** 9n;
+        await provideJettonLiquidity(buyer, dexRouter, jettonMasterBondV1, null, 999n, sendTonAmount, sendJettonAmount);
+
+        // buyer swap jetton to ton
+        const sendJettonAmountSwap = 10n * 10n ** 9n;
+        const minAmountOut = 0n;
+        const deadline = BigInt(Math.floor(Date.now() / 1000 + 60));
+        await swapJetton(buyer, dexRouter, jettonMasterBondV1, null, sendJettonAmountSwap, minAmountOut, deadline);
+
+        // buyer swap ton to jetton
+        let dexRouterWalletAddress = await jettonMasterBondV1.getWalletAddress(dexRouter.address);
+        await swapTon(buyer, dexRouter, dexRouterWalletAddress, sendTonAmount, minAmountOut, deadline);
+
+        // admin fee before
+        let adminFee0 = (await poolV1.getPoolData()).adminFee0;
+        let adminFee1 = (await poolV1.getPoolData()).adminFee1;
+
+        // admin meme wallet balance before
+        let adminMemeWalletAddress = await jettonMasterBondV1.getWalletAddress(deployer.address);
+        let adminMemeWallet = blockchain.openContract(JettonWallet.createFromAddress(adminMemeWalletAddress));
+        let adminMemeWalletBalanceBefore = await adminMemeWallet.getJettonBalance();
+        let adminTonBalanceBefore = await deployer.getBalance();
+
+        // admin claim admin fee
+        const claimAdminFeeResult = await poolV1.sendClaimAdminFee(deployer.getSender(), toNano('1'));
+        // Expect that deployer send claim admin fee to pool
+        expect(claimAdminFeeResult.transactions).toHaveTransaction({
+            op: PoolOpcodes.ClaimAdminFee,
+            from: deployer.address,
+            to: poolV1.address,
+            success: true,
+        });
+
+        // const ClaimAdminFee = findTransactionRequired(claimAdminFeeResult.transactions, {
+        //     op: PoolOpcodes.ClaimAdminFee,
+        //     from: deployer.address,
+        //     to: poolV1.address,
+        //     success: true,
+        // });
+        // printTxGasStats('ClaimAdminFee', ClaimAdminFee);
+        // printTransactionFees(claimAdminFeeResult.transactions);
+
+        // Pool send payout msg to dex router
+        expect(claimAdminFeeResult.transactions).toHaveTransaction({
+            op: PoolOpcodes.PayoutFromPool,
+            from: poolV1.address,
+            to: dexRouter.address,
+            success: true,
+        });
+
+        // Dex Router send excess to admin
+        expect(claimAdminFeeResult.transactions).toHaveTransaction({
+            op: PoolOpcodes.Excess,
+            from: dexRouter.address,
+            to: deployer.address,
+            success: true,
+        });
+
+        // admin ton balance increase
+        let adminTonBalanceAfter = await deployer.getBalance();
+        let gas_fee = toNano('0.7');
+        expect(adminTonBalanceAfter).toBeGreaterThan(adminTonBalanceBefore + adminFee0 - gas_fee);
+
+        // Expect that dex router wallet send jetton internal transfer to admin meme wallet
+        expect(claimAdminFeeResult.transactions).toHaveTransaction({
+            op: PoolOpcodes.InternalTransfer,
+            from: dexRouterWalletAddress,
+            to: adminMemeWalletAddress,
+            success: true,
+        });
+
+        // admin meme wallet balance after
+        let adminMemeWalletBalanceAfter = await adminMemeWallet.getJettonBalance();
+
+        // admin meme wallet balance should be increased
+        expect(adminMemeWalletBalanceAfter).toEqual(adminMemeWalletBalanceBefore + adminFee1);
+
+        // Admin Fee should be 0
+        let adminFee0After = (await poolV1.getPoolData()).adminFee0;
+        let adminFee1After = (await poolV1.getPoolData()).adminFee1;
+        expect(adminFee0After).toEqual(0n);
+        expect(adminFee1After).toEqual(0n);
+    });
+
+    it('should admin claim admin fee when admin fee is 0', async () => {
+        // Buyer provide liquidity
+        const sendTonAmount = toNano('1000');
+        const sendJettonAmount = 1000n * 10n ** 9n;
+        await provideJettonLiquidity(buyer, dexRouter, jettonMasterBondV1, null, 999n, sendTonAmount, sendJettonAmount);
+
+        // buyer swap jetton to ton
+        const sendJettonAmountSwap = 10n * 10n ** 9n;
+        const minAmountOut = 0n;
+        const deadline = BigInt(Math.floor(Date.now() / 1000 + 60));
+        await swapJetton(buyer, dexRouter, jettonMasterBondV1, null, sendJettonAmountSwap, minAmountOut, deadline);
+
+        // buyer swap ton to jetton
+        let dexRouterWalletAddress = await jettonMasterBondV1.getWalletAddress(dexRouter.address);
+        await swapTon(buyer, dexRouter, dexRouterWalletAddress, sendTonAmount, minAmountOut, deadline);
+
+        // admin claim admin fee
+        const claimAdminFeeResult = await poolV1.sendClaimAdminFee(buyer.getSender(), toNano('1'));
+
+        // Expect throw invalid sender error 2022
+        expect(claimAdminFeeResult.transactions).toHaveTransaction({
+            from: buyer.address,
+            to: poolV1.address,
+            success: false,
+            exitCode: 2022,
+        });
     });
 });

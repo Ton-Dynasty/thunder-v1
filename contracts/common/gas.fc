@@ -15,20 +15,20 @@ const SEND_TRANSFER_GAS_CONSUMPTION    = 9255;
 const RECEIVE_TRANSFER_GAS_CONSUMPTION = 10355;
 
 ;; Dex Router Related
-const DEX_ROUTER_BITS = 39002;
-const DEX_ROUTER_CELLS = 82;
+const DEX_ROUTER_BITS = 42146;
+const DEX_ROUTER_CELLS = 85;
 const SEND_TO_DEX_ROUTER = 10245;
-const DEPLOY_POOL_GAS = 12692;
-const SWAP_INTERNAL_DR_GAS = 12099; ;; Dex Router Jetton Wallet -> Dex Router (Jetton Notify)
+const DEPLOY_POOL_GAS = 12780;
+const SWAP_INTERNAL_DR_GAS = 12187; ;; Dex Router Jetton Wallet -> Dex Router (Jetton Notify)
 
 ;; Pool Related
-const POOL_BITS = 27187;
-const POOL_CELLS = 61;
+const POOL_BITS = 30259;
+const POOL_CELLS = 64;
 const BUILD_POOL_GAS_FEE = 100000000; ;; 0.1 TON
 const POOL_DEPOSIT_GAS = 18209;
 const SWAP_INTERNAL_POOL_GAS = 14987;
 const PACKOUT_FROM_POOL_GAS = 11579;
-const WITHDRAW_GAS = 22433;
+const WITHDRAW_GAS = 22539;
 
 ;; Others
 const FORWARD_FEE = 30000000; ;; 0.03 TON

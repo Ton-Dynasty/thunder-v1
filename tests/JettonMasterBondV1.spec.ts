@@ -22,12 +22,12 @@ describe('JettonMasterBondV1 general testcases', () => {
 
     beforeEach(async () => {
         ({ blockchain, deployer, dexRouter, jettonMasterBondV1 } = await loadJMBondFixture());
-        // printTxGasStats = (name, transaction) => {
-        //     const txComputed = computedGeneric(transaction);
-        //     console.log(`${name} used ${txComputed.gasUsed} gas`);
-        //     console.log(`${name} gas cost: ${txComputed.gasFees}`);
-        //     return txComputed.gasFees;
-        // };
+        printTxGasStats = (name, transaction) => {
+            const txComputed = computedGeneric(transaction);
+            // console.log(`${name} used ${txComputed.gasUsed} gas`);
+            // console.log(`${name} gas cost: ${txComputed.gasFees}`);
+            return txComputed.gasFees;
+        };
     });
 
     const userWallet = async (address: Address, jettonMaster: SandboxContract<JettonMasterBondV1>) =>
@@ -81,7 +81,7 @@ describe('JettonMasterBondV1 general testcases', () => {
         );
         let buyerTonBalanceAfter = await buyer.getBalance();
 
-        // Calculate gas fee for buy token transaction
+        // // Calculate gas fee for buy token transaction
         // const buyMeMeTx = findTransactionRequired(buyTokenResult.transactions, {
         //     op: MasterOpocde.Mint,
         //     from: buyer.address,
@@ -148,6 +148,7 @@ describe('JettonMasterBondV1 general testcases', () => {
         let buyerTonBalanceBefore = await buyer.getBalance();
         let burnAmount = buyerMemeTokenBalanceBefore / 2n;
         const burnResult = await buyerWallet.sendBurn(buyer.getSender(), toNano('1'), burnAmount, null, null);
+
         // const burnMeMeTx = findTransactionRequired(burnResult.transactions, {
         //     op: MasterOpocde.BurnNotification,
         //     from: buyerWallet.address,
@@ -155,6 +156,7 @@ describe('JettonMasterBondV1 general testcases', () => {
         //     success: true,
         // });
         // printTxGasStats('Burn Meme Jetton With TON', burnMeMeTx);
+
         let buyerMemeTokenBalanceAfter = await buyerWallet.getJettonBalance();
         let buyerTonBalanceAfter = await buyer.getBalance();
 

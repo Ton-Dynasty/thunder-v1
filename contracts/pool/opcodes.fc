@@ -3,3 +3,4 @@ const op::swap_internal = "swap_internal"c; ;;fcb1be1e
 const op::withdraw = "withdraw"c; ;;b5de5f9e
 const op::payout_from_pool = "payout_from_pool"c; ;;23a14fb2
 const op::upgrade  = 0x2508d66a;
+const op::claim_admin_fee = "claim_admin_fee"c; ;; 913e42af

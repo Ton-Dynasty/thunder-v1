@@ -1,6 +1,7 @@
 #include "../common/gas.fc";
 
 const BURN_LP_GAS = 2959;
+const CLAIM_GAS = 12720;
 
 int calculate_pool_min_storage_fee() inline {
     return get_storage_fee(MY_WORKCHAIN, MIN_STORAGE_DURATION, POOL_BITS, POOL_CELLS);
@@ -59,4 +60,13 @@ int calculate_pool_min_storage_fee() inline {
     int pool_burn_lp_gas = null?(pool_gas_consumption) ? BURN_LP_GAS : pool_gas_consumption;    
     int gas_comp = get_compute_fee(MY_WORKCHAIN, pool_burn_lp_gas) + fwd_fee;
     return gas_comp;
+}
+
+(int, int) cal_claim_admin_fee(int fwd_fee) inline {
+    int pool_gas_consumption = get_precompiled_gas_consumption();
+    int pool_claim_gas = null?(pool_gas_consumption) ? CLAIM_GAS : pool_gas_consumption;    
+    int gas_comp = get_compute_fee(MY_WORKCHAIN, pool_claim_gas);
+
+    int total_fee = gas_comp + fwd_fee * 5 + get_jetton_transfer_fee();
+    return (total_fee, gas_comp);
 }
