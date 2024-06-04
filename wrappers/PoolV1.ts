@@ -66,6 +66,7 @@ export const PoolOpcodes = {
     PayoutFromPool: 0x23a14fb2,
     SwapTon: 0xdcb17fc0,
     Withdraw: 0xb5de5f9e,
+    Burn: 0x595f07bc,
 };
 
 export type WithdrawFP = {
@@ -189,7 +190,7 @@ export class PoolV1 implements Contract {
         const contentLp = res.stack.readCell();
 
         const jettonWalletCode = res.stack.readCell();
-        Slice
+        Slice;
         return {
             totalSupply,
             mintable,

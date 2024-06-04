@@ -1,5 +1,5 @@
 
-#include "../../common/workchain.fc";
+#include "../common/workchain.fc";
 
 const int STATUS_SIZE = 4;
 

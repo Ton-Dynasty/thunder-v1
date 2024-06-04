@@ -3,13 +3,14 @@ import { Address, Cell, beginCell, toNano } from '@ton/core';
 import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
 import { DexRouter } from '../wrappers/DexRouter';
 import { compile } from '@ton/blueprint';
-import { JettonWallet } from '../wrappers/JettonWallet';
+import { JettonWallet, LpJettonWallet } from '../wrappers/JettonWallet';
 import { PoolV1 } from '../wrappers/PoolV1';
 
 export async function loadJMBondFixture() {
     const jettonMasterBondV1Code = await compile(JettonMasterBondV1.name);
     const dexRouterCode = await compile(DexRouter.name);
     const jettonWalletCode = await compile(JettonWallet.name);
+    const jettonLpCode = await compile(LpJettonWallet.name);
     const poolCode = await compile(PoolV1.name);
 
     const blockchain = await Blockchain.create();
@@ -20,7 +21,7 @@ export async function loadJMBondFixture() {
             {
                 ownerAddress: deployer.address,
                 poolCode: poolCode,
-                lpWalletCode: jettonWalletCode,
+                lpWalletCode: jettonLpCode,
             },
             dexRouterCode,
         ),

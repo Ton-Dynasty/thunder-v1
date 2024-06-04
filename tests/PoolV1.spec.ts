@@ -947,13 +947,17 @@ describe('PoolV1', () => {
 
         await provideJettonLiquidity(buyer, dexRouter, jettonMasterBondV1, null, 999n, sendTonAmount, sendJettonAmount);
 
+        // get pool lp wallet balance before
+        let poolLpWalletAddress = await poolV1.getWalletAddress(poolV1.address);
+        let poolLpWallet = blockchain.openContract(JettonWallet.createFromAddress(poolLpWalletAddress));
+        let poolLpWalletBalanceBefore = await poolLpWallet.getJettonBalance();
+
         const lpAmount = 20n * 10n ** 9n;
         const asset0MinAmount = 0n;
         const asset1MinAmount = 0n;
 
         // get buyer's LP wallet balance before
         let buyerLpWalletAddress = await poolV1.getWalletAddress(buyer.address);
-        let poolLpWalletAddress = await poolV1.getWalletAddress(poolV1.address);
         let buyerLpWallet = blockchain.openContract(JettonWallet.createFromAddress(buyerLpWalletAddress));
         let buyerLpWalletBalanceBefore = await buyerLpWallet.getJettonBalance();
 
@@ -971,6 +975,9 @@ describe('PoolV1', () => {
 
         const result = await withdraw(buyer, poolV1, lpAmount, asset0MinAmount, asset1MinAmount);
 
+        // get pool lp wallet balance after
+        let poolLpWalletBalanceAfter = await poolLpWallet.getJettonBalance();
+
         // get buyer's LP wallet balance after
         let buyerLpWalletBalanceAfter = await buyerLpWallet.getJettonBalance();
         expect(buyerLpWalletBalanceAfter).toEqual(buyerLpWalletBalanceBefore - lpAmount);
@@ -982,13 +989,11 @@ describe('PoolV1', () => {
 
         // get buyer's Jetton wallet balance after
         let buyerJettonWalletBalanceAfter = await buyerJettonWallet.getJettonBalance();
-        // TODO: calculate actual value
         expect(buyerJettonWalletBalanceAfter).toEqual(buyerJettonWalletBalanceBefore + 587033725644278n);
 
         // get pool data after
         let poolDataAfter = await poolV1.getPoolData();
         expect(poolDataAfter.totalSupply).toEqual(poolDataBefore.totalSupply - lpAmount);
-        // TODO: calculate actual value
         expect(poolDataAfter.reserve0).toEqual(9304298914761n);
         expect(poolDataAfter.reserve1).toEqual(7850982803281341n);
 
@@ -1063,6 +1068,25 @@ describe('PoolV1', () => {
             to: buyer.address,
             success: true,
         });
+
+        // Expect Pool send brun msg to pool lp wallet to subtract lp amount
+        expect(result.transactions).toHaveTransaction({
+            op: PoolOpcodes.Burn,
+            from: poolV1.address,
+            to: poolLpWalletAddress,
+            success: true,
+        });
+
+        const BurnLp = findTransactionRequired(result.transactions, {
+            op: PoolOpcodes.Burn,
+            from: poolV1.address,
+            to: poolLpWalletAddress,
+            success: true,
+        });
+        printTxGasStats('BurnLp', BurnLp);
+
+        // Expect that pool lp wallet balance should be remain the same
+        expect(poolLpWalletBalanceAfter).toEqual(poolLpWalletBalanceBefore);
     });
 
     it('should throw error when withdraw wrong lp to to pool', async () => {

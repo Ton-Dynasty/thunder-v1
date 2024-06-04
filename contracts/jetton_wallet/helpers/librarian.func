@@ -1,6 +1,6 @@
 ;; Simple library keeper
 
-#include "../../../imports/stdlib.fc";
+#include "../../imports/stdlib.fc";
 
 const int DEFAULT_DURATION = 3600 * 24 * 365 * 100; ;; 100 years, can top-up in any time
 const int ONE_TON = 1000000000;

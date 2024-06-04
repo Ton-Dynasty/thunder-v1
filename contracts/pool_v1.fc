@@ -169,7 +169,8 @@
 
     (int total_fees, int gas_consumption) = cal_withdraw_internal(ctx::fwd_fee);
     throw_unless(error::not_enough_ton, ctx::value > total_fees);
-    int send_ton = ctx::value - gas_consumption;
+    int burn_fee = cal_burn_lp_fee(ctx::fwd_fee);
+    int send_ton = ctx::value - gas_consumption - burn_fee;
     (int asset0_amount, int asset1_amount) = simulate::withdraw(lp_amount);
 
     ;; If the amount of asset0 or asset1 is less than the min amount, send lp back to the sender
@@ -194,7 +195,10 @@
     msg_body = pack_payout_from_pool(query_id, jetton_sender, recipient, 1, asset1_amount, fulfill_payload);
     send_bounceable_msg(pool::dex_router, send_ton / 2 , msg_body, SEND_MODE_REGULAR);
 
-    ;; TODO: burn lp token
+    ;; Send to pool jetton wallet to subtract balance
+    cell data = pack_burn_data(query_id, lp_amount);
+    send_bounceable_msg(pool_jetton_wallet, burn_fee, data, SEND_MODE_REGULAR);
+    
 
     emit::withdraw(
         jetton_sender,

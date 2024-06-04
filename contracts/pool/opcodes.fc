@@ -2,3 +2,4 @@ const op::deposit = "deposit"c; ;;95db9d39
 const op::swap_internal = "swap_internal"c; ;;fcb1be1e
 const op::withdraw = "withdraw"c; ;;b5de5f9e
 const op::payout_from_pool = "payout_from_pool"c; ;;23a14fb2
+const op::burn = 0x595f07bc;
