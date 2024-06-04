@@ -1,0 +1,62 @@
+#include "../imports/stdlib.fc";
+
+;; logs
+const log::mint = "log::mint"c; ;;77a80ef3
+const log::burn = "log::burn"c; ;;21e2e096
+
+
+() emit::mint(
+    slice minter,
+    slice recipient,
+    int ton_amount,
+    int mint_amount,
+    int total_supply,
+    int ton_reserve,
+    int jetton_reserve,
+    int is_on_moon
+) impure inline_ref {
+    cell coins_data = begin_cell()
+        .store_coins(ton_amount)
+        .store_coins(mint_amount)
+        .store_coins(total_supply)
+        .store_coins(ton_reserve)
+        .store_coins(jetton_reserve)
+    .end_cell();
+
+    builder log = begin_cell()
+        .store_op(op::event_log)
+        .store_slice(minter)
+        .store_slice(recipient)
+        .store_ref(coins_data)
+        .store_uint(is_on_moon, 2);
+
+    emit_log(log::mint, log);
+}
+
+() emit::burn(
+    slice burner,
+    slice recipient,
+    int burn_amount,
+    int return_amount,
+    int total_supply,
+    int ton_reserve,
+    int jetton_reserve,
+    int is_on_moon
+) impure inline_ref {
+    cell coins_data = begin_cell()
+        .store_coins(burn_amount)
+        .store_coins(return_amount)
+        .store_coins(total_supply)
+        .store_coins(ton_reserve)
+        .store_coins(jetton_reserve)
+    .end_cell();
+
+    builder log = begin_cell()
+        .store_op(op::event_log)
+        .store_slice(burner)
+        .store_slice(recipient)
+        .store_ref(coins_data)
+        .store_uint(is_on_moon, 2);
+
+    emit_log(log::burn, log);
+}
