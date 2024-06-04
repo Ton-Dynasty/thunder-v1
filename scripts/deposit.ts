@@ -1,6 +1,5 @@
-import { Address, Cell, Dictionary, SendMode, beginCell, toNano } from '@ton/core';
+import { Address, toNano } from '@ton/core';
 import { NetworkProvider } from '@ton/blueprint';
-import { JettonWallet } from '../wrappers/JettonWallet';
 import { PoolV1 } from '../wrappers/PoolV1';
 import { promptAmount } from '../utils/ui';
 import { DexRouter } from '../wrappers/DexRouter';
