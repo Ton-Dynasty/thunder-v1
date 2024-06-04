@@ -1,0 +1,39 @@
+;; Storage Duration
+const MIN_STORAGE_DURATION = 4 * 24 * 3600; ;; 4 days
+
+;; Jetton Master Related
+const JETTON_MASTER_BITS = 17737;
+const JETTON_CELLS = 44;
+const BUY_MEME_GAS = 12218; ;; ton the moon, 18452
+const BURN_MEME_GAS = 10903;
+
+;; Jetton Wallet Related
+const JETTON_WALLET_INITSTATE_BITS  = 931;
+const JETTON_WALLET_INITSTATE_CELLS = 3;
+const JETTON_NOTIFY_GAS_CONSUMPTION = 16721;
+const SEND_TRANSFER_GAS_CONSUMPTION    = 9255;
+const RECEIVE_TRANSFER_GAS_CONSUMPTION = 10355;
+
+;; Dex Router Related
+const DEX_ROUTER_BITS = 36450;
+const DEX_ROUTER_CELLS = 74;
+const SEND_TO_DEX_ROUTER = 10245;
+const DEPLOY_POOL_GAS = 10774;
+const SWAP_INTERNAL_DR_GAS = 11936; ;; Dex Router Jetton Wallet -> Dex Router (Jetton Notify)
+
+;; Pool Related
+const POOL_BITS = 21950;
+const POOL_CELLS = 47;
+const BUILD_POOL_GAS_FEE = 100000000; ;; 0.1 TON
+
+;; Pool Related
+const POOL_DEPOSIT_GAS = 14901;
+const POOL_BITS = 21950;
+const POOL_CELLS = 47;
+const SWAP_INTERNAL_POOL_GAS = 11936;
+const PACKOUT_FROM_POOL_GAS = 10389;
+const WITHDRAW_GAS = 15508;
+
+;; Others
+const FORWARD_FEE = 30000000; ;; 0.03 TON
+const EMIT_GAS = 2800000;

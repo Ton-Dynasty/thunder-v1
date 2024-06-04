@@ -1,21 +1,4 @@
-const MIN_STORAGE_DURATION = 4 * 24 * 3600; ;; 4 days
-
-;; Pool Related
-const POOL_DEPOSIT_GAS = 14901;
-const POOL_BITS = 21950;
-const POOL_CELLS = 47;
-const SWAP_INTERNAL_POOL_GAS = 11936;
-const PACKOUT_FROM_POOL_GAS = 10389;
-const WITHDRAW_GAS = 15508;
-
-;; Jetton Wallet Related
-const JETTON_WALLET_INITSTATE_BITS  = 931;
-const JETTON_WALLET_INITSTATE_CELLS = 3;
-const JETTON_NOTIFY_GAS_CONSUMPTION = 16721;
-const SEND_TRANSFER_GAS_CONSUMPTION    = 9255;
-const RECEIVE_TRANSFER_GAS_CONSUMPTION = 10355;
-
-const FORWARD_FEE = 30000000; ;; 0.03 TON
+#include "../common/gas.fc";
 
 int calculate_pool_min_storage_fee() inline {
     return get_storage_fee(MY_WORKCHAIN, MIN_STORAGE_DURATION, POOL_BITS, POOL_CELLS);

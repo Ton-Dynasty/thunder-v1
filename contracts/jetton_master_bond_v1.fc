@@ -34,7 +34,7 @@
         .store_maybe_ref(null()) ;; reject payload
         .end_cell();
     send_ton_liquidity += BUILD_POOL_GAS_FEE; ;; build_pool_fee is for building pool and farm and is paid by thunder fi in line 16
-    int ton_to_dex_router = send_ton_liquidity + fee_for_admin; ;; fee_for_admin will be transfer in excess msg. 
+    int ton_to_dex_router = send_ton_liquidity + fee_for_admin - EMIT_GAS; ;; fee_for_admin will be transfer in excess msg. 
 
     ;; Send mint jetton to Router
     mint_jetton(

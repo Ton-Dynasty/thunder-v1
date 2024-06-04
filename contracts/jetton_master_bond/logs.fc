@@ -28,7 +28,7 @@ const log::burn = "log::burn"c; ;;21e2e096
         .store_slice(minter)
         .store_slice(recipient)
         .store_ref(coins_data)
-        .store_uint(is_on_moon, 2);
+        .store_int(is_on_moon, 2);
 
     emit_log(log::mint, log);
 }
