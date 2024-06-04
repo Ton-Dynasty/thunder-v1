@@ -68,7 +68,10 @@
     cell reject_payload
 ) impure inline {
     throw_unless(error::invalid_sender, equal_slices(ctx::sender, pool::dex_router));
-    int send_ton = ctx::value - gas::gas_consumption;
+
+    (int total_fees, int gas_consumption) = cal_swap_internal(ctx::fwd_fee);
+    throw_unless(error::not_enough_ton, ctx::value > total_fees);
+    int send_ton = ctx::value - gas_consumption;
     if ((now() > deadline)) {
         cell msg_body = pack_payout_from_pool(query_id, sender, sender, asset_in, amount_in, reject_payload);
         send_bounceable_msg(pool::dex_router, send_ton , msg_body, SEND_MODE_REGULAR);
@@ -127,7 +130,9 @@
     slice pool_jetton_wallet = calculate_jetton_wallet_address(calculate_jetton_wallet_state_init(my_address(),my_address(),pool::lp_jetton_wallet_code));
     throw_unless(error::invalid_sender, equal_slices(ctx::sender, pool_jetton_wallet));
 
-    int send_ton = ctx::value - gas::gas_consumption;
+    (int total_fees, int gas_consumption) = cal_withdraw_internal(ctx::fwd_fee);
+    throw_unless(error::not_enough_ton, ctx::value > total_fees);
+    int send_ton = ctx::value - gas_consumption;
     (int asset0_amount, int asset1_amount) = simulate::withdraw(lp_amount);
 
     ;; If the amount of asset0 or asset1 is less than the min amount, send lp back to the sender

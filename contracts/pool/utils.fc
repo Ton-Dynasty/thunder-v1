@@ -59,7 +59,7 @@
     .store_coins(amount)
     .store_slice(my_address())
     .store_slice(to)
-    .store_coins(payload.cell_null?() ? 0 : gas::forward_ton) 
+    .store_coins(payload.cell_null?() ? 0 : FORWARD_FEE) 
     .store_maybe_ref(payload);
 
     deploy(BOUNCEABLE, to_wallet_address, send_ton, body.end_cell(), state_init, SEND_MODE_REGULAR);

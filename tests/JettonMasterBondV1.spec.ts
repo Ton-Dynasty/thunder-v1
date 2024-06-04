@@ -45,15 +45,15 @@ describe('JettonMasterBondV1 general testcases', () => {
         // const stateCell = beginCell().store(storeStateInit(state)).endCell();
         // console.log('State init stats:', collectCellStats(stateCell, []));
         // Calculate Dex Router contract gas fee
-        // const smc = await blockchain.getContract(dexRouter.address);
-        // if (smc.accountState === undefined) throw new Error("Can't access wallet account state");
-        // if (smc.accountState.type !== 'active') throw new Error('Wallet account is not active');
-        // if (smc.account.account === undefined || smc.account.account === null)
-        //     throw new Error("Can't access wallet account!");
-        // console.log('dexRouter max storage stats:', smc.account.account.storageStats.used);
-        // const state = smc.accountState.state;
-        // const stateCell = beginCell().store(storeStateInit(state)).endCell();
-        // console.log('State init stats:', collectCellStats(stateCell, []));
+        const smc = await blockchain.getContract(dexRouter.address);
+        if (smc.accountState === undefined) throw new Error("Can't access wallet account state");
+        if (smc.accountState.type !== 'active') throw new Error('Wallet account is not active');
+        if (smc.account.account === undefined || smc.account.account === null)
+            throw new Error("Can't access wallet account!");
+        console.log('dexRouter max storage stats:', smc.account.account.storageStats.used);
+        const state = smc.accountState.state;
+        const stateCell = beginCell().store(storeStateInit(state)).endCell();
+        console.log('State init stats:', collectCellStats(stateCell, []));
     });
 
     it('should buy token with 10 tons', async () => {
@@ -402,8 +402,6 @@ describe('JettonMasterBondV1 general testcases', () => {
         const buyTontoMoon = toNano('1000000');
         const toTheMoonResult = await buyToken(jettonMasterBondV1, buyer, buyTontoMoon);
         let deployerTonBalanceAfter = await deployer.getBalance();
-
-        // printTransactionFees(toTheMoonResult.transactions);
 
         // Epext that onMoon = 1n
         let onMoon = (await jettonMasterBondV1.getMasterData()).onMoon;

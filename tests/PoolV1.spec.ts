@@ -292,13 +292,13 @@ describe('PoolV1', () => {
             success: true,
         });
 
-        // const depositAssetTx = findTransactionRequired(result.transactions, {
-        //     op: PoolOpcodes.Deposit,
-        //     from: dexRouter.address,
-        //     to: poolV1.address,
-        //     success: true,
-        // });
-        // printTxGasStats('Burn Meme Jetton With TON', depositAssetTx);
+        const depositAssetTx = findTransactionRequired(result.transactions, {
+            op: PoolOpcodes.Deposit,
+            from: dexRouter.address,
+            to: poolV1.address,
+            success: true,
+        });
+        printTxGasStats('depositAssetTx', depositAssetTx);
 
         // Expect that pool send LP token to buyer LP wallet
         expect(result.transactions).toHaveTransaction({
@@ -527,11 +527,6 @@ describe('PoolV1', () => {
             deadline,
         );
 
-        // get buyer's Ton balance after
-        let buyerTonBalanceAfter = await buyer.getBalance();
-        let gas_fee = toNano('0.1');
-        expect(buyerTonBalanceAfter).toBeGreaterThan(buyerTonBalanceBefore + 1197740580n - gas_fee);
-
         // get buyer's Jetton wallet balance after
         let buyerJettonWalletBalanceAfter = await buyerJettonWallet.getJettonBalance();
         expect(buyerJettonWalletBalanceAfter).toEqual(buyerJettonWalletBalanceBefore - sendJettonAmount);
@@ -558,6 +553,14 @@ describe('PoolV1', () => {
             success: true,
         });
 
+        const SwapInternalToRouter = findTransactionRequired(result.transactions, {
+            op: PoolOpcodes.JettonNotification,
+            from: dexRouterWalletAddress,
+            to: dexRouter.address,
+            success: true,
+        });
+        printTxGasStats('SwapInternalToRouter', SwapInternalToRouter);
+
         // Expect that Dex Router send Swap Internal to Pool
         expect(result.transactions).toHaveTransaction({
             op: PoolOpcodes.SwapInternal,
@@ -565,6 +568,14 @@ describe('PoolV1', () => {
             to: poolV1.address,
             success: true,
         });
+
+        const SwapInternalToPool = findTransactionRequired(result.transactions, {
+            op: PoolOpcodes.SwapInternal,
+            from: dexRouter.address,
+            to: poolV1.address,
+            success: true,
+        });
+        printTxGasStats('SwapInternalToPool', SwapInternalToPool);
 
         // Expect that Pool send Ton PayoutFromPool to Dex Router
         expect(result.transactions).toHaveTransaction({
@@ -574,6 +585,14 @@ describe('PoolV1', () => {
             success: true,
         });
 
+        const PackoutFromPool = findTransactionRequired(result.transactions, {
+            op: PoolOpcodes.PayoutFromPool,
+            from: poolV1.address,
+            to: dexRouter.address,
+            success: true,
+        });
+        printTxGasStats('PackoutFromPool', PackoutFromPool);
+
         // Expect that Dex Router send Excess to buyer
         expect(result.transactions).toHaveTransaction({
             op: PoolOpcodes.Excess,
@@ -581,6 +600,11 @@ describe('PoolV1', () => {
             to: buyer.address,
             success: true,
         });
+
+        // get buyer's Ton balance after
+        let buyerTonBalanceAfter = await buyer.getBalance();
+        let gas_fee = toNano('0.1');
+        expect(buyerTonBalanceAfter).toBeGreaterThan(buyerTonBalanceBefore + 1197740580n - gas_fee);
     });
 
     it('should send back swap in asset (jetton) when now > deadline', async () => {
@@ -665,7 +689,6 @@ describe('PoolV1', () => {
         let poolDataBefore = await poolV1.getPoolData();
 
         const result = await swapTon(buyer, dexRouter, dexRouterWalletAddress, sendTonAmount, minAmountOut, deadline);
-        printTransactionFees(result.transactions);
 
         // get buyer's Ton balance after
         let buyerTonBalanceAfter = await buyer.getBalance();
@@ -690,6 +713,14 @@ describe('PoolV1', () => {
             success: true,
         });
 
+        const SwapInternalTon = findTransactionRequired(result.transactions, {
+            op: PoolOpcodes.SwapTon,
+            from: buyer.address,
+            to: dexRouter.address,
+            success: true,
+        });
+        printTxGasStats('SwapInternalTon', SwapInternalTon);
+
         // Expect that Dex Router send Swap Internal to Pool
         expect(result.transactions).toHaveTransaction({
             op: PoolOpcodes.SwapInternal,
@@ -705,6 +736,30 @@ describe('PoolV1', () => {
             to: dexRouter.address,
             success: true,
         });
+
+        const SwapInternalToPool = findTransactionRequired(result.transactions, {
+            op: PoolOpcodes.SwapInternal,
+            from: dexRouter.address,
+            to: poolV1.address,
+            success: true,
+        });
+        printTxGasStats('SwapInternalToPool', SwapInternalToPool);
+
+        // Pool send packout from pool to dex router
+        expect(result.transactions).toHaveTransaction({
+            op: PoolOpcodes.PayoutFromPool,
+            from: poolV1.address,
+            to: dexRouter.address,
+            success: true,
+        });
+
+        const PackoutFromPool = findTransactionRequired(result.transactions, {
+            op: PoolOpcodes.PayoutFromPool,
+            from: poolV1.address,
+            to: dexRouter.address,
+            success: true,
+        });
+        printTxGasStats('PackoutFromPool', PackoutFromPool);
 
         // Expect that Dex Router send Jetton Transfer to Dex Router Jetton Wallet
         expect(result.transactions).toHaveTransaction({
@@ -960,6 +1015,14 @@ describe('PoolV1', () => {
             to: poolV1.address,
             success: true,
         });
+
+        const WithdrawAsset = findTransactionRequired(result.transactions, {
+            op: PoolOpcodes.JettonNotification,
+            from: poolLpWalletAddress,
+            to: poolV1.address,
+            success: true,
+        });
+        printTxGasStats('WithdrawAsset', WithdrawAsset);
 
         // Expect that Pool send payout from pool to Dex Router
         expect(result.transactions).toHaveTransaction({

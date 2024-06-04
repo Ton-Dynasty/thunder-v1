@@ -1,26 +1,26 @@
-const MIN_STORAGE_DURATION = 72 * 3600; ;; 3 days
+const MIN_STORAGE_DURATION = 4 * 24 * 3600; ;; 4 days
 
-
-const DEX_ROUTER_BITS = 16869;
-const DEX_ROUTER_CELLS = 35;
-
-const POOL_BITS = 21950;
-const POOL_CELLS = 47;
-
-
+;; Dex Router Related
+const DEX_ROUTER_BITS = 36450;
+const DEX_ROUTER_CELLS = 74;
 const SEND_TO_DEX_ROUTER = 10245;
 const DEPLOY_POOL_GAS = 12977;
+const SWAP_INTERNAL_DR_GAS = 11936; ;; Dex Router Jetton Wallet -> Dex Router (Jetton Notify)
+
+;; Pool Related
+const POOL_BITS = 21950;
+const POOL_CELLS = 47;
+const BUILD_POOL_GAS_FEE = 500000000; ;; 0.1 TON
 const POOL_DEPOSIT_GAS = 14901;
+const SWAP_INTERNAL_POOL_GAS = 10668;
+const PACKOUT_FROM_POOL_GAS = 10389;
 
 ;; Jetton transfer fees
 const JETTON_NOTIFY_GAS_CONSUMPTION = 16721;
 const SEND_TRANSFER_GAS_CONSUMPTION    = 9255;
 const RECEIVE_TRANSFER_GAS_CONSUMPTION = 10355;
-const BUILD_POOL_GAS_FEE = 500000000; ;; 0.1 TON
-const GAS_CONSUMPTION = 50000000; ;; 0.05 TON
+
 const FORWARD_FEE = 30000000; ;; 0.03 TON
-
-
 
 int calculate_dex_router_min_storage_fee() inline {
     return get_storage_fee(MY_WORKCHAIN, MIN_STORAGE_DURATION, DEX_ROUTER_BITS, DEX_ROUTER_CELLS);
@@ -37,17 +37,11 @@ int get_jetton_transfer_fee() inline {
     return get_compute_fee(MY_WORKCHAIN, send_transfer_gas_consumption) + get_compute_fee(MY_WORKCHAIN, receive_transfer_gas_consumption);
 }
 
-(int, int) cal_deploy_pool_fee(int fwd_fee, int deposit_type) inline {
+(int, int) cal_deploy_pool_fee(int fwd_fee) inline {
     int pool_gas_consumption = get_precompiled_gas_consumption();
     int send_to_dex_router_consumption = null?(pool_gas_consumption) ? SEND_TO_DEX_ROUTER : pool_gas_consumption;
 
-    int deploy_pool_gas_consumption = 0;
-    if (deposit_type == 0) {
-        deploy_pool_gas_consumption = 0;
-    } else {
-        deploy_pool_gas_consumption = null?(pool_gas_consumption) ? DEPLOY_POOL_GAS : pool_gas_consumption;
-    }
-
+    int deploy_pool_gas_consumption = null?(pool_gas_consumption) ? DEPLOY_POOL_GAS : pool_gas_consumption;
     int deposit_asset_gas_consumption = null?(pool_gas_consumption) ? POOL_DEPOSIT_GAS : pool_gas_consumption;
 
     int gas_comp = get_compute_fee(MY_WORKCHAIN, send_to_dex_router_consumption) + 
@@ -62,3 +56,33 @@ int get_jetton_transfer_fee() inline {
     return (total_fee, gas_comp);
 }
 
+(int, int) cal_swap_fee(int fwd_fee) inline {
+    int pool_gas_consumption = get_precompiled_gas_consumption();
+    int router_swap_internal_consumption = null?(pool_gas_consumption) ? SWAP_INTERNAL_DR_GAS : pool_gas_consumption;
+    int pool_swap_internal_consumption = null?(pool_gas_consumption) ? SWAP_INTERNAL_POOL_GAS : pool_gas_consumption;
+
+    int gas_comp = get_compute_fee(MY_WORKCHAIN, router_swap_internal_consumption) + 
+    calculate_dex_router_min_storage_fee();
+    
+    int total_fee = gas_comp + 
+    get_jetton_transfer_fee() + 
+    get_compute_fee(MY_WORKCHAIN, pool_swap_internal_consumption) +
+    fwd_fee * 5;
+
+    return (total_fee, gas_comp);
+}
+
+(int, int) cal_packout_fee(int fwd_fee) inline {
+    int pool_gas_consumption = get_precompiled_gas_consumption();
+    int router_packout_gas = null?(pool_gas_consumption) ? PACKOUT_FROM_POOL_GAS : pool_gas_consumption;
+    int pool_swap_internal_consumption = null?(pool_gas_consumption) ? SWAP_INTERNAL_POOL_GAS : pool_gas_consumption;
+
+    int gas_comp = get_compute_fee(MY_WORKCHAIN, router_packout_gas) + 
+    calculate_dex_router_min_storage_fee();
+    
+    int total_fee = gas_comp + 
+    get_jetton_transfer_fee() + 
+    fwd_fee * 3;
+
+    return (total_fee, gas_comp);
+}

@@ -1,19 +1,19 @@
-const gas::gas_consumption = 20000000; ;; 0.2 gas
-const gas::forward_ton = 100000000; ;; 0.1 gas
+const MIN_STORAGE_DURATION = 4 * 24 * 3600; ;; 4 days
 
-const MIN_STORAGE_DURATION = 72 * 3600; ;; 3 days
+;; Pool Related
 const POOL_DEPOSIT_GAS = 14901;
-
 const POOL_BITS = 21950;
 const POOL_CELLS = 47;
+const SWAP_INTERNAL_POOL_GAS = 11936;
+const PACKOUT_FROM_POOL_GAS = 10389;
+const WITHDRAW_GAS = 15508;
 
-;; Jetton transfer fees
+;; Jetton Wallet Related
+const JETTON_WALLET_INITSTATE_BITS  = 931;
+const JETTON_WALLET_INITSTATE_CELLS = 3;
 const JETTON_NOTIFY_GAS_CONSUMPTION = 16721;
 const SEND_TRANSFER_GAS_CONSUMPTION    = 9255;
 const RECEIVE_TRANSFER_GAS_CONSUMPTION = 10355;
-
-const JETTON_WALLET_INITSTATE_BITS  = 931;
-const JETTON_WALLET_INITSTATE_CELLS = 3;
 
 const FORWARD_FEE = 30000000; ;; 0.03 TON
 
@@ -42,6 +42,36 @@ int get_jetton_transfer_fee() inline {
     
     int total_fee = gas_comp + 
     fwd_fee * 2  + 
+    get_jetton_transfer_fee();
+
+    return (total_fee, gas_comp);
+}
+
+(int, int) cal_swap_internal(int fwd_fee) inline {
+    int pool_gas_consumption = get_precompiled_gas_consumption();
+    int pool_swap_internal_consumption = null?(pool_gas_consumption) ? SWAP_INTERNAL_POOL_GAS : pool_gas_consumption;    
+
+    int gas_comp = get_compute_fee(MY_WORKCHAIN, pool_swap_internal_consumption) + 
+    calculate_pool_min_storage_fee();
+    
+    int total_fee = gas_comp + 
+    get_compute_fee(MY_WORKCHAIN, PACKOUT_FROM_POOL_GAS) +
+    fwd_fee * 4 + 
+    get_jetton_transfer_fee();
+
+    return (total_fee, gas_comp);
+}
+
+(int, int) cal_withdraw_internal(int fwd_fee) inline {
+    int pool_gas_consumption = get_precompiled_gas_consumption();
+    int pool_withdraw_gas = null?(pool_gas_consumption) ? WITHDRAW_GAS : pool_gas_consumption;    
+
+    int gas_comp = get_compute_fee(MY_WORKCHAIN, pool_withdraw_gas) + 
+    calculate_pool_min_storage_fee();
+    
+    int total_fee = gas_comp + 
+    get_compute_fee(MY_WORKCHAIN, PACKOUT_FROM_POOL_GAS) * 2 +
+    fwd_fee * 5 + 
     get_jetton_transfer_fee();
 
     return (total_fee, gas_comp);
