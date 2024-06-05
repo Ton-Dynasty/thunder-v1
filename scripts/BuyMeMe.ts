@@ -23,7 +23,7 @@ export async function run(provider: NetworkProvider) {
 
     await provider.sender().send({
         to: jettonMasterBondV1.address,
-        value: toNano('2'),
+        value: toNano('2') + tonAmount,
         body: message,
     });
 }
