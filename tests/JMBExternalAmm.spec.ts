@@ -616,6 +616,39 @@ describe('JettonMasterBondV1 general testcases', () => {
         });
     });
 
+    it('should throw error when burn amount is equal to 0', async () => {
+        const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
+        await buyToken(jettonMasterBondV1, buyer);
+
+        // get state before burning meme tokens
+        let tonReserverBefore = (await jettonMasterBondV1.getMasterData()).tonReserves;
+        let jettonReservesBefore = (await jettonMasterBondV1.getMasterData()).jettonReserves;
+        let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
+        let buyerMemeTokenBalanceBefore = await buyerWallet.getJettonBalance();
+
+        // Buyers burn half of meme tokens
+        let buyerTonBalanceBefore = await buyer.getBalance();
+        let burnAmount = 0n;
+        const burnResult = await buyerWallet.sendBurn(buyer.getSender(), gas_cost, burnAmount, null, null);
+
+        let buyerMemeTokenBalanceAfter = await buyerWallet.getJettonBalance();
+        let buyerTonBalanceAfter = await buyer.getBalance();
+
+        let buyerMemeWallet = await userWallet(buyer.address, jettonMasterBondV1);
+        expect(burnResult.transactions).toHaveTransaction({
+            from: buyerMemeWallet.address,
+            to: jettonMasterBondV1.address,
+            success: false,
+            exitCode: 2004,
+        });
+
+        // Expect that buyers meme token balance is still same
+        expect(buyerMemeTokenBalanceAfter).toEqual(buyerMemeTokenBalanceBefore);
+
+        // Expect that buyer's ton is slightly decreased
+        expect(buyerTonBalanceBefore - buyerTonBalanceAfter).toBeGreaterThan(gas_cost);
+    });
+
     it('should admin can claim admin fee', async () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
         const buyTon = toNano('5000');
