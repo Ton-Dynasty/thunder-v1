@@ -1,13 +1,7 @@
-const op::mint = 0x642b7d07;
-const op::internal_transfer = 0x178d4519;
-const op::excesses = 0xd53276db;
-const op::burn_notification = 0x7bdd97de;
 const op::change_content_cell = 0xcb862902;
 const op::upgrade = 0x2508d66a;
 const op::top_up = 0xd372158c;
-const op::provide_wallet_address = 0x2c76b973;
-const op::take_wallet_address = 0xd1735400;
-const op::create_pool = "create_pool"c; ;; 2e3034ef
+;; const op::create_pool = "create_pool"c; ;; 2e3034ef ;; This is for the next release
 const op::claim_admin_fee = "claim_admin_fee"c; ;; 913e42af
 const op::add_liquidity = "add_liquidity"c; ;; 3ebe5431
 

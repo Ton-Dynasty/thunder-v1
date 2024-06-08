@@ -13,28 +13,22 @@
 
 () internal::ton_the_moon(int query_id, int ctx:fwd_fee) impure inline {
     master::on_moon = TRUE;
-    ;; Calculate jetton reserves send to dex router and thunder fi admin fee
+    ;; Calculate jetton reserves send to admin
     int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision; ;; Only send 90% of ton_reserves to liquidity pool
-    int fee_for_admin = master::ton_reserves - send_ton_liquidity - BUILD_POOL_GAS_FEE + master::fee; ;; build_pool_fee is for building pool and farm, thunder fi will pay for it.
+    ;; When to the moon, admin fee will send to admin
+    int fee_for_admin = master::ton_reserves - send_ton_liquidity - BUILD_POOL_GAS_FEE + master::fee - EMIT_GAS; ;; thunder fi will pay build pool fee and emit gas fee
 
-    ;; Calculate jetton reserves send to dex router
+    ;; Calculate jetton reserves send to admin
     int price_for_now = const:price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
     int send_jetton_liquidity = const:price_precision * send_ton_liquidity / price_for_now;
     int extra_jetton = master::jetton_reserves - send_jetton_liquidity;
-    ;; TODO: We should use this extra_jetton to do something, but for now we substract it in total supply
+    ;; We burn the remaining jetton for now
     master::total_supply -= extra_jetton;
 
-    ;; cell add_liquidity_payload = begin_cell()
-    ;;     .store_uint(op::add_liquidity ,32)
-    ;;     .store_coins(send_ton_liquidity) ;; other asset amount
-    ;;     .store_slice(address_none()) ;; other asset wallet
-    ;;     .store_coins(0) ;; min_lp_amount
-    ;;     .store_slice(my_address()) ;; lp_receiver
-    ;;     .store_maybe_ref(null()) ;; fulfill payload
-    ;;     .store_maybe_ref(null()) ;; reject payload
-    ;;     .end_cell();
-    send_ton_liquidity += BUILD_POOL_GAS_FEE; ;; build_pool_fee is for building pool and farm and is paid by thunder fi in line 16
-    int ton_to_dex_router = send_ton_liquidity + fee_for_admin - EMIT_GAS; ;; fee_for_admin will be transfer in excess msg. 
+
+    ;; We will send both ton and meme jetton to admin for now. We will write a AMM to build liquidity pool in the future
+    send_ton_liquidity += BUILD_POOL_GAS_FEE; ;; build_pool_fee is for building pool and farm and is paid by thunder fi in line 19
+    int ton_to_dex_router = send_ton_liquidity + fee_for_admin; ;; fee_for_admin will be transfer in excess msg. 
 
     ;; Send mint jetton to admin
     mint_jetton(
@@ -85,15 +79,16 @@
     
     ;; Calculate token_out based on ton_amount
     (int token_out, int true_amount_in, int ton_has_to_pay) = simulate::estimate_mint_jetton_amount(ton_amount);
+    ;; If the amount out doesn't meet the min_token_out, then throw error. It will send ton back to user by bounce
     throw_unless(error::not_meet_min_amount, token_out >= min_token_out); 
 
     ;; Calculate remaining ton and update storage
     int ton_back_to_user = ctx::value - gas_consumptoin - ton_has_to_pay;
     master::ton_reserves += true_amount_in;
-    master::fee += ton_has_to_pay - true_amount_in;
+    master::fee += ton_has_to_pay - true_amount_in; ;; fee is the difference between ton_has_to_pay and true_amount_in
     master::jetton_reserves -= token_out;
 
-    ;; If ton_reserves reach to the moon threshold, then send to dex router to deploy liquidity pool
+    ;; If ton_reserves reach to the moon threshold, then send to admin
     if(master::ton_reserves == const::ton_the_moon) {
         internal::ton_the_moon(query_id, ctx::fwd_fee);
     }
@@ -135,6 +130,9 @@
     slice response_address
 ) impure inline_ref {
 
+    ;; Burn Amount should larger than 0
+    throw_unless(error::burn_amount_zero, burn_amount > 0);
+
     ;; Calculate the gas fee
     (int total_fees, int gas_consumptoin) = cal_sell_fee(ctx::fwd_fee);
     throw_unless(error::not_enough_ton, ctx::value > total_fees);
@@ -143,14 +141,15 @@
     ;; Calculate sender's wallet address
     cell state_init = calculate_jetton_wallet_state_init(from_address, my_address(), master::jetton_wallet_code);
     slice true_sender = calculate_jetton_wallet_address(state_init);
+    ;; Only master's meme jetton wallet can send burn notifycation to jetton mastser
     throw_unless(error::not_valid_wallet, equal_slices_bits(true_sender, ctx::sender));
 
     ;; Calculate amount out based on burn jetton_amount
-    (int amount_out, int delta_ton, int jetton_out, int fee) = simulate::estimate_burn_jetton_amount(burn_amount);
+    (int amount_out, int delta_ton, int fee) = simulate::estimate_burn_jetton_amount(burn_amount);
     
     ;; Upload storage
     master::ton_reserves -= delta_ton;
-    master::jetton_reserves += jetton_out;
+    master::jetton_reserves += burn_amount;
     master::fee += fee;
 
     ;; If user didn't provide response address to receive ton, then send to from_address
@@ -186,10 +185,10 @@
 
     if op == op::mint {
         ;; load data in mint msg
-        int ton_amount = ctx::body~load_coins();
-        int min_token_out = ctx::body~load_coins();
-        slice destination = ctx::body~load_msg_addr();
-        slice response_address = ctx::body~load_msg_addr();
+        int ton_amount = ctx::body~load_coins(); ;; user paid this amount of ton to buy meme token
+        int min_token_out = ctx::body~load_coins(); ;; minimum amount of meme token user want to buy
+        slice destination = ctx::body~load_msg_addr(); ;; who will receive the meme token
+        slice response_address = ctx::body~load_msg_addr(); ;; who will receive the remaining ton
         cell custom_payload = ctx::body~load_maybe_ref();
         int forward_ton_amount = ctx::body~load_coins();
         cell forward_payload = ctx::body~load_ref();
@@ -220,9 +219,9 @@
     if op == op::burn_notification {
         ;; Throw error if token already listed. it will send back jetton to user by bounce
         throw_unless(error::token_already_listed, master::on_moon == FALSE);
-        int jetton_amount = ctx::body~load_coins();
-        slice from_address = ctx::body~load_msg_addr();
-        slice response_address = ctx::body~load_msg_addr();
+        int jetton_amount = ctx::body~load_coins(); ;; meme jetton amount user want to sell
+        slice from_address = ctx::body~load_msg_addr(); ;; who sold the meme jetton
+        slice response_address = ctx::body~load_msg_addr(); ;; who will receive The TON obtained from selling meme tokens
         ctx::body.end_parse();
         handle::burn_token(query_id, ctx::sender, ctx::value, ctx::fwd_fee, jetton_amount, from_address, response_address);
 

@@ -1,6 +1,6 @@
 #include "workchain.fc";
-
-() deploy( ;; deploy contract with state_init
+;; deploy contract with state_init
+() deploy(
     int bounce_flag,
     slice recipient,
     int value,

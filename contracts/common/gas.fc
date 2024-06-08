@@ -14,6 +14,10 @@ const JETTON_NOTIFY_GAS_CONSUMPTION = 16721;
 const SEND_TRANSFER_GAS_CONSUMPTION    = 9255;
 const RECEIVE_TRANSFER_GAS_CONSUMPTION = 10355;
 
+
+{- 
+    Dex Router and Pool is for the next release, so just ignore it now 
+-}
 ;; Dex Router Related
 const DEX_ROUTER_BITS = 42146;
 const DEX_ROUTER_CELLS = 85;
