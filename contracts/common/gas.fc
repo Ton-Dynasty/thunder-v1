@@ -32,7 +32,7 @@ const WITHDRAW_GAS = 22539;
 
 ;; Others
 const FORWARD_FEE = 30000000; ;; 0.03 TON
-const EMIT_GAS = 2800000;
+const EMIT_GAS = 2000000;
 
 int get_jetton_transfer_fee() inline {
     int pool_gas_consumption = get_precompiled_gas_consumption();
