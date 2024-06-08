@@ -14,11 +14,12 @@ export async function run(provider: NetworkProvider) {
     await factory.sendCreateVault(provider.sender(), {
         asset: Asset.jetton(jettonAddress),
     });
+    console.log('Vault creation initiated');
     const jettonVault = provider.open(await factory.getJettonVault(jettonAddress));
     while ((await jettonVault.getReadinessStatus()) !== ReadinessStatus.READY) {
-        sleep(1000);
+        sleep(3000);
     }
-    console.log('Vault created:', `https://tonviewer.com/${jettonVault.address.toString()}`);
+    console.log('Vault created successfully');
 
     // Create a volatile pool
     const TON = Asset.native();
@@ -27,15 +28,17 @@ export async function run(provider: NetworkProvider) {
     await factory.sendCreateVolatilePool(provider.sender(), {
         assets: [TON, Jetton],
     });
+    console.log('Pool creation initiated');
     while ((await pool.getReadinessStatus()) !== ReadinessStatus.READY) {
-        sleep(1000);
+        sleep(3000);
     }
-    console.log('Pool created:', `https://tonviewer.com/${pool.address.toString()}`);
+    console.log('Pool created successfully');
 
     // print vault address and pool address
     const vaultAddress = await factory.getVaultAddress(Jetton);
     const poolAddress = await factory.getPoolAddress({ poolType: PoolType.VOLATILE, assets: [TON, Jetton] });
-
-    console.log('Vault address:', vaultAddress.toString());
-    console.log('Pool address:', poolAddress.toString());
+    console.log('========================================================');
+    console.log('Vault address:', `https://tonviewer.com/${vaultAddress.toString()}`);
+    console.log('Pool address:', `https://tonviewer.com/${poolAddress.toString()}`);
+    console.log('========================================================');
 }
