@@ -1,9 +1,7 @@
-import { Address, beginCell, toNano } from '@ton/core';
+import { Address, toNano } from '@ton/core';
 import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
 import { compile, NetworkProvider } from '@ton/blueprint';
-import { DexRouter } from '../wrappers/DexRouter';
 import { JettonWallet } from '@ton/ton';
-import { PoolV1 } from '../wrappers/PoolV1';
 import { buildJettonContent } from '../utils/jetton';
 
 export async function run(provider: NetworkProvider) {
