@@ -1,7 +1,6 @@
 import { Blockchain, SandboxContract, TreasuryContract, printTransactionFees } from '@ton/sandbox';
 import { Address, Cell, SenderArguments, Transaction, beginCell, storeStateInit, toNano } from '@ton/core';
 import { JettonMasterBondV1, MasterOpocde } from '../wrappers/JettonMasterBondV1';
-import { DexRouter } from '../wrappers/DexRouter';
 import '@ton/test-utils';
 import { compile } from '@ton/blueprint';
 import { JettonWallet } from '../wrappers/JettonWallet';
@@ -9,19 +8,17 @@ import { loadJMBondFixture, buyToken } from './helper';
 import { collectCellStats, computedGeneric } from '../gasUtils';
 import { findTransactionRequired } from '@ton/test-utils';
 import { MockContract } from '../wrappers/MockContract';
-import { PoolV1 } from '../wrappers/PoolV1';
 
 describe('JettonMasterBondV1 general testcases', () => {
     let blockchain: Blockchain;
     let deployer: SandboxContract<TreasuryContract>;
-    let dexRouter: SandboxContract<DexRouter>;
     let jettonMasterBondV1: SandboxContract<JettonMasterBondV1>;
     let printTxGasStats: (name: string, trans: Transaction) => bigint;
     const precision = 1000n;
     const fee_rate = 10n;
 
     beforeEach(async () => {
-        ({ blockchain, deployer, dexRouter, jettonMasterBondV1 } = await loadJMBondFixture());
+        ({ blockchain, deployer, jettonMasterBondV1 } = await loadJMBondFixture());
         printTxGasStats = (name, transaction) => {
             const txComputed = computedGeneric(transaction);
             // console.log(`${name} used ${txComputed.gasUsed} gas`);
@@ -252,58 +249,41 @@ describe('JettonMasterBondV1 general testcases', () => {
         expect(buyerTonBalanceBefore - buyerTonBalanceAfter).toBeGreaterThan(gas_fee);
     });
 
-    it('should transfer tokens and tons to DexRouter after meeting TonTheMoon', async () => {
+    it('should transfer tokens and tons to admin after meeting TonTheMoon', async () => {
         let deployerTonBalanceBefore = await deployer.getBalance();
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
         const buyTon = toNano('1000000');
         const toTheMoonResult = await buyToken(jettonMasterBondV1, buyer, buyTon);
         let deployerTonBalanceAfter = await deployer.getBalance();
 
-        // Expect that jettonMasterBondV1 send internal transfer to DexRouter wallet
-        let dexRouterWalletAddress = await jettonMasterBondV1.getWalletAddress(dexRouter.address);
+        // Expect that jettonMasterBondV1 send internal transfer to admin wallet
+        let adminMemeWallet = await userWallet(deployer.address, jettonMasterBondV1);
         expect(toTheMoonResult.transactions).toHaveTransaction({
             op: MasterOpocde.InternalTransfer,
             from: jettonMasterBondV1.address,
-            to: dexRouterWalletAddress,
+            to: adminMemeWallet.address,
             success: true,
         });
 
-        // const sendToDexRouterTx = findTransactionRequired(toTheMoonResult.transactions, {
-        //     op: MasterOpocde.InternalTransfer,
-        //     from: jettonMasterBondV1.address,
-        //     to: dexRouterWalletAddress,
-        //     success: true,
-        // });
-        // printTxGasStats('JM Send to Dex Router', sendToDexRouterTx);
-
-        // Expect that dexRouterWallet send jetton notification to dexRouter
-        expect(toTheMoonResult.transactions).toHaveTransaction({
-            op: MasterOpocde.JettonNotification,
-            from: dexRouterWalletAddress,
-            to: dexRouter.address,
-            success: true,
-            //value: 9001000000000n, // 9000 ton + 1 ton for build pool and farm
-        });
-
-        // const deployPoolTx = findTransactionRequired(toTheMoonResult.transactions, {
-        //     op: MasterOpocde.JettonNotification,
-        //     from: dexRouterWalletAddress,
-        //     to: dexRouter.address,
-        //     success: true,
-        // });
-        // printTxGasStats('Dex Router Deploy Pool:', deployPoolTx);
-
-        // Expect that dexRouterWallet send excess to admin address
+        // Expect that admin meme wallet send excess to admin
         expect(toTheMoonResult.transactions).toHaveTransaction({
             op: MasterOpocde.Excess,
-            from: dexRouterWalletAddress,
+            from: adminMemeWallet.address,
             to: deployer.address,
             success: true,
-            //value: 999034037987n, // admin fees
         });
-        // Expect that deployer ton balance increased at least 1100 TON
+
+        // Expect that admin meme wallet send jetton notification to admin
+        expect(toTheMoonResult.transactions).toHaveTransaction({
+            op: MasterOpocde.JettonNotification,
+            from: adminMemeWallet.address,
+            to: deployer.address,
+            success: true,
+        });
+
+        // Expect that deployer ton balance increased at least 10100 TON, 10000 is ton reserves and 100 is fee
         let gas_fee = toNano('0.05');
-        expect(deployerTonBalanceAfter - deployerTonBalanceBefore + gas_fee).toBeGreaterThanOrEqual(toNano('1100'));
+        expect(deployerTonBalanceAfter - deployerTonBalanceBefore + gas_fee).toBeGreaterThanOrEqual(toNano('10100'));
 
         // Expect that jettonMasterBondV1 send jetton internal transfer to buyer meme token wallet
         let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
@@ -320,25 +300,15 @@ describe('JettonMasterBondV1 general testcases', () => {
             from: buyerWallet.address,
             to: buyer.address,
             success: true,
-            //value: 989899955558577n, // This is remaining ton after buyer bought meme token
         });
-
-        // const burnMeMeTx = findTransactionRequired(toTheMoonResult.transactions, {
-        //     op: MasterOpocde.Excess,
-        //     from: buyerWallet.address,
-        //     to: buyer.address,
-        //     success: true,
-        // });
-        // printTxGasStats('Send TON Fee', burnMeMeTx);
 
         // buyers meme token balance should be 90909090909090910n
         let buyerMemeTokenBalance = await buyerWallet.getJettonBalance();
         expect(buyerMemeTokenBalance).toEqual(90909090909090910n);
 
-        // Dex Ruoter meme token balance should be 7438016528925619
-        let dexRouterWallet = await userWallet(dexRouter.address, jettonMasterBondV1);
-        let dexRouterMemeTokenBalance = await dexRouterWallet.getJettonBalance();
-        expect(dexRouterMemeTokenBalance).toEqual(7438016528925619n);
+        // admin meme token balance should be 7438016528925619
+        let adminMemeWalletBalance = await adminMemeWallet.getJettonBalance();
+        expect(adminMemeWalletBalance).toEqual(7438016528925619n);
 
         // Expect jettonMasterBondV1 ton reserves = 0
         let tonReservesAfter = (await jettonMasterBondV1.getMasterData()).tonReserves;
@@ -355,24 +325,6 @@ describe('JettonMasterBondV1 general testcases', () => {
         // Epext that onMoon = 1n
         let onMoon = (await jettonMasterBondV1.getMasterData()).onMoon;
         expect(onMoon).toEqual(-1n);
-
-        let dexRouterMemeWallet = await userWallet(dexRouter.address, jettonMasterBondV1);
-        let poolAddress = await dexRouter.getPoolAddress(dexRouterMemeWallet.address, null);
-        // Expect that Dex Router send deposit asset to Pool
-        expect(toTheMoonResult.transactions).toHaveTransaction({
-            op: MasterOpocde.DepositAsset,
-            from: dexRouter.address,
-            to: poolAddress,
-            success: true,
-        });
-
-        // const depositAssetTx = findTransactionRequired(toTheMoonResult.transactions, {
-        //     op: MasterOpocde.DepositAsset,
-        //     from: dexRouter.address,
-        //     to: poolAddress,
-        //     success: true,
-        // });
-        // printTxGasStats('Pool Deposit Asset', depositAssetTx);
     });
 
     it('should buy meme tokens and sell meme tokens 100 times and ton the moon', async () => {
@@ -409,21 +361,11 @@ describe('JettonMasterBondV1 general testcases', () => {
         let onMoon = (await jettonMasterBondV1.getMasterData()).onMoon;
         expect(onMoon).toEqual(-1n);
 
-        // Expect that Dex Router send deposit asset to Pool
-        let dexRouterMemeWallet = await userWallet(dexRouter.address, jettonMasterBondV1);
-        let poolAddress = await dexRouter.getPoolAddress(dexRouterMemeWallet.address, null);
-        expect(toTheMoonResult.transactions).toHaveTransaction({
-            op: MasterOpocde.DepositAsset,
-            from: dexRouter.address,
-            to: poolAddress,
-            success: true,
-        });
-
-        // Expect that dexRouterWallet send excess to admin address
-        let dexRouterWalletAddress = await jettonMasterBondV1.getWalletAddress(dexRouter.address);
+        // Expect that admin meme wallet send excess to admin address
+        let adminMemeWalletAddress = await jettonMasterBondV1.getWalletAddress(deployer.address);
         expect(toTheMoonResult.transactions).toHaveTransaction({
             op: MasterOpocde.Excess,
-            from: dexRouterWalletAddress,
+            from: adminMemeWalletAddress,
             to: deployer.address,
             success: true,
         });
@@ -431,7 +373,7 @@ describe('JettonMasterBondV1 general testcases', () => {
         // Expect that deployer ton balance increased at least feeAfter + 999TON ( 10% of ton reserves)
         let gas_fee = toNano('0.05');
         expect(deployerTonBalanceAfter - deployerTonBalanceBefore + gas_fee).toBeGreaterThanOrEqual(
-            feeAfter + toNano('999'),
+            feeAfter + toNano('10000'),
         );
     });
 
@@ -719,7 +661,6 @@ describe('JettonMasterBondV1 general testcases', () => {
 describe('JettonMasterBondV1 premint when deploying contract', () => {
     let blockchain: Blockchain;
     let deployer: SandboxContract<TreasuryContract>;
-    let dexRouter: SandboxContract<DexRouter>;
     let jettonMasterBondV1: SandboxContract<JettonMasterBondV1>;
 
     beforeEach(async () => {
@@ -732,28 +673,7 @@ describe('JettonMasterBondV1 premint when deploying contract', () => {
 
     it('should deploy contract with premint', async () => {
         const jettonMasterBondV1Code = await compile(JettonMasterBondV1.name);
-        const dexRouterCode = await compile(DexRouter.name);
         const jettonWalletCode = await compile(JettonWallet.name);
-        const poolCode = await compile(PoolV1.name);
-
-        const dexRouter = blockchain.openContract(
-            DexRouter.createFromConfig(
-                {
-                    ownerAddress: deployer.address,
-                    poolCode: poolCode,
-                    lpWalletCode: jettonWalletCode,
-                },
-                dexRouterCode,
-            ),
-        );
-
-        const deployDexRouterResult = await dexRouter.sendDeploy(deployer.getSender(), toNano('0.05'));
-        expect(deployDexRouterResult.transactions).toHaveTransaction({
-            from: deployer.address,
-            to: dexRouter.address,
-            deploy: true,
-            success: true,
-        });
 
         const jettonMasterBondV1 = blockchain.openContract(
             JettonMasterBondV1.createFromConfig(
@@ -764,7 +684,7 @@ describe('JettonMasterBondV1 premint when deploying contract', () => {
                     jettonReserves: toNano('100000000'),
                     fee: 0n,
                     onMoon: 0n,
-                    dexRouter: dexRouter.address,
+                    dexRouter: deployer.address,
                     jettonWalletCode: jettonWalletCode,
                     jettonContent: beginCell().endCell(),
                 },

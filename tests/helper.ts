@@ -1,39 +1,17 @@
 import { Blockchain, SandboxContract, TreasuryContract, printTransactionFees } from '@ton/sandbox';
 import { Address, Cell, beginCell, toNano } from '@ton/core';
 import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
-import { DexRouter } from '../wrappers/DexRouter';
 import { compile } from '@ton/blueprint';
 import { JettonWallet, LpJettonWallet } from '../wrappers/JettonWallet';
-import { PoolV1 } from '../wrappers/PoolV1';
 
 export async function loadJMBondFixture() {
     const jettonMasterBondV1Code = await compile(JettonMasterBondV1.name);
-    const dexRouterCode = await compile(DexRouter.name);
     const jettonWalletCode = await compile(JettonWallet.name);
     const jettonLpCode = await compile(LpJettonWallet.name);
-    const poolCode = await compile(PoolV1.name);
 
     const blockchain = await Blockchain.create();
     const deployer = await blockchain.treasury('deployer', { workchain: 0, balance: toNano('100000000') });
 
-    const dexRouter = blockchain.openContract(
-        DexRouter.createFromConfig(
-            {
-                ownerAddress: deployer.address,
-                poolCode: poolCode,
-                lpWalletCode: jettonLpCode,
-            },
-            dexRouterCode,
-        ),
-    );
-
-    const deployDexRouterResult = await dexRouter.sendDeploy(deployer.getSender(), toNano('0.05'));
-    expect(deployDexRouterResult.transactions).toHaveTransaction({
-        from: deployer.address,
-        to: dexRouter.address,
-        deploy: true,
-        success: true,
-    });
 
     const jettonMasterBondV1 = blockchain.openContract(
         JettonMasterBondV1.createFromConfig(
@@ -44,7 +22,7 @@ export async function loadJMBondFixture() {
                 jettonReserves: toNano('100000000'),
                 fee: 0n,
                 onMoon: 0n,
-                dexRouter: dexRouter.address,
+                dexRouter: deployer.address,
                 jettonWalletCode: jettonWalletCode,
                 jettonContent: beginCell().endCell(),
             },
@@ -60,7 +38,7 @@ export async function loadJMBondFixture() {
         success: true,
     });
 
-    return { blockchain, deployer, dexRouter, jettonMasterBondV1 };
+    return { blockchain, deployer, jettonMasterBondV1 };
 }
 
 export const buyToken = async (

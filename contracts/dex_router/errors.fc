@@ -1,2 +1,0 @@
-const error::not_enough_ton = 2000;
-const error::invalid_sender = 2001;
