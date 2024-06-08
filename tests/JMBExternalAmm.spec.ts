@@ -253,43 +253,12 @@ describe('JettonMasterBondV1 general testcases', () => {
         expect(buyerTonBalanceBefore - buyerTonBalanceAfter).toBeGreaterThan(gas_fee);
     });
 
-    it('should transfer tokens and tons to admin after meeting TonTheMoon', async () => {
-        let deployerTonBalanceBefore = await deployer.getBalance();
+    it('should ton the moon after ton reserves reach 10000 ton', async () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
         let buyerTonBalanceBefore = await buyer.getBalance();
         const buyTon = toNano('1000000');
         const toTheMoonResult = await buyToken(jettonMasterBondV1, buyer, buyTon);
         let buyerTonBalanceAfter = await buyer.getBalance();
-        let deployerTonBalanceAfter = await deployer.getBalance();
-
-        // Expect that jettonMasterBondV1 send internal transfer to admin wallet
-        let adminMemeWallet = await userWallet(deployer.address, jettonMasterBondV1);
-        expect(toTheMoonResult.transactions).toHaveTransaction({
-            op: MasterOpocde.InternalTransfer,
-            from: jettonMasterBondV1.address,
-            to: adminMemeWallet.address,
-            success: true,
-        });
-
-        // Expect that admin meme wallet send excess to admin
-        expect(toTheMoonResult.transactions).toHaveTransaction({
-            op: MasterOpocde.Excess,
-            from: adminMemeWallet.address,
-            to: deployer.address,
-            success: true,
-        });
-
-        // Expect that admin meme wallet send jetton notification to admin
-        expect(toTheMoonResult.transactions).toHaveTransaction({
-            op: MasterOpocde.JettonNotification,
-            from: adminMemeWallet.address,
-            to: deployer.address,
-            success: true,
-        });
-
-        // Expect that deployer ton balance increased at least 10100 TON, 10000 is ton reserves and 100 is fee
-        let gas_fee = toNano('0.05');
-        expect(deployerTonBalanceAfter - deployerTonBalanceBefore + gas_fee).toBeGreaterThanOrEqual(toNano('10100'));
 
         // Expect that jettonMasterBondV1 send jetton internal transfer to buyer meme token wallet
         let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
@@ -308,28 +277,26 @@ describe('JettonMasterBondV1 general testcases', () => {
             success: true,
         });
 
+        let jettonReservesAfter = await (await jettonMasterBondV1.getMasterData()).jettonReserves;
+        let tonReservesAfter = (await jettonMasterBondV1.getMasterData()).tonReserves;
+
+        // Expect that jetton reserves equal to k/x, where k = 10^11, x = 10^4 + 1000 (virtual ton), 10^9 is decimal
+        let trueJettonReserves = (10n ** 11n * 10n ** 9n) / 11000n;
+        expect(jettonReservesAfter).toEqual(trueJettonReserves);
+
+        // Expect that ton reserves = 10000000000000n
+        expect(tonReservesAfter).toEqual(toNano('10000'));
+
         // buyers meme token balance should be 90909090909090910n
         let buyerMemeTokenBalance = await buyerWallet.getJettonBalance();
         expect(buyerMemeTokenBalance).toEqual(90909090909090910n);
 
-        // admin meme token balance should be 7438016528925619
-        let adminMemeWalletBalance = await adminMemeWallet.getJettonBalance();
-        expect(adminMemeWalletBalance).toEqual(7438016528925619n);
+        // // admin meme token balance should be 7438016528925619
+        // let adminMemeWalletBalance = await adminMemeWallet.getJettonBalance();
+        // expect(adminMemeWalletBalance).toEqual(7438016528925619n);
 
         // buyer's ton balance should decrease at least 10000 ton
         expect(buyerTonBalanceBefore - buyerTonBalanceAfter).toBeGreaterThan(toNano('10000'));
-
-        // Expect jettonMasterBondV1 ton reserves = 0
-        let tonReservesAfter = (await jettonMasterBondV1.getMasterData()).tonReserves;
-        let jettonReservesAfter = (await jettonMasterBondV1.getMasterData()).jettonReserves;
-        expect(tonReservesAfter).toEqual(0n);
-
-        // Expect jettonMasterBondV1 jetton reserves = 0
-        expect(jettonReservesAfter).toEqual(0n);
-
-        // Expect fee = 0
-        let feeAfter = (await jettonMasterBondV1.getMasterData()).fee;
-        expect(feeAfter).toEqual(0n);
 
         // Epext that onMoon = 1n
         let onMoon = (await jettonMasterBondV1.getMasterData()).onMoon;
@@ -337,8 +304,8 @@ describe('JettonMasterBondV1 general testcases', () => {
     });
 
     it('should buy meme tokens and sell meme tokens 100 times and ton the moon', async () => {
-        let deployerTonBalanceBefore = await deployer.getBalance();
         let buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('100000000') });
+        let buyerTonBalanceBefore = await buyer.getBalance();
         const buyTon = toNano('10');
         let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
 
@@ -364,26 +331,18 @@ describe('JettonMasterBondV1 general testcases', () => {
         // Ton the moon
         const buyTontoMoon = toNano('1000000');
         const toTheMoonResult = await buyToken(jettonMasterBondV1, buyer, buyTontoMoon);
-        let deployerTonBalanceAfter = await deployer.getBalance();
+        let buyerTonBalanceAfter = await buyer.getBalance();
+
+        // buyer's ton balance should decrease at least 10000 ton
+        expect(buyerTonBalanceBefore - buyerTonBalanceAfter).toBeGreaterThan(toNano('10000'));
+
+        // buyers meme token balance should be 90909090909090910n
+        let buyerMemeTokenBalance = await buyerWallet.getJettonBalance();
+        expect(buyerMemeTokenBalance).toEqual(90909090909090910n);
 
         // Epext that onMoon = 1n
         let onMoon = (await jettonMasterBondV1.getMasterData()).onMoon;
         expect(onMoon).toEqual(-1n);
-
-        // Expect that admin meme wallet send excess to admin address
-        let adminMemeWalletAddress = await jettonMasterBondV1.getWalletAddress(deployer.address);
-        expect(toTheMoonResult.transactions).toHaveTransaction({
-            op: MasterOpocde.Excess,
-            from: adminMemeWalletAddress,
-            to: deployer.address,
-            success: true,
-        });
-
-        // Expect that deployer ton balance increased at least feeAfter + 999TON ( 10% of ton reserves)
-        let gas_fee = toNano('0.05');
-        expect(deployerTonBalanceAfter - deployerTonBalanceBefore + gas_fee).toBeGreaterThanOrEqual(
-            feeAfter + toNano('10000'),
-        );
     });
 
     it('should not buy meme tokens after token on the list', async () => {
@@ -406,6 +365,91 @@ describe('JettonMasterBondV1 general testcases', () => {
             to: jettonMasterBondV1.address,
             success: false,
             exitCode: 2002,
+        });
+    });
+
+    it('should admin send op::to_the_moon', async () => {
+        const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
+        const buyTon = toNano('1000000');
+        await buyToken(jettonMasterBondV1, buyer, buyTon);
+
+        let adminTonBalanceBefore = await deployer.getBalance();
+        let adminMemeWallet = await userWallet(deployer.address, jettonMasterBondV1);
+        let adminMemeTokenBalanceBefore = await adminMemeWallet.getJettonBalance();
+        let jettonReserves = await (await jettonMasterBondV1.getMasterData()).jettonReserves;
+        let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(deployer.getSender(), toNano('0.05'));
+
+        let adminTonBalanceAfter = await deployer.getBalance();
+        let adminMemeTokenBalanceAfter = await adminMemeWallet.getJettonBalance();
+
+        // Expect that admin send op::to_the_moon to jettonMasterBondV1
+        expect(toTheMoonResult.transactions).toHaveTransaction({
+            op: MasterOpocde.ToTheMoon,
+            from: deployer.address,
+            to: jettonMasterBondV1.address,
+            success: true,
+        });
+
+        // Expecet that jettonMasterBondV1 send jetton internal transfer to admin meme token wallet
+        expect(toTheMoonResult.transactions).toHaveTransaction({
+            op: MasterOpocde.InternalTransfer,
+            from: jettonMasterBondV1.address,
+            to: adminMemeWallet.address,
+            success: true,
+        });
+
+        // Expect that admin meme wallet send excess to admin
+        expect(toTheMoonResult.transactions).toHaveTransaction({
+            op: MasterOpocde.Excess,
+            from: adminMemeWallet.address,
+            to: deployer.address,
+            success: true,
+        });
+
+        // Expect that admin balance increased at least 1100 ton
+        expect(adminTonBalanceAfter - adminTonBalanceBefore).toBeGreaterThan(toNano('1100'));
+
+        // // Expect that admin jetton balance should be jettonReserves - 7438016528925619n
+        expect(adminMemeTokenBalanceAfter).toEqual(jettonReserves - 7438016528925619n);
+
+        // Expect that ton reserves = 0
+        let tonReservesAfter = (await jettonMasterBondV1.getMasterData()).tonReserves;
+        expect(tonReservesAfter).toEqual(0n);
+
+        // Expect that jetton reserves = 0n
+        let jettonReservesAfter = await (await jettonMasterBondV1.getMasterData()).jettonReserves;
+        expect(jettonReservesAfter).toEqual(0n);
+
+        // Expect that fee = 0n
+        let feeAfter = await (await jettonMasterBondV1.getMasterData()).fee;
+        expect(feeAfter).toEqual(0n);
+    });
+
+    it('should not send to the moon if jetotn master bond is not on moon', async () => {
+        const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
+        const buyTon = toNano('100');
+        await buyToken(jettonMasterBondV1, buyer, buyTon);
+        let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(deployer.getSender(), toNano('0.05'));
+        // Expect to throw not on moon error 2005
+        expect(toTheMoonResult.transactions).toHaveTransaction({
+            from: deployer.address,
+            to: jettonMasterBondV1.address,
+            success: false,
+            exitCode: 2005,
+        });
+    });
+
+    it('should only admin can send op::to_the_moon', async () => {
+        const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
+        const buyTon = toNano('100000');
+        await buyToken(jettonMasterBondV1, buyer, buyTon);
+        let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(buyer.getSender(), toNano('0.05'));
+        // Expect to not admin error 70
+        expect(toTheMoonResult.transactions).toHaveTransaction({
+            from: buyer.address,
+            to: jettonMasterBondV1.address,
+            success: false,
+            exitCode: 70,
         });
     });
 

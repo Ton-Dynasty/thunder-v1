@@ -13,40 +13,6 @@
 
 () internal::ton_the_moon(int query_id, int ctx:fwd_fee) impure inline {
     master::on_moon = TRUE;
-    ;; Calculate jetton reserves send to admin
-    int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision; ;; Only send 90% of ton_reserves to liquidity pool
-    ;; When to the moon, admin fee will send to admin
-    int fee_for_admin = master::ton_reserves - send_ton_liquidity - BUILD_POOL_GAS_FEE + master::fee - EMIT_GAS; ;; thunder fi will pay build pool fee and emit gas fee
-
-    ;; Calculate jetton reserves send to admin
-    int price_for_now = const:price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
-    int send_jetton_liquidity = const:price_precision * send_ton_liquidity / price_for_now;
-    int extra_jetton = master::jetton_reserves - send_jetton_liquidity;
-    ;; We burn the remaining jetton for now
-    master::total_supply -= extra_jetton;
-
-
-    ;; We will send both ton and meme jetton to admin for now. We will write a AMM to build liquidity pool in the future
-    send_ton_liquidity += BUILD_POOL_GAS_FEE; ;; build_pool_fee is for building pool and farm and is paid by thunder fi in line 19
-    int ton_to_dex_router = send_ton_liquidity + fee_for_admin; ;; fee_for_admin will be transfer in excess msg. 
-
-    ;; Send mint jetton to admin
-    mint_jetton(
-        BOUNCEABLE,
-        query_id,
-        ton_to_dex_router, 
-        send_jetton_liquidity,
-        master::admin_address,
-        master::admin_address,
-        send_ton_liquidity, 
-        null()
-    );
-
-    ;; Update storage
-    master::ton_reserves = 0;
-    master::jetton_reserves = 0;
-    master::fee = 0;
-
     return ();
 }
 
@@ -279,6 +245,56 @@
     if op == op::claim_admin_fee {
         throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
         handle::claim_admin_fee(query_id);
+        return ();
+    }
+
+    if op == op::to_the_moon {
+        ;; Only admin can trigger this function
+        throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
+
+        ;; Only after ton_the_moon is true, can trigger this function
+        throw_unless(error::not_on_moon, master::on_moon == TRUE);
+
+        ;; Calculate jetton reserves send to dex router and thunder fi admin fee
+        int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision; ;; Only send 90% of ton_reserves to liquidity pool
+        int ton_fee_for_admin = master::ton_reserves - send_ton_liquidity - BUILD_POOL_GAS_FEE + master::fee; ;; build_pool_fee is for building pool and farm, thunder fi will pay for it.
+
+        ;; Calculate jetton reserves send to dex router
+        int price_for_now = const:price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
+        int send_jetton_liquidity = const:price_precision * send_ton_liquidity / price_for_now;
+        int jetton_fee_for_admin = master::jetton_reserves - send_jetton_liquidity;
+
+        ;; TODO: Add liquidity to dedust pool
+        ;; cell add_liquidity_payload = begin_cell()
+        ;;     .store_uint(op::add_liquidity ,32)
+        ;;     .store_coins(send_ton_liquidity) ;; other asset amount
+        ;;     .store_slice(address_none()) ;; other asset wallet
+        ;;     .store_coins(0) ;; min_lp_amount
+        ;;     .store_slice(my_address()) ;; lp_receiver
+        ;;     .store_maybe_ref(null()) ;; fulfill payload
+        ;;     .store_maybe_ref(null()) ;; reject payload
+        ;;     .end_cell();
+        ;; send_ton_liquidity += BUILD_POOL_GAS_FEE; ;; build_pool_fee is for building pool and farm and is paid by thunder fi in line 16
+        ;; int ton_to_dex_router = send_ton_liquidity + ton_fee_for_admin - EMIT_GAS; ;; fee_for_admin will be transfer in excess msg. 
+
+        ;; Send fee to admin by minting jetton
+        mint_jetton(
+            BOUNCEABLE,
+            query_id,
+            ton_fee_for_admin, 
+            jetton_fee_for_admin,
+            master::admin_address,
+            master::admin_address,
+            0, 
+            null()
+        );
+
+        ;; Update storage
+        master::ton_reserves = 0;
+        master::jetton_reserves = 0;
+        master::fee = 0;
+
+        master::save_data();
         return ();
     }
 
