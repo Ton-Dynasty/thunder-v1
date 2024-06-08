@@ -50,6 +50,29 @@ export function storeBuyToken(src: BuyToken) {
     };
 }
 
+export type TonTheMoon = {
+    $$type: 'TonTheMoon';
+    query_id: bigint;
+    pool_type: bigint;
+    asset_0: Address;
+    asset_1: Address;
+    vault_0: Address;
+    vault_1: Address;
+    min_lp_amount: bigint;
+};
+
+export function storeTonTheMoon(src: TonTheMoon) {
+    return (b: Builder) => {
+        b.storeUint(MasterOpocde.ToTheMoon, 32);
+        b.storeUint(src.query_id, 64);
+        b.storeUint(src.pool_type, 1);
+        b.storeAddress(src.asset_0);
+        b.storeAddress(src.asset_1);
+        b.storeCoins(src.min_lp_amount);
+        b.storeRef(beginCell().storeAddress(src.vault_0).storeAddress(src.vault_1).endCell());
+    };
+}
+
 export type JettonMasterBondV1Config = {
     totalSupply: bigint;
     adminAddress: Address;
@@ -91,6 +114,10 @@ export class JettonMasterBondV1 implements Contract {
         return beginCell().store(storeBuyToken(src)).endCell();
     }
 
+    static packTonTheMoon(src: TonTheMoon) {
+        return beginCell().store(storeTonTheMoon(src)).endCell();
+    }
+
     async sendBuyToken(
         provider: ContractProvider,
         via: Sender,
@@ -124,11 +151,11 @@ export class JettonMasterBondV1 implements Contract {
         });
     }
 
-    async sendToTheMoon(provider: ContractProvider, via: Sender, value: bigint) {
+    async sendToTheMoon(provider: ContractProvider, via: Sender, value: bigint, body: TonTheMoon) {
         await provider.internal(via, {
             value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
-            body: beginCell().storeUint(MasterOpocde.ToTheMoon, 32).storeUint(0, 64).endCell(),
+            body: JettonMasterBondV1.packTonTheMoon(body),
         });
     }
 

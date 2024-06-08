@@ -1,6 +1,6 @@
 import { Blockchain, SandboxContract, TreasuryContract, printTransactionFees } from '@ton/sandbox';
 import { Address, Cell, SenderArguments, Transaction, beginCell, storeStateInit, toNano } from '@ton/core';
-import { JettonMasterBondV1, MasterOpocde } from '../wrappers/JettonMasterBondV1';
+import { JettonMasterBondV1, MasterOpocde, TonTheMoon } from '../wrappers/JettonMasterBondV1';
 import '@ton/test-utils';
 import { compile } from '@ton/blueprint';
 import { JettonWallet } from '../wrappers/JettonWallet';
@@ -377,7 +377,16 @@ describe('JettonMasterBondV1 general testcases', () => {
         let adminMemeWallet = await userWallet(deployer.address, jettonMasterBondV1);
         let adminMemeTokenBalanceBefore = await adminMemeWallet.getJettonBalance();
         let jettonReserves = await (await jettonMasterBondV1.getMasterData()).jettonReserves;
-        let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(deployer.getSender(), toNano('0.05'));
+        let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(deployer.getSender(), toNano('0.05'), {
+            $$type: 'TonTheMoon',
+            query_id: 0n,
+            pool_type: 1n,
+            asset_0: buyer.address,
+            asset_1: deployer.address,
+            vault_0: buyer.address,
+            vault_1: deployer.address,
+            min_lp_amount: 0n,
+        });
 
         let adminTonBalanceAfter = await deployer.getBalance();
         let adminMemeTokenBalanceAfter = await adminMemeWallet.getJettonBalance();
@@ -429,7 +438,16 @@ describe('JettonMasterBondV1 general testcases', () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
         const buyTon = toNano('100');
         await buyToken(jettonMasterBondV1, buyer, buyTon);
-        let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(deployer.getSender(), toNano('0.05'));
+        let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(deployer.getSender(), toNano('0.05'), {
+            $$type: 'TonTheMoon',
+            query_id: 0n,
+            pool_type: 1n,
+            asset_0: buyer.address,
+            asset_1: deployer.address,
+            vault_0: buyer.address,
+            vault_1: deployer.address,
+            min_lp_amount: 0n,
+        });
         // Expect to throw not on moon error 2005
         expect(toTheMoonResult.transactions).toHaveTransaction({
             from: deployer.address,
@@ -443,7 +461,18 @@ describe('JettonMasterBondV1 general testcases', () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
         const buyTon = toNano('100000');
         await buyToken(jettonMasterBondV1, buyer, buyTon);
-        let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(buyer.getSender(), toNano('0.05'));
+
+        let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(buyer.getSender(), toNano('0.05'), {
+            $$type: 'TonTheMoon',
+            query_id: 0n,
+            pool_type: 1n,
+            asset_0: buyer.address,
+            asset_1: deployer.address,
+            vault_0: buyer.address,
+            vault_1: deployer.address,
+            min_lp_amount: 0n,
+        });
+
         // Expect to not admin error 70
         expect(toTheMoonResult.transactions).toHaveTransaction({
             from: buyer.address,

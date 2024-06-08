@@ -5,4 +5,5 @@ const op::top_up = 0xd372158c;
 const op::claim_admin_fee = "claim_admin_fee"c; ;; 913e42af
 const op::add_liquidity = "add_liquidity"c; ;; 3ebe5431
 const op::to_the_moon = "to_the_moon"c; ;; 18ea8228
+const op::deposit_ton_liquidity = 0xd55e4686;
 

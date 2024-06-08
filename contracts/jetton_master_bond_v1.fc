@@ -20,7 +20,7 @@
     int query_id
 ) impure inline_ref {
     int send_ton = master::fee; ;; Remaining BUILD_POOL_GAS_FEE for building pool and farm
-    transfer_ton(query_id, NON_BOUNCEABLE, master::admin_address, send_ton, SEND_MODE_REGULAR);
+    transfer_ton(query_id, NON_BOUNCEABLE, master::admin_address, send_ton, null(), SEND_MODE_REGULAR);
 
     master::fee = 0;
     master::save_data();
@@ -125,7 +125,7 @@
     }
 
     ;; Transfer tons (from selling meme tokens) to user
-    transfer_ton(query_id, NON_BOUNCEABLE, recipient, amount_out + send_ton, SEND_MODE_REGULAR);
+    transfer_ton(query_id, NON_BOUNCEABLE, recipient, amount_out + send_ton, null(), SEND_MODE_REGULAR);
 
     emit::burn(
         from_address,
@@ -140,6 +140,61 @@
 
     master::save_data();
     return ();
+}
+
+() handle::to_the_moon(
+    slice vault_0,
+    slice vault_1,
+    int query_id,
+    int pool_type,
+    slice asset_0,
+    slice asset_1,
+    int min_lp_amount
+) impure inline_ref {
+    ;; Calculate jetton reserves send to dex router and thunder fi admin fee
+    int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision; ;; Only send 90% of ton_reserves to liquidity pool
+    int ton_fee_for_admin = master::ton_reserves - send_ton_liquidity - BUILD_POOL_GAS_FEE + master::fee; ;; build_pool_fee is for building pool and farm, thunder fi will pay for it.
+
+    ;; Calculate jetton reserves send to dex router
+    int price_for_now = const:price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
+    int send_jetton_liquidity = const:price_precision * send_ton_liquidity / price_for_now;
+    int jetton_fee_for_admin = master::jetton_reserves - send_jetton_liquidity;
+
+    ;; Send fee to admin by minting jetton
+    mint_jetton(
+        BOUNCEABLE,
+        query_id,
+        ton_fee_for_admin, 
+        jetton_fee_for_admin,
+        master::admin_address,
+        master::admin_address,
+        0, 
+        null()
+    );
+
+    ;; Update storage
+    master::ton_reserves = 0;
+    master::jetton_reserves = 0;
+    master::fee = 0;
+
+    ;; ;; Provide ton liquidity to dedust
+    ;; cell msg_body = pack_add_ton_liquidity(1000000000, pool_type, asset_0, asset_1, min_lp_amount, send_ton_liquidity, send_jetton_liquidity, query_id);
+    ;; transfer_ton(query_id, NON_BOUNCEABLE, vault_0, 1000000000, msg_body, SEND_MODE_REGULAR);
+
+    ;; ;; Provide jetton liquidity to dedust
+    ;; mint_jetton(
+    ;;     BOUNCEABLE,
+    ;;     query_id,
+    ;;     1000000000,
+    ;;     send_jetton_liquidity,
+    ;;     vault_1,
+    ;;     master::admin_address,
+    ;;     FORWARD_FEE,
+    ;;     msg_body
+    ;; );
+
+    return ();
+
 }
 
 () route_internal(slice ctx::sender, int ctx::value, int ctx::fwd_fee, slice ctx::body) impure inline {
@@ -255,44 +310,23 @@
         ;; Only after ton_the_moon is true, can trigger this function
         throw_unless(error::not_on_moon, master::on_moon == TRUE);
 
-        ;; Calculate jetton reserves send to dex router and thunder fi admin fee
-        int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision; ;; Only send 90% of ton_reserves to liquidity pool
-        int ton_fee_for_admin = master::ton_reserves - send_ton_liquidity - BUILD_POOL_GAS_FEE + master::fee; ;; build_pool_fee is for building pool and farm, thunder fi will pay for it.
+        int pool_type = ctx::body~load_uint(1);
+        slice asset_0 = ctx::body~load_msg_addr();
+        slice asset_1 = ctx::body~load_msg_addr();
+        int min_lp_amount = ctx::body~load_coins();
+        slice vault_slice = ctx::body~load_ref().begin_parse();
+        slice vault_0 = vault_slice~load_msg_addr();
+        slice vault_1 = vault_slice~load_msg_addr();
 
-        ;; Calculate jetton reserves send to dex router
-        int price_for_now = const:price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
-        int send_jetton_liquidity = const:price_precision * send_ton_liquidity / price_for_now;
-        int jetton_fee_for_admin = master::jetton_reserves - send_jetton_liquidity;
-
-        ;; TODO: Add liquidity to dedust pool
-        ;; cell add_liquidity_payload = begin_cell()
-        ;;     .store_uint(op::add_liquidity ,32)
-        ;;     .store_coins(send_ton_liquidity) ;; other asset amount
-        ;;     .store_slice(address_none()) ;; other asset wallet
-        ;;     .store_coins(0) ;; min_lp_amount
-        ;;     .store_slice(my_address()) ;; lp_receiver
-        ;;     .store_maybe_ref(null()) ;; fulfill payload
-        ;;     .store_maybe_ref(null()) ;; reject payload
-        ;;     .end_cell();
-        ;; send_ton_liquidity += BUILD_POOL_GAS_FEE; ;; build_pool_fee is for building pool and farm and is paid by thunder fi in line 16
-        ;; int ton_to_dex_router = send_ton_liquidity + ton_fee_for_admin - EMIT_GAS; ;; fee_for_admin will be transfer in excess msg. 
-
-        ;; Send fee to admin by minting jetton
-        mint_jetton(
-            BOUNCEABLE,
+        handle::to_the_moon(
+            vault_0,
+            vault_1,
             query_id,
-            ton_fee_for_admin, 
-            jetton_fee_for_admin,
-            master::admin_address,
-            master::admin_address,
-            0, 
-            null()
+            pool_type,
+            asset_0,
+            asset_1,
+            min_lp_amount
         );
-
-        ;; Update storage
-        master::ton_reserves = 0;
-        master::jetton_reserves = 0;
-        master::fee = 0;
 
         master::save_data();
         return ();
