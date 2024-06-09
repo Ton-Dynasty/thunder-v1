@@ -5,7 +5,7 @@ import { promptAddress, promptToncoin } from '../utils/ui';
 import { Asset, Factory, MAINNET_FACTORY_ADDR, VaultJetton, VaultNative } from '@dedust/sdk';
 
 export async function run(provider: NetworkProvider) {
-    // UQB-n1EUXYP5Oc66pWdgEbltvnyoa-WqqY9hGS4glqPQD7Ay
+    // UQAzqEt44VT1GPtNooB-RdOwc_Fx5cerMZqxhyGr0tzAnr8v
     const jettonMasterAddress = await promptAddress('Enter the JettonMasterBondV1 address: ', provider.ui());
     const jettonMasterBondV1 = provider.open(JettonMasterBondV1.createFromAddress(jettonMasterAddress));
 
@@ -18,7 +18,7 @@ export async function run(provider: NetworkProvider) {
     const assets: [Asset, Asset] = [TON, JETTON];
     const targetBalances: [bigint, bigint] = [tonAmount, jettonAmount];
 
-    const vaultAddress = Address.parse('UQCehw0bksAB_n-kkDUBZXUfH7WsqX_pDHVmZzfRdN0zYKD_');
+    const vaultAddress = Address.parse('UQCC5-_sxj78P-3xyQYRPcVhMnDIjcCzGvQlUo1OPjvvpAB2');
     const poolType = 0;
     const minLp = 0;
 

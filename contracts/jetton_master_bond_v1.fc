@@ -178,19 +178,19 @@ const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a
 
     ;; Provide ton liquidity to dedust
     int send_ton = send_ton_liquidity + 150000000; ;; 0.15 ton
-    ;; transfer_ton(query_id, NON_BOUNCEABLE, TON_VAULT_ADDR, send_ton, ton_body, SEND_MODE_REGULAR);
+    transfer_ton(query_id, NON_BOUNCEABLE, TON_VAULT_ADDR, send_ton, ton_body, SEND_MODE_REGULAR);
 
-    ;; ;; Provide jetton liquidity to dedust
-    ;; mint_jetton(
-    ;;     BOUNCEABLE,
-    ;;     query_id,
-    ;;     400000000 + 100000000, ;; 0.5 TON
-    ;;     10 * ONE_TON, ;; 10 jetton
-    ;;     vault_address,
-    ;;     master::admin_address,
-    ;;     400000000, ;; 0.4 TON
-    ;;     jetton_body
-    ;; );
+    ;; Provide jetton liquidity to dedust
+    mint_jetton(
+        BOUNCEABLE,
+        query_id,
+        400000000 + 100000000, ;; 0.5 TON
+        10 * ONE_TON, ;; 10 jetton
+        vault_address,
+        master::admin_address,
+        400000000, ;; 0.4 TON
+        jetton_body
+    );
     return ();
 
 }
