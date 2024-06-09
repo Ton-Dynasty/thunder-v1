@@ -61,7 +61,7 @@
     .store_slice(recipient)
     .store_slice(response_address)
     .store_coins(forward_ton_amount)
-    .store_ref(forward_payload)
+    .store_maybe_ref(forward_payload)
     .end_cell();
 
     ;; Calculate recipient's wallet address

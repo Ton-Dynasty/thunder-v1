@@ -168,7 +168,7 @@ const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a
         master::admin_address,
         master::admin_address,
         0, 
-        begin_cell().store_uint(0, 1).end_cell()
+        null()
     );
 
     ;; Update storage
@@ -177,7 +177,7 @@ const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a
     master::fee = 0;
 
     ;; Provide ton liquidity to dedust
-    ;; int send_ton = send_ton_liquidity + 150000000; ;; 0.15 ton
+    int send_ton = send_ton_liquidity + 150000000; ;; 0.15 ton
     ;; transfer_ton(query_id, NON_BOUNCEABLE, TON_VAULT_ADDR, send_ton, ton_body, SEND_MODE_REGULAR);
 
     ;; ;; Provide jetton liquidity to dedust
@@ -191,7 +191,7 @@ const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a
     ;;     400000000, ;; 0.4 TON
     ;;     jetton_body
     ;; );
-    ;; return ();
+    return ();
 
 }
 
