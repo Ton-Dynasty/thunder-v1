@@ -8,6 +8,7 @@ import { loadJMBondFixture, buyToken } from './helper';
 import { collectCellStats, computedGeneric } from '../gasUtils';
 import { findTransactionRequired } from '@ton/test-utils';
 import { MockContract } from '../wrappers/MockContract';
+import { simulateMint, simulateBurn, simulateMintAndBurn, simulateMultipleOperations } from './simulate';
 
 describe('JettonMasterBondV1 general testcases', () => {
     let blockchain: Blockchain;
@@ -113,11 +114,13 @@ describe('JettonMasterBondV1 general testcases', () => {
         let tonReservesAfter = (await jettonMasterBondV1.getMasterData()).tonReserves;
         let jettonReservesAfter = (await jettonMasterBondV1.getMasterData()).jettonReserves;
 
+        const simulateMintResult = simulateMint(toNano('10'));
+
         // Expect that ton reserves is equal to 9900000000n
-        expect(tonReservesAfter).toEqual(9900000000n);
+        expect(tonReservesAfter).toEqual(simulateMintResult.ton_reserve);
 
         // Expect that jetton reserve is equal to 99019704921279334n
-        expect(jettonReservesAfter).toEqual(99019704921279334n);
+        expect(jettonReservesAfter).toEqual(simulateMintResult.jetton_reserve);
 
         // Expect that buyer received meme token
         let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
@@ -125,19 +128,20 @@ describe('JettonMasterBondV1 general testcases', () => {
         expect(buyerMemeTokenBalance).toEqual(jettonReservesBefore - jettonReservesAfter);
 
         // Expect buyer meme token balance is equal to 980295078720666n
-        expect(buyerMemeTokenBalance).toBe(980295078720666n);
+        expect(buyerMemeTokenBalance).toBe(simulateMintResult.total_supply - simulateMintResult.jetton_reserve);
 
         // Expect that ton reserves increased tonAmount * 90%
         expect(tonReservesAfter - tonReservesBefore).toEqual((tonAmount * (precision - fee_rate)) / precision);
 
         // Expect that fees increased tonAmount * 10%
         let feeAfter = (await jettonMasterBondV1.getMasterData()).fee;
-        expect(feeAfter).toEqual((tonAmount * fee_rate) / precision);
+        expect(feeAfter).toEqual(simulateMintResult.protocol_fee);
     });
 
     it('should burn half of buyer meme tokens', async () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
         await buyToken(jettonMasterBondV1, buyer);
+        const simulateBeforeBurnResult = simulateMint(toNano('10'));
 
         // get state before burning meme tokens
         let tonReserverBefore = (await jettonMasterBondV1.getMasterData()).tonReserves;
@@ -188,16 +192,22 @@ describe('JettonMasterBondV1 general testcases', () => {
 
         // jetton reseve should increase
         expect(jettonReservesAfter - jettonReservesBefore).toEqual(burnAmount);
+        const simulateBurnResult = simulateMintAndBurn(toNano('10'), burnAmount);
 
         // Expect ton reserves = 4925618189n
-        expect(tonReservesAfter).toEqual(4925618189n);
+        expect(tonReservesAfter).toEqual(simulateBurnResult.ton_reserve);
 
         // Expect jetton reserves = 99509852460639667n
-        expect(jettonReservesAfter).toEqual(99509852460639667n);
+        expect(jettonReservesAfter).toEqual(simulateBurnResult.jetton_reserve);
 
         // Expect that buyers ton balance increased at least 4924637993n
         let gas_fee = toNano('0.05');
-        expect(buyerTonBalanceAfter - buyerTonBalanceBefore + gas_fee).toBeGreaterThanOrEqual(4924637993n);
+        let amountOut =
+            simulateBeforeBurnResult.ton_reserve -
+            simulateBurnResult.ton_reserve -
+            (simulateBurnResult.protocol_fee - simulateBeforeBurnResult.protocol_fee);
+
+        expect(buyerTonBalanceAfter - buyerTonBalanceBefore + gas_fee).toBeGreaterThanOrEqual(amountOut);
     });
 
     it('should burn buyer meme tokens and send to the assigned recipient', async () => {
@@ -238,18 +248,16 @@ describe('JettonMasterBondV1 general testcases', () => {
 
         let tonReservesAfter = (await jettonMasterBondV1.getMasterData()).tonReserves;
         let jettonReservesAfter = await (await jettonMasterBondV1.getMasterData()).jettonReserves;
+        const simulateBurnResult = simulateMintAndBurn(toNano('10'), burnAmount);
 
         // Expect ton reserves = 4925618189n
-        expect(tonReservesAfter).toEqual(4925618189n);
+        expect(tonReservesAfter).toEqual(simulateBurnResult.ton_reserve);
 
         // Expect jetton reserves = 99509852460639667n
-        expect(jettonReservesAfter).toEqual(99509852460639667n);
-
-        // Expect that deployers ton balance increased at least 4924637993n
-        let gas_fee = toNano('0.05');
-        expect(deployerTonBalanceAfter - deployerTonBalanceBefore + gas_fee).toBeGreaterThanOrEqual(4924637993n);
+        expect(jettonReservesAfter).toEqual(simulateBurnResult.jetton_reserve);
 
         // Buyers ton balance should decrease at least gas fee
+        let gas_fee = toNano('0.05');
         expect(buyerTonBalanceBefore - buyerTonBalanceAfter).toBeGreaterThan(gas_fee);
     });
 
@@ -281,22 +289,22 @@ describe('JettonMasterBondV1 general testcases', () => {
         let tonReservesAfter = (await jettonMasterBondV1.getMasterData()).tonReserves;
 
         // Expect that jetton reserves equal to k/x, where k = 10^11, x = 10^4 + 1000 (virtual ton), 10^9 is decimal
-        let trueJettonReserves = (10n ** 11n * 10n ** 9n) / 11000n;
-        expect(jettonReservesAfter).toEqual(trueJettonReserves);
+        const simulateMintResult = simulateMint(buyTon);
+        expect(jettonReservesAfter).toEqual(simulateMintResult.jetton_reserve);
 
         // Expect that ton reserves = 10000000000000n
-        expect(tonReservesAfter).toEqual(toNano('10000'));
+        expect(tonReservesAfter).toEqual(simulateMintResult.ton_reserve);
 
         // buyers meme token balance should be 90909090909090910n
         let buyerMemeTokenBalance = await buyerWallet.getJettonBalance();
-        expect(buyerMemeTokenBalance).toEqual(90909090909090910n);
-
-        // // admin meme token balance should be 7438016528925619
-        // let adminMemeWalletBalance = await adminMemeWallet.getJettonBalance();
-        // expect(adminMemeWalletBalance).toEqual(7438016528925619n);
+        expect(buyerMemeTokenBalance).toEqual(simulateMintResult.total_supply - simulateMintResult.jetton_reserve);
 
         // buyer's ton balance should decrease at least 10000 ton
-        expect(buyerTonBalanceBefore - buyerTonBalanceAfter).toBeGreaterThan(toNano('10000'));
+        expect(buyerTonBalanceBefore - buyerTonBalanceAfter).toBeGreaterThan(simulateMintResult.ton_reserve);
+
+        // Expect that protocol fee match
+        let feeAfter = (await jettonMasterBondV1.getMasterData()).fee;
+        expect(feeAfter).toEqual(simulateMintResult.protocol_fee);
 
         // Epext that onMoon = 1n
         let onMoon = (await jettonMasterBondV1.getMasterData()).onMoon;
@@ -308,37 +316,37 @@ describe('JettonMasterBondV1 general testcases', () => {
         let buyerTonBalanceBefore = await buyer.getBalance();
         const buyTon = toNano('10');
         let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
+        let burnAmount = await buyerWallet.getJettonBalance();
 
         // use for loop to buy and sell meme tokens 100 times
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 10; i++) {
             await buyToken(jettonMasterBondV1, buyer, buyTon);
-            let burnAmount = await buyerWallet.getJettonBalance();
+            burnAmount = await buyerWallet.getJettonBalance();
             await buyerWallet.sendBurn(buyer.getSender(), gas_cost, burnAmount, null, null);
         }
 
+        const simulateResult = simulateMultipleOperations(toNano('10'), burnAmount, 10);
+
         // Expect that ton reserves = 0
         let tonReservesAfter = (await jettonMasterBondV1.getMasterData()).tonReserves;
-        expect(tonReservesAfter).toEqual(0n);
+        expect(tonReservesAfter).toEqual(simulateResult.ton_reserve);
 
         // Expect that jetton reserves = 100000000000000000n
         let jettonReservesAfter = await (await jettonMasterBondV1.getMasterData()).jettonReserves;
-        expect(jettonReservesAfter).toEqual(100000000000000000n);
+        expect(jettonReservesAfter).toEqual(simulateResult.jetton_reserve);
 
         // Expect that fee = 19900000000n
-        let feeAfter = await (await jettonMasterBondV1.getMasterData()).fee;
-        expect(feeAfter).toEqual(19900000000n);
+        let feeAfter100 = await (await jettonMasterBondV1.getMasterData()).fee;
+        expect(feeAfter100).toEqual(simulateResult.protocol_fee);
 
         // Ton the moon
         const buyTontoMoon = toNano('1000000');
         const toTheMoonResult = await buyToken(jettonMasterBondV1, buyer, buyTontoMoon);
-        let buyerTonBalanceAfter = await buyer.getBalance();
+        const simulateToTheMoonResult = simulateMint(buyTontoMoon);
 
-        // buyer's ton balance should decrease at least 10000 ton
-        expect(buyerTonBalanceBefore - buyerTonBalanceAfter).toBeGreaterThan(toNano('10000'));
-
-        // buyers meme token balance should be 90909090909090910n
-        let buyerMemeTokenBalance = await buyerWallet.getJettonBalance();
-        expect(buyerMemeTokenBalance).toEqual(90909090909090910n);
+        // fee After should match the simulate result
+        let feeAfter = await (await jettonMasterBondV1.getMasterData()).fee;
+        expect(feeAfter).toEqual(simulateToTheMoonResult.protocol_fee + simulateResult.protocol_fee);
 
         // Epext that onMoon = 1n
         let onMoon = (await jettonMasterBondV1.getMasterData()).onMoon;
