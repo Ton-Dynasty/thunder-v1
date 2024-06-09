@@ -380,12 +380,9 @@ describe('JettonMasterBondV1 general testcases', () => {
         let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(deployer.getSender(), toNano('0.05'), {
             $$type: 'TonTheMoon',
             query_id: 0n,
-            pool_type: 1n,
-            asset_0: beginCell().storeAddress(buyer.address).endCell().beginParse(),
-            asset_1: beginCell().storeAddress(buyer.address).endCell().beginParse(),
-            vault_0: buyer.address,
-            vault_1: deployer.address,
-            min_lp_amount: 0n,
+            ton_body: beginCell().storeAddress(buyer.address).endCell(),
+            jetton_body: beginCell().storeAddress(buyer.address).endCell(),
+            vault_1: buyer.address,
         });
 
         let adminTonBalanceAfter = await deployer.getBalance();
@@ -441,12 +438,9 @@ describe('JettonMasterBondV1 general testcases', () => {
         let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(deployer.getSender(), toNano('0.05'), {
             $$type: 'TonTheMoon',
             query_id: 0n,
-            pool_type: 1n,
-            asset_0: beginCell().endCell().beginParse(),
-            asset_1: beginCell().endCell().beginParse(),
-            vault_0: buyer.address,
-            vault_1: deployer.address,
-            min_lp_amount: 0n,
+            ton_body: beginCell().storeAddress(buyer.address).endCell(),
+            jetton_body: beginCell().storeAddress(buyer.address).endCell(),
+            vault_1: buyer.address,
         });
         // Expect to throw not on moon error 2005
         expect(toTheMoonResult.transactions).toHaveTransaction({
@@ -465,12 +459,9 @@ describe('JettonMasterBondV1 general testcases', () => {
         let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(buyer.getSender(), toNano('0.05'), {
             $$type: 'TonTheMoon',
             query_id: 0n,
-            pool_type: 1n,
-            asset_0: beginCell().endCell().beginParse(),
-            asset_1: beginCell().endCell().beginParse(),
-            vault_0: buyer.address,
-            vault_1: deployer.address,
-            min_lp_amount: 0n,
+            ton_body: beginCell().storeAddress(buyer.address).endCell(),
+            jetton_body: beginCell().storeAddress(buyer.address).endCell(),
+            vault_1: buyer.address,
         });
 
         // Expect to not admin error 70

@@ -10,6 +10,7 @@
 #include "jetton_master_bond/utils.fc";
 #include "jetton_master_bond/logs.fc";
 #include "jetton_master_bond/gas.fc";
+const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a;
 
 () internal::ton_the_moon(int query_id, int ctx:fwd_fee) impure inline {
     master::on_moon = TRUE;
@@ -144,13 +145,10 @@
 
 () handle::to_the_moon(
     int ctx::value,
-    slice vault_0,
-    slice vault_1,
     int query_id,
-    int pool_type,
-    slice asset_0,
-    slice asset_1,
-    int min_lp_amount
+    cell ton_body,
+    slice vault_address,
+    cell jetton_body
 ) impure inline_ref {
     ;; Calculate jetton reserves send to dex router and thunder fi admin fee
     int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision; ;; Only send 90% of ton_reserves to liquidity pool
@@ -170,7 +168,7 @@
         master::admin_address,
         master::admin_address,
         0, 
-        null()
+        begin_cell().store_uint(0, 1).end_cell()
     );
 
     ;; Update storage
@@ -178,24 +176,22 @@
     master::jetton_reserves = 0;
     master::fee = 0;
 
-    ;; ;; Provide ton liquidity to dedust
+    ;; Provide ton liquidity to dedust
     ;; int send_ton = send_ton_liquidity + 150000000; ;; 0.15 ton
-    ;; cell msg_body_for_ton = pack_add_ton_liquidity(send_ton_liquidity, pool_type, asset_0, asset_1, min_lp_amount, send_ton_liquidity, send_jetton_liquidity, query_id);
-    ;; transfer_ton(query_id, NON_BOUNCEABLE, vault_0, send_ton, msg_body_for_ton, SEND_MODE_REGULAR);
+    ;; transfer_ton(query_id, NON_BOUNCEABLE, TON_VAULT_ADDR, send_ton, ton_body, SEND_MODE_REGULAR);
 
     ;; ;; Provide jetton liquidity to dedust
-    ;; cell msg_body_for_jetton = pack_add_jetton_liquidity(pool_type, asset_0, asset_1, min_lp_amount, send_ton_liquidity, send_jetton_liquidity);
     ;; mint_jetton(
     ;;     BOUNCEABLE,
     ;;     query_id,
     ;;     400000000 + 100000000, ;; 0.5 TON
-    ;;     send_jetton_liquidity,
-    ;;     vault_1,
+    ;;     10 * ONE_TON, ;; 10 jetton
+    ;;     vault_address,
     ;;     master::admin_address,
     ;;     400000000, ;; 0.4 TON
-    ;;     msg_body_for_jetton
+    ;;     jetton_body
     ;; );
-    return ();
+    ;; return ();
 
 }
 
@@ -312,23 +308,16 @@
         ;; Only after ton_the_moon is true, can trigger this function
         throw_unless(error::not_on_moon, master::on_moon == TRUE);
 
-        int pool_type = ctx::body~load_uint(1);
-        slice asset_0 = ctx::body~load_msg_addr();
-        slice asset_1 = ctx::body~load_msg_addr();
-        int min_lp_amount = ctx::body~load_coins();
-        slice vault_slice = ctx::body~load_ref().begin_parse();
-        slice vault_0 = vault_slice~load_msg_addr();
-        slice vault_1 = vault_slice~load_msg_addr();
+        cell ton_body = ctx::body~load_ref();
+        cell jetton_body = ctx::body~load_ref();
+        slice vault_address = ctx::body~load_msg_addr();
 
         handle::to_the_moon(
             ctx::value - 50000000,
-            vault_0,
-            vault_1,
             query_id,
-            pool_type,
-            asset_0,
-            asset_1,
-            min_lp_amount
+            ton_body,
+            vault_address,
+            jetton_body
         );
 
         master::save_data();

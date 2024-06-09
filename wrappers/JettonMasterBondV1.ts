@@ -54,23 +54,18 @@ export function storeBuyToken(src: BuyToken) {
 export type TonTheMoon = {
     $$type: 'TonTheMoon';
     query_id: bigint;
-    pool_type: bigint;
-    asset_0: Slice;
-    asset_1: Slice;
-    vault_0: Address;
+    ton_body: Cell;
+    jetton_body: Cell;
     vault_1: Address;
-    min_lp_amount: bigint;
 };
 
 export function storeTonTheMoon(src: TonTheMoon) {
     return (b: Builder) => {
         b.storeUint(MasterOpocde.ToTheMoon, 32);
         b.storeUint(src.query_id, 64);
-        b.storeUint(src.pool_type, 1);
-        b.storeSlice(src.asset_0);
-        b.storeSlice(src.asset_1);
-        b.storeCoins(src.min_lp_amount);
-        b.storeRef(beginCell().storeAddress(src.vault_0).storeAddress(src.vault_1).endCell());
+        b.storeRef(src.ton_body);
+        b.storeRef(src.jetton_body);
+        b.storeAddress(src.vault_1);
     };
 }
 
