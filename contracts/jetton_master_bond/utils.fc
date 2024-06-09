@@ -125,3 +125,25 @@
 
     return msg_body;
 }
+
+(cell) pack_add_jetton_liquidity(
+    int pool_type,
+    slice asset_0,
+    slice asset_1,
+    int min_lp_amount,
+    int target_balance_0,
+    int target_balance_1
+) impure inline_ref {
+    cell msg_body = begin_cell()
+        .store_uint(op::deposit_jetton_liquidity, 32)
+        .store_uint(pool_type, 1)
+        .store_slice(asset_0)
+        .store_slice(asset_1)
+        .store_coins(min_lp_amount)
+        .store_coins(target_balance_0)
+        .store_coins(target_balance_1)
+        .store_maybe_ref(null())
+        .store_maybe_ref(null())
+        .end_cell();
+    return msg_body;
+}
