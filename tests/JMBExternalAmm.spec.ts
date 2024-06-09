@@ -377,7 +377,7 @@ describe('JettonMasterBondV1 general testcases', () => {
         let adminMemeWallet = await userWallet(deployer.address, jettonMasterBondV1);
         let adminMemeTokenBalanceBefore = await adminMemeWallet.getJettonBalance();
         let jettonReserves = await (await jettonMasterBondV1.getMasterData()).jettonReserves;
-        let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(deployer.getSender(), toNano('0.05'), {
+        let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(deployer.getSender(), toNano('1.2'), {
             $$type: 'TonTheMoon',
             query_id: 0n,
             ton_body: beginCell().storeAddress(buyer.address).endCell(),

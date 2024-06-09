@@ -1,4 +1,9 @@
 #include "../common/gas.fc";
+const BUILD_POOL_GAS = ONE_TON * 2 / 100; ;; 0.02
+const MINT_GAS = ONE_TON * 3 / 100; ;; 0.03
+const DEDUST_ADD_TON_GAS = 300000000; ;; 0.15
+const DEDUST_FOWARD_GAS = 400000000; ;; 0.4
+const DEDUST_SEND_GAS = 100000000; ;; 0.1
 
 int calculate_master_min_storage_fee() inline {
     return get_storage_fee(MY_WORKCHAIN, MIN_STORAGE_DURATION, JETTON_MASTER_BITS, JETTON_CELLS);

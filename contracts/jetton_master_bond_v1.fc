@@ -150,9 +150,10 @@ const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a
     slice vault_address,
     cell jetton_body
 ) impure inline_ref {
+    int remain_ton = ctx::value - MINT_GAS * 2 - DEDUST_FOWARD_GAS - DEDUST_SEND_GAS - DEDUST_ADD_TON_GAS;
     ;; Calculate jetton reserves send to dex router and thunder fi admin fee
     int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision; ;; Only send 90% of ton_reserves to liquidity pool
-    int ton_fee_for_admin = 50000000 + master::ton_reserves - send_ton_liquidity - 10000000 + master::fee; ;; build_pool_fee is for building pool and farm, thunder fi will pay for it.
+    int ton_fee_for_admin = remain_ton + master::ton_reserves - send_ton_liquidity + master::fee; ;; build_pool_fee is for building pool and farm, thunder fi will pay for it.
 
     ;; Calculate jetton reserves send to dex router
     int price_for_now = const:price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
@@ -177,20 +178,33 @@ const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a
     master::fee = 0;
 
     ;; Provide ton liquidity to dedust
-    int send_ton = send_ton_liquidity + 150000000; ;; 0.15 ton
+    int send_ton = send_ton_liquidity + DEDUST_ADD_TON_GAS; ;; dedust ask for 0.15 TON
     transfer_ton(query_id, NON_BOUNCEABLE, TON_VAULT_ADDR, send_ton, ton_body, SEND_MODE_REGULAR);
 
-    ;; Provide jetton liquidity to dedust
+    ;; Mint Jetton to Master Bond, so that it can provide jetton liquidity to dedust
     mint_jetton(
         BOUNCEABLE,
         query_id,
-        400000000 + 100000000, ;; 0.5 TON
-        10 * ONE_TON, ;; 10 jetton
-        vault_address,
+        MINT_GAS, ;; 0.03 TON
+        send_jetton_liquidity,
+        my_address(),
         master::admin_address,
-        400000000, ;; 0.4 TON
-        jetton_body
+        0, 
+        null()
     );
+
+    ;; Provide jetton liquidity to dedust
+    ;; Calculate master bond wallet address
+    slice to_wallet_address = calculate_jetton_wallet_address(calculate_jetton_wallet_state_init(my_address(), my_address(), master::jetton_wallet_code));
+    transfer_jetton(
+        query_id,
+        send_jetton_liquidity,
+        vault_address,
+        DEDUST_FOWARD_GAS,
+        jetton_body,
+        to_wallet_address,
+        DEDUST_FOWARD_GAS + DEDUST_SEND_GAS
+    ) ;
     return ();
 
 }
@@ -308,12 +322,14 @@ const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a
         ;; Only after ton_the_moon is true, can trigger this function
         throw_unless(error::not_on_moon, master::on_moon == TRUE);
 
+        throw_unless(error::not_enough_ton, ctx::value >= ONE_TON);
+
         cell ton_body = ctx::body~load_ref();
         cell jetton_body = ctx::body~load_ref();
         slice vault_address = ctx::body~load_msg_addr();
 
         handle::to_the_moon(
-            ctx::value - 50000000,
+            ctx::value - BUILD_POOL_GAS,
             query_id,
             ton_body,
             vault_address,
