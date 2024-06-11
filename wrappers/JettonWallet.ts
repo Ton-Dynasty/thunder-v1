@@ -19,7 +19,6 @@ export type JettonWalletConfig = {
 
 export function jettonWalletConfigToCell(config: JettonWalletConfig): Cell {
     return beginCell()
-        .storeUint(0, 4) // status
         .storeCoins(0) // jetton balance
         .storeAddress(config.ownerAddress)
         .storeAddress(config.jettonMasterAddress)
@@ -34,7 +33,6 @@ export function endParse(slice: Slice) {
 export function parseJettonWalletData(data: Cell) {
     const sc = data.beginParse();
     const parsed = {
-        status: sc.loadUint(4),
         balance: sc.loadCoins(),
         ownerAddress: sc.loadAddress(),
         jettonMasterAddress: sc.loadAddress(),
@@ -203,9 +201,3 @@ export class JettonWallet implements Contract {
     }
 }
 
-export class LpJettonWallet implements Contract {
-    constructor(
-        readonly address: Address,
-        readonly init?: { code: Cell; data: Cell },
-    ) {}
-}

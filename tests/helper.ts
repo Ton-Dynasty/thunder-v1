@@ -2,12 +2,11 @@ import { Blockchain, SandboxContract, TreasuryContract, printTransactionFees } f
 import { Address, Cell, beginCell, toNano } from '@ton/core';
 import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
 import { compile } from '@ton/blueprint';
-import { JettonWallet, LpJettonWallet } from '../wrappers/JettonWallet';
+import { JettonWallet} from '../wrappers/JettonWallet';
 
 export async function loadJMBondFixture() {
     const jettonMasterBondV1Code = await compile(JettonMasterBondV1.name);
     const jettonWalletCode = await compile(JettonWallet.name);
-    const jettonLpCode = await compile(LpJettonWallet.name);
 
     const blockchain = await Blockchain.create();
     const deployer = await blockchain.treasury('deployer', { workchain: 0, balance: toNano('100000000') });
