@@ -47,3 +47,18 @@ int forward_pool_init_state_overhead() inline {
 
     return (total_fee, gas_comp);
 }
+
+(int, int) cal_claim_fee(int fwd_fee) inline {
+    int master_gas_consumption = get_precompiled_gas_consumption();
+    int claim_admin_gas_consumption = null?(master_gas_consumption) ? CLAIM_ADMIN_FEE : master_gas_consumption;
+    
+
+    int gas_comp = get_compute_fee(MY_WORKCHAIN, claim_admin_gas_consumption) + 
+    calculate_master_min_storage_fee();
+    
+
+    int total_fee = gas_comp + 
+    fwd_fee * 1;
+
+    return (total_fee, gas_comp);
+}

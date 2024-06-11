@@ -10,12 +10,12 @@
 #include "jetton_master_bond/utils.fc";
 #include "jetton_master_bond/logs.fc";
 #include "jetton_master_bond/gas.fc";
-const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a;
 
 () handle::claim_admin_fee(
-    int query_id
+    int query_id,
+    int send_ton
 ) impure inline_ref {
-    int send_ton = master::fee; ;; Remaining BUILD_POOL_GAS_FEE for building pool and farm
+    send_ton += master::fee;
     transfer_ton(query_id, NON_BOUNCEABLE, master::admin_address, send_ton, null(), SEND_MODE_REGULAR);
 
     master::fee = 0;
@@ -309,7 +309,10 @@ const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a
 
     if op == op::claim_admin_fee {
         throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
-        handle::claim_admin_fee(query_id);
+        
+        (int total_fees, int gas_consumptoin) = cal_claim_fee(ctx::fwd_fee);
+        throw_unless(error::not_enough_ton, ctx::value >= total_fees);
+        handle::claim_admin_fee(query_id ,ctx::value - gas_consumptoin);
         return ();
     }
 

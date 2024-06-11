@@ -1,10 +1,6 @@
 const op::change_content_cell = 0xcb862902;
 const op::upgrade = 0x2508d66a;
-const op::top_up = 0xd372158c;
 ;; const op::create_pool = "create_pool"c; ;; 2e3034ef ;; This is for the next release
 const op::claim_admin_fee = "claim_admin_fee"c; ;; 913e42af
-const op::add_liquidity = "add_liquidity"c; ;; 3ebe5431
 const op::to_the_moon = "to_the_moon"c; ;; 18ea8228
-const op::deposit_ton_liquidity = 0xd55e4686;
-const op::deposit_jetton_liquidity = 0x40e108d6;
 

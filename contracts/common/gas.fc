@@ -6,6 +6,7 @@ const JETTON_MASTER_BITS = 19668;
 const JETTON_CELLS = 48;
 const BUY_MEME_GAS = 15372; ;; ton the moon, 18452
 const BURN_MEME_GAS = 14075;
+const CLAIM_ADMIN_FEE = 7415;
 
 ;; Jetton Wallet Related
 const JETTON_WALLET_INITSTATE_BITS  = 931;

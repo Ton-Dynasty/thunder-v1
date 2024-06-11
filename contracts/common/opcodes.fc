@@ -1,5 +1,4 @@
 ;; common opcodes
-const op::comments = 0;
 const op::top_up = 0xd372158c;
 
 ;; jetton opcodes

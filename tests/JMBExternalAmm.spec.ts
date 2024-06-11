@@ -25,8 +25,8 @@ describe('JettonMasterBondV1 general testcases', () => {
         ({ blockchain, deployer, jettonMasterBondV1 } = await loadJMBondFixture());
         printTxGasStats = (name, transaction) => {
             const txComputed = computedGeneric(transaction);
-            // console.log(`${name} used ${txComputed.gasUsed} gas`);
-            // console.log(`${name} gas cost: ${txComputed.gasFees}`);
+            console.log(`${name} used ${txComputed.gasUsed} gas`);
+            console.log(`${name} gas cost: ${txComputed.gasFees}`);
             return txComputed.gasFees;
         };
         const v_ton = 1000n * TON;
@@ -766,6 +766,14 @@ describe('JettonMasterBondV1 general testcases', () => {
             to: jettonMasterBondV1.address,
             success: true,
         });
+
+        const claimAdminFee = findTransactionRequired(claimResult.transactions, {
+            op: MasterOpocde.ClaimAdminFee,
+            from: deployer.address,
+            to: jettonMasterBondV1.address,
+            success: true,
+        });
+        printTxGasStats('Claim Admin Fee:', claimAdminFee);
 
         // Expect that jettonMasterBondV1 send fees to deployer
         expect(claimResult.transactions).toHaveTransaction({
