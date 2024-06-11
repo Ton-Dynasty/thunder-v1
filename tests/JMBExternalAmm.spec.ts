@@ -8,16 +8,18 @@ import { loadJMBondFixture, buyToken } from './helper';
 import { collectCellStats, computedGeneric } from '../gasUtils';
 import { findTransactionRequired } from '@ton/test-utils';
 import { MockContract } from '../wrappers/MockContract';
-import { simulateMint, simulateBurn, simulateMintAndBurn, simulateMultipleOperations } from './simulate';
+import JettonMaster from './simulate';
 
 describe('JettonMasterBondV1 general testcases', () => {
     let blockchain: Blockchain;
     let deployer: SandboxContract<TreasuryContract>;
     let jettonMasterBondV1: SandboxContract<JettonMasterBondV1>;
     let printTxGasStats: (name: string, trans: Transaction) => bigint;
+    let master: JettonMaster;
     const precision = 1000n;
     const fee_rate = 10n;
     const gas_cost = toNano('1');
+    const TON = toNano('1');
 
     beforeEach(async () => {
         ({ blockchain, deployer, jettonMasterBondV1 } = await loadJMBondFixture());
@@ -27,6 +29,12 @@ describe('JettonMasterBondV1 general testcases', () => {
             // console.log(`${name} gas cost: ${txComputed.gasFees}`);
             return txComputed.gasFees;
         };
+        const v_ton = 1000n * TON;
+        const total_supply = 100000000n * TON;
+        const precision = 1000n;
+        const fee_rate = 10n;
+        const ton_the_moon = 10000n * TON;
+        master = new JettonMaster(ton_the_moon, v_ton, total_supply, precision, fee_rate);
     });
 
     const userWallet = async (address: Address, jettonMaster: SandboxContract<JettonMasterBondV1>) =>
@@ -114,7 +122,9 @@ describe('JettonMasterBondV1 general testcases', () => {
         let tonReservesAfter = (await jettonMasterBondV1.getMasterData()).tonReserves;
         let jettonReservesAfter = (await jettonMasterBondV1.getMasterData()).jettonReserves;
 
-        const simulateMintResult = simulateMint(toNano('10'));
+        // const simulateMintResult = simulateMint(toNano('10'));
+        master.mint(tonAmount);
+        const simulateMintResult = master.stats();
 
         // Expect that ton reserves is equal to 9900000000n
         expect(tonReservesAfter).toEqual(simulateMintResult.ton_reserve);
@@ -140,8 +150,11 @@ describe('JettonMasterBondV1 general testcases', () => {
 
     it('should burn half of buyer meme tokens', async () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
-        await buyToken(jettonMasterBondV1, buyer);
-        const simulateBeforeBurnResult = simulateMint(toNano('10'));
+        const buyTon = toNano('10');
+        await buyToken(jettonMasterBondV1, buyer, buyTon);
+        // const simulateBeforeBurnResult = simulateMint(buyTon);
+        master.mint(buyTon);
+        const simulateBeforeBurnResult = master.stats();
 
         // get state before burning meme tokens
         let tonReserverBefore = (await jettonMasterBondV1.getMasterData()).tonReserves;
@@ -192,7 +205,8 @@ describe('JettonMasterBondV1 general testcases', () => {
 
         // jetton reseve should increase
         expect(jettonReservesAfter - jettonReservesBefore).toEqual(burnAmount);
-        const simulateBurnResult = simulateMintAndBurn(toNano('10'), burnAmount);
+        master.burn(burnAmount);
+        const simulateBurnResult = master.stats();
 
         // Expect ton reserves = 4925618189n
         expect(tonReservesAfter).toEqual(simulateBurnResult.ton_reserve);
@@ -212,7 +226,9 @@ describe('JettonMasterBondV1 general testcases', () => {
 
     it('should burn buyer meme tokens and send to the assigned recipient', async () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('1000000') });
-        await buyToken(jettonMasterBondV1, buyer);
+        let buyAmount = toNano('10');
+        await buyToken(jettonMasterBondV1, buyer, buyAmount);
+        master.mint(buyAmount);
 
         let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
         let buyerMemeTokenBalanceBefore = await buyerWallet.getJettonBalance();
@@ -248,7 +264,8 @@ describe('JettonMasterBondV1 general testcases', () => {
 
         let tonReservesAfter = (await jettonMasterBondV1.getMasterData()).tonReserves;
         let jettonReservesAfter = await (await jettonMasterBondV1.getMasterData()).jettonReserves;
-        const simulateBurnResult = simulateMintAndBurn(toNano('10'), burnAmount);
+        master.burn(burnAmount);
+        const simulateBurnResult = master.stats();
 
         // Expect ton reserves = 4925618189n
         expect(tonReservesAfter).toEqual(simulateBurnResult.ton_reserve);
@@ -289,7 +306,8 @@ describe('JettonMasterBondV1 general testcases', () => {
         let tonReservesAfter = (await jettonMasterBondV1.getMasterData()).tonReserves;
 
         // Expect that jetton reserves equal to k/x, where k = 10^11, x = 10^4 + 1000 (virtual ton), 10^9 is decimal
-        const simulateMintResult = simulateMint(buyTon);
+        master.mint(buyTon);
+        const simulateMintResult = master.stats();
         expect(jettonReservesAfter).toEqual(simulateMintResult.jetton_reserve);
 
         // Expect that ton reserves = 10000000000000n
@@ -316,16 +334,17 @@ describe('JettonMasterBondV1 general testcases', () => {
         let buyerTonBalanceBefore = await buyer.getBalance();
         const buyTon = toNano('10');
         let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
-        let burnAmount = await buyerWallet.getJettonBalance();
 
         // use for loop to buy and sell meme tokens 100 times
         for (let i = 0; i < 10; i++) {
             await buyToken(jettonMasterBondV1, buyer, buyTon);
-            burnAmount = await buyerWallet.getJettonBalance();
+            master.mint(buyTon);
+            let burnAmount = await buyerWallet.getJettonBalance();
             await buyerWallet.sendBurn(buyer.getSender(), gas_cost, burnAmount, null, null);
+            master.burn(burnAmount);
         }
 
-        const simulateResult = simulateMultipleOperations(toNano('10'), burnAmount, 10);
+        const simulateResult = master.stats();
 
         // Expect that ton reserves = 0
         let tonReservesAfter = (await jettonMasterBondV1.getMasterData()).tonReserves;
@@ -342,11 +361,12 @@ describe('JettonMasterBondV1 general testcases', () => {
         // Ton the moon
         const buyTontoMoon = toNano('1000000');
         const toTheMoonResult = await buyToken(jettonMasterBondV1, buyer, buyTontoMoon);
-        const simulateToTheMoonResult = simulateMint(buyTontoMoon);
+        master.mint(buyTontoMoon);
+        const simulateToTheMoonResult = master.stats();
 
         // fee After should match the simulate result
         let feeAfter = await (await jettonMasterBondV1.getMasterData()).fee;
-        expect(feeAfter).toEqual(simulateToTheMoonResult.protocol_fee + simulateResult.protocol_fee);
+        expect(feeAfter).toEqual(simulateToTheMoonResult.protocol_fee);
 
         // Epext that onMoon = 1n
         let onMoon = (await jettonMasterBondV1.getMasterData()).onMoon;
@@ -380,6 +400,7 @@ describe('JettonMasterBondV1 general testcases', () => {
         const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
         const buyTon = toNano('1000000');
         await buyToken(jettonMasterBondV1, buyer, buyTon);
+        master.mint(buyTon);
 
         let adminTonBalanceBefore = await deployer.getBalance();
         let adminMemeWallet = await userWallet(deployer.address, jettonMasterBondV1);
@@ -420,11 +441,14 @@ describe('JettonMasterBondV1 general testcases', () => {
             success: true,
         });
 
-        // Expect that admin balance increased at least 1100 ton
-        expect(adminTonBalanceAfter - adminTonBalanceBefore).toBeGreaterThan(toNano('1100'));
+        const simulateResult = master.calculateLiquidityAndFees();
 
-        // // Expect that admin jetton balance should be jettonReserves - 7438016528925619n
-        expect(adminMemeTokenBalanceAfter).toEqual(jettonReserves - 7438016528925619n);
+        // Expect that admin balance increased at least ton_fee_for_admin - gas_fee
+        let gas_fee = toNano('1');
+        expect(adminTonBalanceAfter - adminTonBalanceBefore).toBeGreaterThan(simulateResult.ton_fee_for_admin - gas_fee);
+
+        // // Expect that admin jetton balance should be jetton_fee_for_admin
+        expect(adminMemeTokenBalanceAfter).toEqual(simulateResult.jetton_fee_for_admin);
 
         // Expect that ton reserves = 0
         let tonReservesAfter = (await jettonMasterBondV1.getMasterData()).tonReserves;

@@ -1,6 +1,7 @@
 import exp from 'constants';
 
 const TON = 1_000_000_000n;
+const PRICE_PRECISION = 1_000_000_000n;
 const JETTON_DECIMAL = 1_000_000_000n;
 
 class JettonMaster {
@@ -17,6 +18,7 @@ class JettonMaster {
     v_ton: bigint;
     precision: bigint;
     fee_rate: bigint;
+    commission: bigint;
 
     constructor(
         ton_the_moon: bigint,
@@ -26,6 +28,7 @@ class JettonMaster {
         fee_rate: bigint,
         admin_address: string = 'address: 0xton',
         dex_router: string = 'address: dex router',
+        commission: bigint = 100n,
     ) {
         this.ton_the_moon = ton_the_moon;
         this.on_moon = false;
@@ -40,6 +43,7 @@ class JettonMaster {
         this.v_ton = v_ton;
         this.precision = precision;
         this.fee_rate = fee_rate;
+        this.commission = commission;
     }
 
     get token_price() {
@@ -106,6 +110,22 @@ class JettonMaster {
         return remain_ton;
     }
 
+    calculateLiquidityAndFees() {
+        const send_ton_liquidity = (this.ton_reserves * (this.precision - this.commission)) / this.precision;
+        const ton_fee_for_admin = this.ton_reserves - send_ton_liquidity + this.fee; 
+        
+        const price_for_now = (PRICE_PRECISION * (this.ton_reserves + this.v_ton)) / this.jetton_reserves;
+        const send_jetton_liquidity = (PRICE_PRECISION * send_ton_liquidity) / price_for_now;
+        const jetton_fee_for_admin = this.jetton_reserves - send_jetton_liquidity;
+
+        return {
+            send_ton_liquidity,
+            ton_fee_for_admin,
+            send_jetton_liquidity,
+            jetton_fee_for_admin
+        };
+    }
+
     stats() {
         const progress = Number((this.ton_reserves * 10000n) / this.ton_the_moon) / 100;
         const init_price = Number(this.v_ton) / Number(this.total_supply);
@@ -128,54 +148,4 @@ class JettonMaster {
         };
     }
 }
-
-export function simulateMint(tonAmount: bigint) {
-    const v_ton = 1000n * TON;
-    const total_supply = 100000000n * TON;
-    const precision = 1000n;
-    const fee_rate = 10n;
-    const ton_the_moon = 10000n * TON;
-    const master = new JettonMaster(ton_the_moon, v_ton, total_supply, precision, fee_rate);
-    master.mint(tonAmount);
-    return master.stats();
-}
-
-export function simulateMintAndBurn(mintAmount: bigint, burnAmount: bigint) {
-    const v_ton = 1000n * TON;
-    const total_supply = 100000000n * TON;
-    const precision = 1000n;
-    const fee_rate = 10n;
-    const ton_the_moon = 10000n * TON;
-    const k = v_ton * total_supply;
-    const master = new JettonMaster(ton_the_moon, v_ton, total_supply, precision, fee_rate);
-
-    master.mint(mintAmount);
-    master.burn(burnAmount);
-
-    return master.stats();
-}
-
-export function simulateBurn(jettonAmount: bigint) {
-    const v_ton = 1000n * TON;
-    const total_supply = 100000000n * TON;
-    const precision = 1000n;
-    const fee_rate = 10n;
-    const ton_the_moon = 10000n * TON;
-    const master = new JettonMaster(ton_the_moon, v_ton, total_supply, precision, fee_rate);
-    return master.stats();
-}
-export function simulateMultipleOperations(mintAmount: bigint, burnAmount: bigint, iterations: number) {
-    const v_ton = 1000n * TON;
-    const total_supply = 100000000n * TON;
-    const precision = 1000n;
-    const fee_rate = 10n;
-    const ton_the_moon = 10000n * TON;
-    const master = new JettonMaster(ton_the_moon, v_ton, total_supply, precision, fee_rate);
-
-    for (let i = 0; i < iterations; i++) {
-        master.mint(mintAmount);
-        master.burn(burnAmount);
-    }
-
-    return master.stats();
-}
+export default JettonMaster;
