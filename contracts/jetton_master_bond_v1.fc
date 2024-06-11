@@ -151,8 +151,8 @@ const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a
     int ton_fee_for_admin = remain_ton + master::ton_reserves - send_ton_liquidity + master::fee; ;; build_pool_fee is for building pool and farm, thunder fi will pay for it.
 
     ;; Calculate jetton reserves send to dex router
-    int price_for_now = const:price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
-    int send_jetton_liquidity = const:price_precision * send_ton_liquidity / price_for_now;
+    int price_for_now = const::price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
+    int send_jetton_liquidity = const::price_precision * send_ton_liquidity / price_for_now;
     int jetton_fee_for_admin = master::jetton_reserves - send_jetton_liquidity;
 
     ;; Send fee to admin by minting jetton

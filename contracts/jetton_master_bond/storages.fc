@@ -1,12 +1,12 @@
-global int master::total_supply;
-global slice master::admin_address;
-global int master::ton_reserves; ;; the amount of ton stored in bonding curve
-global int master::jetton_reserves; ;; the amount of jetton remain in contract
-global int master::fee; ;; accumulated trading fee for admin to claim
-global int master::on_moon; ;; is listing?
-global slice master::dex_router; ;; listing target address
-global cell master::jetton_wallet_code;
-global cell master::jetton_content;
+global int master::total_supply; ;; Total supply of the meme token (10^8).
+global slice master::admin_address; ;; Admin address for managing fees and contract updates.
+global int master::ton_reserves; ;; TON stored in bonding curve, starts at 0.
+global int master::jetton_reserves; ;; Remaining jettons, starts at 10^8.
+global int master::fee; ;; Accumulated trading fees for admin.
+global int master::on_moon; ;; Listing status: -1 if listed, 0 if not.
+global slice master::dex_router; ;; This variable is for next release, for now it is not used.
+global cell master::jetton_wallet_code; ;; Meme token wallet code.
+global cell master::jetton_content; ;; Information about the meme token.
 
 () master::load_data() impure inline_ref {
     slice ds = get_data().begin_parse();
