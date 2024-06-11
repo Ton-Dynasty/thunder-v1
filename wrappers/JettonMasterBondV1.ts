@@ -217,13 +217,15 @@ export class JettonMasterBondV1 implements Contract {
             },
         ]);
         const amountOut = result.stack.readBigNumber();
-        const trueAmountIn = result.stack.readBigNumber();
-        const tonHasToPay = result.stack.readBigNumber();
+        const tonReserve = result.stack.readBigNumber();
+        const jettonReserve = result.stack.readBigNumber();
+        const totalSupply = result.stack.readBigNumber();
 
         return {
             amountOut,
-            trueAmountIn,
-            tonHasToPay,
+            tonReserve,
+            jettonReserve,
+            totalSupply
         };
     }
     async getSellEstimateResult(provider: ContractProvider, amountIn: bigint) {
@@ -234,13 +236,15 @@ export class JettonMasterBondV1 implements Contract {
             },
         ]);
         const amountOut = result.stack.readBigNumber();
-        const deltaTon = result.stack.readBigNumber();
-        const fee = result.stack.readBigNumber();
+        const tonReserve = result.stack.readBigNumber();
+        const jettonReserve = result.stack.readBigNumber();
+        const totalSupply = result.stack.readBigNumber();
 
         return {
             amountOut,
-            deltaTon,
-            fee,
+            tonReserve,
+            jettonReserve,
+            totalSupply
         };
     }
 }

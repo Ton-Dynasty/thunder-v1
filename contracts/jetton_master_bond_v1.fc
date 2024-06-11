@@ -378,12 +378,15 @@ slice get_wallet_address(slice owner_address) method_id {
     return (total_supply, mintable, admin_address, master::jetton_content, jetton_wallet_code);
 }
 
-(int, int, int) get_estimate_buy_result(int ton_amount) method_id {
+(int, int, int, int) get_estimate_buy_result(int ton_amount) method_id {
     master::load_data();
-    return simulate::estimate_buy_result(ton_amount);
+    (int token_out, _, _) = simulate::estimate_buy_result(ton_amount);
+    return (token_out, master::ton_reserves, master::jetton_reserves, master::total_supply);
 }
 
-(int, int, int) get_estimate_sell_result(int jetton_amount) method_id {
+(int, int, int, int) get_estimate_sell_result(int jetton_amount) method_id {
     master::load_data();
-    return simulate::estimate_sell_result(jetton_amount);
+
+    (int amount_out, _, _) = simulate::estimate_sell_result(jetton_amount);
+    return (amount_out, master::ton_reserves, master::jetton_reserves, master::total_supply);
 }
