@@ -7,13 +7,12 @@ import { Asset, Factory, MAINNET_FACTORY_ADDR, VaultJetton, VaultNative } from '
 export async function run(provider: NetworkProvider) {
     const factory = provider.open(Factory.createFromAddress(MAINNET_FACTORY_ADDR));
     const tonVault = provider.open(await factory.getNativeVault());
-    // UQAFi8FcQ6eSSX57-yWpAW-0fp3eMbcs90QWRIBMW4QBiP6F
+    // UQByWaBNDQ8GSAn3obmnioxuS46Rgim-5CvUUZ3JOtUfVj8-
     const jettonMasterAddress = await promptAddress('Enter the JettonMasterBondV1 address: ', provider.ui());
     const jettonMasterBondV1 = provider.open(JettonMasterBondV1.createFromAddress(jettonMasterAddress));
 
     const tonReserve = (await jettonMasterBondV1.getMasterData()).tonReserves;
     const jettonReserve = (await jettonMasterBondV1.getMasterData()).jettonReserves;
-    console.log('TON Reserve:', tonReserve);
 
     const tonAmount = (tonReserve * (1000n - 100n)) / 1000n; //225000000n; // 5 TON // 225 000 000
     const priceforNow = (1000000000n * (tonReserve + toNano('1000'))) / jettonReserve;
@@ -25,7 +24,7 @@ export async function run(provider: NetworkProvider) {
     const assets: [Asset, Asset] = [TON, JETTON];
     const targetBalances: [bigint, bigint] = [tonAmount, jettonAmount];
 
-    // EQB0bXw9U4Zpm2mlto3igAAEtMvAmaVm8jB12I96gwosnk-r
+    // EQAKUU5XuGfhL07hqT_6ohmgKKE7TabmDzN8pcc2ScCRXH1b
     const vaultAddress = await promptAddress('Enter the Vault address: ', provider.ui());
     const poolType = 0;
     const minLp = 0;

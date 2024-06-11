@@ -10,16 +10,16 @@ export async function run(provider: NetworkProvider) {
     const factory = provider.open(Factory.createFromAddress(MAINNET_FACTORY_ADDR));
     const jettonAddress = await promptAddress('Please enter the jetton address to create lp pool:', provider.ui()); // prettier-ignore
 
-    // // Create a vault
-    // await factory.sendCreateVault(provider.sender(), {
-    //     asset: Asset.jetton(jettonAddress),
-    // });
-    // console.log('Vault creation initiated');
-    // const jettonVault = provider.open(await factory.getJettonVault(jettonAddress));
-    // while ((await jettonVault.getReadinessStatus()) !== ReadinessStatus.READY) {
-    //     sleep(3000);
-    // }
-    // console.log('Vault created successfully');
+    // Create a vault
+    await factory.sendCreateVault(provider.sender(), {
+        asset: Asset.jetton(jettonAddress),
+    });
+    console.log('Vault creation initiated');
+    const jettonVault = provider.open(await factory.getJettonVault(jettonAddress));
+    while ((await jettonVault.getReadinessStatus()) !== ReadinessStatus.READY) {
+        sleep(3000);
+    }
+    console.log('Vault created successfully');
 
     // Create a volatile pool
     const TON = Asset.native();
