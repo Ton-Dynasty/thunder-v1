@@ -40,7 +40,7 @@ const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a
     throw_unless(error::not_enough_ton, ctx::value > ton_amount + total_fees + forward_ton_amount);
     
     ;; Calculate token_out based on ton_amount
-    (int token_out, int true_amount_in, int ton_has_to_pay) = simulate::estimate_mint_jetton_amount(ton_amount);
+    (int token_out, int true_amount_in, int ton_has_to_pay) = simulate::estimate_buy_result(ton_amount);
     ;; If the amount out doesn't meet the min_token_out, then throw error. It will send ton back to user by bounce
     throw_unless(error::not_meet_min_amount, token_out >= min_token_out); 
 
@@ -107,7 +107,7 @@ const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a
     throw_unless(error::not_valid_wallet, equal_slices_bits(true_sender, ctx::sender));
 
     ;; Calculate amount out based on burn jetton_amount
-    (int amount_out, int delta_ton, int fee) = simulate::estimate_burn_jetton_amount(burn_amount);
+    (int amount_out, int delta_ton, int fee) = simulate::estimate_sell_result(burn_amount);
     
     ;; Upload storage
     master::ton_reserves -= delta_ton;
@@ -376,4 +376,14 @@ slice get_wallet_address(slice owner_address) method_id {
     cell jetton_wallet_code = master::jetton_wallet_code;
     int mintable = TRUE;
     return (total_supply, mintable, admin_address, master::jetton_content, jetton_wallet_code);
+}
+
+(int, int, int) get_estimate_buy_result(int ton_amount) method_id {
+    master::load_data();
+    return simulate::estimate_buy_result(ton_amount);
+}
+
+(int, int, int) get_estimate_sell_result(int jetton_amount) method_id {
+    master::load_data();
+    return simulate::estimate_sell_result(jetton_amount);
 }

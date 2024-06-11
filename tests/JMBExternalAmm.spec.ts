@@ -445,7 +445,9 @@ describe('JettonMasterBondV1 general testcases', () => {
 
         // Expect that admin balance increased at least ton_fee_for_admin - gas_fee
         let gas_fee = toNano('1');
-        expect(adminTonBalanceAfter - adminTonBalanceBefore).toBeGreaterThan(simulateResult.ton_fee_for_admin - gas_fee);
+        expect(adminTonBalanceAfter - adminTonBalanceBefore).toBeGreaterThan(
+            simulateResult.ton_fee_for_admin - gas_fee,
+        );
 
         // // Expect that admin jetton balance should be jetton_fee_for_admin
         expect(adminMemeTokenBalanceAfter).toEqual(simulateResult.jetton_fee_for_admin);

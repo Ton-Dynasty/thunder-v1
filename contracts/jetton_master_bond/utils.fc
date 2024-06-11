@@ -7,7 +7,7 @@
  *   - true_amount_in: The actual amount of TON that will be added to the reserves.
  *   - ton_has_to_pay: The total amount of TON that has to be paid considering the fee rate.
 -}
-(int, int, int) simulate::estimate_mint_jetton_amount(
+(int, int, int) simulate::estimate_buy_result(
     int amount_in ;; The amount of TON provided for minting.
 ) inline_ref {
     int k = const::v_ton * master::total_supply; ;; this k come from original state
@@ -32,7 +32,7 @@
  *   - jetton_in: The amount of Jetton tokens provided for burning.
  *   - fee: The fee deducted from the initial amount of TON.
 -}
-(int, int, int) simulate::estimate_burn_jetton_amount(int jetton_in) inline_ref {
+(int, int, int) simulate::estimate_sell_result(int jetton_in) inline_ref {
     
     int k = const::v_ton * master::total_supply; ;; this k come from original state
     int delta_ton = (master::ton_reserves + const::v_ton) - k / (master::jetton_reserves + jetton_in); ;; Calculate the ton amount out before fees

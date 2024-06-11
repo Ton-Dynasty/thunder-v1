@@ -208,4 +208,39 @@ export class JettonMasterBondV1 implements Contract {
             adminAddress,
         };
     }
+
+    async getBuyEstimateResult(provider: ContractProvider, amountIn: bigint) {
+        const result = await provider.get('get_estimate_buy_result', [
+            {
+                type: 'int',
+                value: amountIn,
+            },
+        ]);
+        const amountOut = result.stack.readBigNumber();
+        const trueAmountIn = result.stack.readBigNumber();
+        const tonHasToPay = result.stack.readBigNumber();
+
+        return {
+            amountOut,
+            trueAmountIn,
+            tonHasToPay,
+        };
+    }
+    async getSellEstimateResult(provider: ContractProvider, amountIn: bigint) {
+        const result = await provider.get('get_estimate_sell_result', [
+            {
+                type: 'int',
+                value: amountIn,
+            },
+        ]);
+        const amountOut = result.stack.readBigNumber();
+        const deltaTon = result.stack.readBigNumber();
+        const fee = result.stack.readBigNumber();
+
+        return {
+            amountOut,
+            deltaTon,
+            fee,
+        };
+    }
 }
