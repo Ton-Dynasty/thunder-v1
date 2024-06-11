@@ -54,8 +54,8 @@ export async function run(provider: NetworkProvider) {
         .storeMaybeRef(null)
         .endCell();
 
-    const msg = JettonMasterBondV1.packTonTheMoon({
-        $$type: 'TonTheMoon',
+    const msg = JettonMasterBondV1.packToTheMoon({
+        $$type: 'ToTheMoon',
         query_id: 0n,
         ton_body: tonBody,
         jetton_body: jettonBody,

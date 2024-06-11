@@ -25,7 +25,7 @@ export const MasterOpocde = {
     ToTheMoon: 0x18ea8228,
 };
 
-export type BuyToken = {
+export type Mint = {
     $$type: 'BuyToken';
     query_id: bigint;
     ton_amount: bigint;
@@ -37,7 +37,7 @@ export type BuyToken = {
     forward_payload: Cell;
 };
 
-export function storeBuyToken(src: BuyToken) {
+export function storeMint(src: Mint) {
     return (b: Builder) => {
         b.storeUint(MasterOpocde.Mint, 32);
         b.storeUint(src.query_id, 64);
@@ -51,15 +51,15 @@ export function storeBuyToken(src: BuyToken) {
     };
 }
 
-export type TonTheMoon = {
-    $$type: 'TonTheMoon';
+export type ToTheMoon = {
+    $$type: 'ToTheMoon';
     query_id: bigint;
     ton_body: Cell;
     jetton_body: Cell;
     vault_1: Address;
 };
 
-export function storeTonTheMoon(src: TonTheMoon) {
+export function storeToTheMoon(src: ToTheMoon) {
     return (b: Builder) => {
         b.storeUint(MasterOpocde.ToTheMoon, 32);
         b.storeUint(src.query_id, 64);
@@ -75,7 +75,7 @@ export type JettonMasterBondV1Config = {
     tonReserves: bigint;
     jettonReserves: bigint;
     fee: bigint;
-    onMoon: bigint;
+    onMoon: boolean;
     dexRouter: Address;
     jettonWalletCode: Cell;
     jettonContent: Cell;
@@ -90,7 +90,7 @@ export function jettonMasterBondV1ConfigToCell(config: JettonMasterBondV1Config)
         .storeCoins(config.fee)
         .storeRef(
             beginCell()
-                .storeInt(config.onMoon, 2)
+                .storeBit(config.onMoon)
                 .storeAddress(config.dexRouter)
                 .storeRef(config.jettonWalletCode)
                 .storeRef(config.jettonContent)
@@ -106,19 +106,19 @@ export class JettonMasterBondV1 implements Contract {
     ) {}
 
     /* pack data */
-    static packBuyToken(src: BuyToken) {
-        return beginCell().store(storeBuyToken(src)).endCell();
+    static packBuyToken(src: Mint) {
+        return beginCell().store(storeMint(src)).endCell();
     }
 
-    static packTonTheMoon(src: TonTheMoon) {
-        return beginCell().store(storeTonTheMoon(src)).endCell();
+    static packToTheMoon(src: ToTheMoon) {
+        return beginCell().store(storeToTheMoon(src)).endCell();
     }
 
-    async sendBuyToken(
+    async sendMint(
         provider: ContractProvider,
         via: Sender,
         args: { value: bigint; bounce?: boolean },
-        body: BuyToken,
+        body: Mint,
         sendMode?: SendMode,
     ) {
         await provider.internal(via, {
@@ -147,11 +147,11 @@ export class JettonMasterBondV1 implements Contract {
         });
     }
 
-    async sendToTheMoon(provider: ContractProvider, via: Sender, value: bigint, body: TonTheMoon) {
+    async sendToTheMoon(provider: ContractProvider, via: Sender, value: bigint, body: ToTheMoon) {
         await provider.internal(via, {
             value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
-            body: JettonMasterBondV1.packTonTheMoon(body),
+            body: JettonMasterBondV1.packToTheMoon(body),
         });
     }
 
@@ -195,7 +195,7 @@ export class JettonMasterBondV1 implements Contract {
         const jettonReserves = fees.stack.readBigNumber();
         const fee = fees.stack.readBigNumber();
         const totalSupply = fees.stack.readBigNumber();
-        const onMoon = fees.stack.readBigNumber();
+        const onMoon = fees.stack.readBoolean();
         const dexRouter = fees.stack.readAddress();
         const adminAddress = fees.stack.readAddress();
         return {
@@ -225,7 +225,7 @@ export class JettonMasterBondV1 implements Contract {
             amountOut,
             tonReserve,
             jettonReserve,
-            totalSupply
+            totalSupply,
         };
     }
     async getSellEstimateResult(provider: ContractProvider, amountIn: bigint) {
@@ -244,7 +244,7 @@ export class JettonMasterBondV1 implements Contract {
             amountOut,
             tonReserve,
             jettonReserve,
-            totalSupply
+            totalSupply,
         };
     }
 }

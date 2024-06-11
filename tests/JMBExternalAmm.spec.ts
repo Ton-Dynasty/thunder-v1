@@ -1,6 +1,6 @@
 import { Blockchain, SandboxContract, TreasuryContract, printTransactionFees } from '@ton/sandbox';
 import { Address, Cell, SenderArguments, Transaction, beginCell, storeStateInit, toNano } from '@ton/core';
-import { JettonMasterBondV1, MasterOpocde, TonTheMoon } from '../wrappers/JettonMasterBondV1';
+import { JettonMasterBondV1, MasterOpocde, ToTheMoon } from '../wrappers/JettonMasterBondV1';
 import '@ton/test-utils';
 import { compile } from '@ton/blueprint';
 import { JettonWallet } from '../wrappers/JettonWallet';
@@ -72,7 +72,7 @@ describe('JettonMasterBondV1 general testcases', () => {
         let buyerTonBalanceBefore = await buyer.getBalance();
         let tonAmount = toNano('10'); // Buyer buys meme token with 10 tons
         let sendAllTon = tonAmount + gas_cost;
-        const buyTokenResult = await jettonMasterBondV1.sendBuyToken(
+        const buyTokenResult = await jettonMasterBondV1.sendMint(
             buyer.getSender(),
             { value: sendAllTon },
             {
@@ -324,9 +324,9 @@ describe('JettonMasterBondV1 general testcases', () => {
         let feeAfter = (await jettonMasterBondV1.getMasterData()).fee;
         expect(feeAfter).toEqual(simulateMintResult.protocol_fee);
 
-        // Epext that onMoon = 1n
+        // Epext that onMoon = true
         let onMoon = (await jettonMasterBondV1.getMasterData()).onMoon;
-        expect(onMoon).toEqual(-1n);
+        expect(onMoon).toEqual(true);
     });
 
     it('should buy meme tokens and sell meme tokens 100 times and ton the moon', async () => {
@@ -365,12 +365,12 @@ describe('JettonMasterBondV1 general testcases', () => {
         const simulateToTheMoonResult = master.stats();
 
         // fee After should match the simulate result
-        let feeAfter = await (await jettonMasterBondV1.getMasterData()).fee;
+        let feeAfter = (await jettonMasterBondV1.getMasterData()).fee;
         expect(feeAfter).toEqual(simulateToTheMoonResult.protocol_fee);
 
-        // Epext that onMoon = 1n
+        // Epext that onMoon = true
         let onMoon = (await jettonMasterBondV1.getMasterData()).onMoon;
-        expect(onMoon).toEqual(-1n);
+        expect(onMoon).toEqual(true);
     });
 
     it('should not buy meme tokens after token on the list', async () => {
@@ -407,7 +407,7 @@ describe('JettonMasterBondV1 general testcases', () => {
         let adminMemeTokenBalanceBefore = await adminMemeWallet.getJettonBalance();
         let jettonReserves = await (await jettonMasterBondV1.getMasterData()).jettonReserves;
         let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(deployer.getSender(), toNano('1.2'), {
-            $$type: 'TonTheMoon',
+            $$type: 'ToTheMoon',
             query_id: 0n,
             ton_body: beginCell().storeAddress(buyer.address).endCell(),
             jetton_body: beginCell().storeAddress(buyer.address).endCell(),
@@ -470,7 +470,7 @@ describe('JettonMasterBondV1 general testcases', () => {
         const buyTon = toNano('100');
         await buyToken(jettonMasterBondV1, buyer, buyTon);
         let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(deployer.getSender(), toNano('0.05'), {
-            $$type: 'TonTheMoon',
+            $$type: 'ToTheMoon',
             query_id: 0n,
             ton_body: beginCell().storeAddress(buyer.address).endCell(),
             jetton_body: beginCell().storeAddress(buyer.address).endCell(),
@@ -491,7 +491,7 @@ describe('JettonMasterBondV1 general testcases', () => {
         await buyToken(jettonMasterBondV1, buyer, buyTon);
 
         let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(buyer.getSender(), toNano('0.05'), {
-            $$type: 'TonTheMoon',
+            $$type: 'ToTheMoon',
             query_id: 0n,
             ton_body: beginCell().storeAddress(buyer.address).endCell(),
             jetton_body: beginCell().storeAddress(buyer.address).endCell(),
@@ -583,7 +583,7 @@ describe('JettonMasterBondV1 general testcases', () => {
         let tonAmount = toNano('10');
         let sendAllTon = gas_cost;
         let buyerBeforeBalance = await buyer.getBalance();
-        const notEnoughTonResult = await jettonMasterBondV1.sendBuyToken(
+        const notEnoughTonResult = await jettonMasterBondV1.sendMint(
             buyer.getSender(),
             { value: sendAllTon },
             {
@@ -619,7 +619,7 @@ describe('JettonMasterBondV1 general testcases', () => {
         let tonAmount = toNano('10');
         let sendAllTon = tonAmount + gas_cost;
         let buyerBeforeBalance = await buyer.getBalance();
-        const notEnoughTonResult = await jettonMasterBondV1.sendBuyToken(
+        const notEnoughTonResult = await jettonMasterBondV1.sendMint(
             buyer.getSender(),
             { value: sendAllTon },
             {
@@ -822,7 +822,7 @@ describe('JettonMasterBondV1 premint when deploying contract', () => {
                     tonReserves: 0n,
                     jettonReserves: toNano('100000000'),
                     fee: 0n,
-                    onMoon: 0n,
+                    onMoon: false,
                     dexRouter: deployer.address,
                     jettonWalletCode: jettonWalletCode,
                     jettonContent: beginCell().endCell(),

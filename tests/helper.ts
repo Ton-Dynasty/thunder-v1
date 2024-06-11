@@ -12,7 +12,6 @@ export async function loadJMBondFixture() {
     const blockchain = await Blockchain.create();
     const deployer = await blockchain.treasury('deployer', { workchain: 0, balance: toNano('100000000') });
 
-
     const jettonMasterBondV1 = blockchain.openContract(
         JettonMasterBondV1.createFromConfig(
             {
@@ -21,7 +20,7 @@ export async function loadJMBondFixture() {
                 tonReserves: 0n,
                 jettonReserves: toNano('100000000'),
                 fee: 0n,
-                onMoon: 0n,
+                onMoon: false,
                 dexRouter: deployer.address,
                 jettonWalletCode: jettonWalletCode,
                 jettonContent: beginCell().endCell(),
@@ -53,7 +52,7 @@ export const buyToken = async (
     forward_payload: Cell = beginCell().storeUint(0n, 1).endCell(),
 ) => {
     let sendAllTon = tonAmount + toNano('1');
-    return await jettonMasterBondV1.sendBuyToken(
+    return await jettonMasterBondV1.sendMint(
         buyer.getSender(),
         { value: sendAllTon },
         {
