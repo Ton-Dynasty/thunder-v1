@@ -56,10 +56,10 @@ export async function run(provider: NetworkProvider) {
 
     const msg = JettonMasterBondV1.packToTheMoon({
         $$type: 'ToTheMoon',
-        query_id: 0n,
-        ton_body: tonBody,
-        jetton_body: jettonBody,
-        vault_1: vaultAddress,
+        queryId: 0n,
+        tonBody: tonBody,
+        jettonBody: jettonBody,
+        vault1: vaultAddress,
     });
 
     await provider.sender().send({
