@@ -12,11 +12,6 @@
 #include "jetton_master_bond/gas.fc";
 const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a;
 
-() internal::ton_the_moon(int query_id, int ctx:fwd_fee) impure inline {
-    master::on_moon = TRUE;
-    return ();
-}
-
 () handle::claim_admin_fee(
     int query_id
 ) impure inline_ref {
@@ -57,7 +52,7 @@ const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a
 
     ;; If ton_reserves reach to the moon threshold, then send to admin
     if(master::ton_reserves == const::ton_the_moon) {
-        internal::ton_the_moon(query_id, ctx::fwd_fee);
+        master::on_moon = TRUE;
     }
 
     ;; Mint tokens to user

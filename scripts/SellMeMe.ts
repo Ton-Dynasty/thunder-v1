@@ -1,7 +1,7 @@
 import { Address, beginCell, toNano } from '@ton/core';
-import { DexRouter } from '../wrappers/DexRouter';
+// import { DexRouter } from '../wrappers/DexRouter';
 import { compile, NetworkProvider } from '@ton/blueprint';
-import { PoolV1 } from '../wrappers/PoolV1';
+// import { PoolV1 } from '../wrappers/PoolV1';
 import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
 import { JettonWallet } from '../wrappers/JettonWallet';
 import { promptAddress, promptAmount } from '../utils/ui';

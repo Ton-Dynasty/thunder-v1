@@ -11,8 +11,13 @@ export async function run(provider: NetworkProvider) {
     const jettonMasterAddress = await promptAddress('Enter the JettonMasterBondV1 address: ', provider.ui());
     const jettonMasterBondV1 = provider.open(JettonMasterBondV1.createFromAddress(jettonMasterAddress));
 
-    const tonAmount = toNano('0.225'); //225000000n; // 5 TON // 225 000 000
-    const jettonAmount = 22488755622188n; // 10 SCALE //  22488755622188
+    const tonReserve = (await jettonMasterBondV1.getMasterData()).tonReserves;
+    const jettonReserve = (await jettonMasterBondV1.getMasterData()).jettonReserves;
+    console.log('TON Reserve:', tonReserve);
+
+    const tonAmount = (tonReserve * (1000n - 100n)) / 1000n; //225000000n; // 5 TON // 225 000 000
+    const priceforNow = (1000000000n * (tonReserve + toNano('1000'))) / jettonReserve;
+    const jettonAmount = (1000000000n * tonAmount) / priceforNow; // 22488755622188
 
     const TON = Asset.native();
     const JETTON = Asset.jetton(jettonMasterAddress);
