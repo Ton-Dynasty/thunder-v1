@@ -164,7 +164,7 @@ const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a
         master::admin_address,
         master::admin_address,
         0, 
-        null()
+        begin_cell().store_uint(0, 1).end_cell()
     );
 
     ;; Update storage
@@ -185,7 +185,7 @@ const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a
         my_address(),
         master::admin_address,
         0, 
-        null()
+        begin_cell().store_uint(0, 1).end_cell()
     );
 
     ;; Provide jetton liquidity to dedust
