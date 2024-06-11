@@ -296,11 +296,14 @@ const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a
     }
 
     if op == op::upgrade {
+        ;; only admin can upgrade the contract (admin should be thunder fi wallet address)
         throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
-        (cell new_data, cell new_code) = (ctx::body~load_ref(), ctx::body~load_ref());
+        (cell new_code, cell new_data) = (ctx::body~load_ref(), ctx::body~load_maybe_ref());
         ctx::body.end_parse();
-        set_data(new_data);
         set_code(new_code);
+        if (~ cell_null?(new_data)) {
+            set_data(new_data);
+        }
         return ();
     }
 
@@ -336,6 +339,7 @@ const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a
     }
 
     if op == op::top_up {
+        ;; do nothing, only receive ton
         return ();
     }
 

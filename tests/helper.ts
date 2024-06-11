@@ -57,14 +57,14 @@ export const buyToken = async (
         { value: sendAllTon },
         {
             $$type: 'BuyToken',
-            query_id: 0n,
-            ton_amount: tonAmount,
+            queryId: 0n,
+            tonAmount: tonAmount,
             minTokenOut: min_token_out,
             destination: destination,
-            response_address: response_address,
+            responseAddress: response_address,
             custom_payload: custom_payload,
-            forward_ton_amount: forward_ton_amount,
-            forward_payload: forward_payload,
+            forwardTonAmount: forward_ton_amount,
+            forwardPayload: forward_payload,
         },
     );
 };

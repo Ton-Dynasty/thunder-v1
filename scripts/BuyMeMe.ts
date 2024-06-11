@@ -11,14 +11,14 @@ export async function run(provider: NetworkProvider) {
 
     const message = JettonMasterBondV1.packBuyToken({
         $$type: 'BuyToken',
-        query_id: 0n,
-        ton_amount: tonAmount,
+        queryId: 0n,
+        tonAmount: tonAmount,
         minTokenOut: minTokenOut,
         destination: provider.sender().address!,
-        response_address: provider.sender().address!,
+        responseAddress: provider.sender().address!,
         custom_payload: null,
-        forward_ton_amount: 0n,
-        forward_payload: beginCell().storeUint(0n, 1).endCell(),
+        forwardTonAmount: 0n,
+        forwardPayload: beginCell().storeUint(0n, 1).endCell(),
     });
 
     await provider.sender().send({

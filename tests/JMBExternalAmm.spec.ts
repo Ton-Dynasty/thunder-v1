@@ -77,14 +77,14 @@ describe('JettonMasterBondV1 general testcases', () => {
             { value: sendAllTon },
             {
                 $$type: 'BuyToken',
-                query_id: 0n,
-                ton_amount: tonAmount,
+                queryId: 0n,
+                tonAmount: tonAmount,
                 minTokenOut: 0n,
                 destination: buyer.address,
-                response_address: buyer.address,
+                responseAddress: buyer.address,
                 custom_payload: null,
-                forward_ton_amount: 0n,
-                forward_payload: beginCell().storeUint(0n, 1).endCell(),
+                forwardTonAmount: 0n,
+                forwardPayload: beginCell().storeUint(0n, 1).endCell(),
             },
         );
         let buyerTonBalanceAfter = await buyer.getBalance();
@@ -408,10 +408,10 @@ describe('JettonMasterBondV1 general testcases', () => {
         let jettonReserves = await (await jettonMasterBondV1.getMasterData()).jettonReserves;
         let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(deployer.getSender(), toNano('1.2'), {
             $$type: 'ToTheMoon',
-            query_id: 0n,
-            ton_body: beginCell().storeAddress(buyer.address).endCell(),
-            jetton_body: beginCell().storeAddress(buyer.address).endCell(),
-            vault_1: buyer.address,
+            queryId: 0n,
+            tonBody: beginCell().storeAddress(buyer.address).endCell(),
+            jettonBody: beginCell().storeAddress(buyer.address).endCell(),
+            vault1: buyer.address,
         });
 
         let adminTonBalanceAfter = await deployer.getBalance();
@@ -471,10 +471,10 @@ describe('JettonMasterBondV1 general testcases', () => {
         await buyToken(jettonMasterBondV1, buyer, buyTon);
         let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(deployer.getSender(), toNano('0.05'), {
             $$type: 'ToTheMoon',
-            query_id: 0n,
-            ton_body: beginCell().storeAddress(buyer.address).endCell(),
-            jetton_body: beginCell().storeAddress(buyer.address).endCell(),
-            vault_1: buyer.address,
+            queryId: 0n,
+            tonBody: beginCell().storeAddress(buyer.address).endCell(),
+            jettonBody: beginCell().storeAddress(buyer.address).endCell(),
+            vault1: buyer.address,
         });
         // Expect to throw not on moon error 2005
         expect(toTheMoonResult.transactions).toHaveTransaction({
@@ -492,10 +492,10 @@ describe('JettonMasterBondV1 general testcases', () => {
 
         let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(buyer.getSender(), toNano('0.05'), {
             $$type: 'ToTheMoon',
-            query_id: 0n,
-            ton_body: beginCell().storeAddress(buyer.address).endCell(),
-            jetton_body: beginCell().storeAddress(buyer.address).endCell(),
-            vault_1: buyer.address,
+            queryId: 0n,
+            tonBody: beginCell().storeAddress(buyer.address).endCell(),
+            jettonBody: beginCell().storeAddress(buyer.address).endCell(),
+            vault1: buyer.address,
         });
 
         // Expect to not admin error 70
@@ -588,14 +588,14 @@ describe('JettonMasterBondV1 general testcases', () => {
             { value: sendAllTon },
             {
                 $$type: 'BuyToken',
-                query_id: 0n,
-                ton_amount: tonAmount,
+                queryId: 0n,
+                tonAmount: tonAmount,
                 minTokenOut: 0n,
                 destination: buyer.address,
-                response_address: buyer.address,
+                responseAddress: buyer.address,
                 custom_payload: null,
-                forward_ton_amount: 0n,
-                forward_payload: beginCell().storeUint(0n, 1).endCell(),
+                forwardTonAmount: 0n,
+                forwardPayload: beginCell().storeUint(0n, 1).endCell(),
             },
         );
         let buyerAfterBalance = await buyer.getBalance();
@@ -624,14 +624,14 @@ describe('JettonMasterBondV1 general testcases', () => {
             { value: sendAllTon },
             {
                 $$type: 'BuyToken',
-                query_id: 0n,
-                ton_amount: tonAmount,
+                queryId: 0n,
+                tonAmount: tonAmount,
                 minTokenOut: toNano('1000000000000000000000'),
                 destination: buyer.address,
-                response_address: buyer.address,
+                responseAddress: buyer.address,
                 custom_payload: null,
-                forward_ton_amount: 0n,
-                forward_payload: beginCell().storeUint(0n, 1).endCell(),
+                forwardTonAmount: 0n,
+                forwardPayload: beginCell().storeUint(0n, 1).endCell(),
             },
         );
         let buyerAfterBalance = await buyer.getBalance();

@@ -23,49 +23,66 @@ export const MasterOpocde = {
     DepositAsset: 0x95db9d39,
     ClaimAdminFee: 0x913e42af,
     ToTheMoon: 0x18ea8228,
+    Upgrade: 0x2508d66a,
 };
 
 export type Mint = {
     $$type: 'BuyToken';
-    query_id: bigint;
-    ton_amount: bigint;
+    queryId: bigint;
+    tonAmount: bigint;
     minTokenOut: bigint;
     destination: Address;
-    response_address: Address;
+    responseAddress: Address;
     custom_payload: Maybe<Cell>;
-    forward_ton_amount: bigint;
-    forward_payload: Cell;
+    forwardTonAmount: bigint;
+    forwardPayload: Cell;
 };
 
 export function storeMint(src: Mint) {
     return (b: Builder) => {
         b.storeUint(MasterOpocde.Mint, 32);
-        b.storeUint(src.query_id, 64);
-        b.storeCoins(src.ton_amount);
+        b.storeUint(src.queryId, 64);
+        b.storeCoins(src.tonAmount);
         b.storeCoins(src.minTokenOut);
         b.storeAddress(src.destination);
-        b.storeAddress(src.response_address);
+        b.storeAddress(src.responseAddress);
         b.storeMaybeRef(src.custom_payload);
-        b.storeCoins(src.forward_ton_amount);
-        b.storeRef(src.forward_payload);
+        b.storeCoins(src.forwardTonAmount);
+        b.storeRef(src.forwardPayload);
     };
 }
 
 export type ToTheMoon = {
     $$type: 'ToTheMoon';
-    query_id: bigint;
-    ton_body: Cell;
-    jetton_body: Cell;
-    vault_1: Address;
+    queryId: bigint;
+    tonBody: Cell;
+    jettonBody: Cell;
+    vault1: Address;
 };
 
 export function storeToTheMoon(src: ToTheMoon) {
     return (b: Builder) => {
         b.storeUint(MasterOpocde.ToTheMoon, 32);
-        b.storeUint(src.query_id, 64);
-        b.storeRef(src.ton_body);
-        b.storeRef(src.jetton_body);
-        b.storeAddress(src.vault_1);
+        b.storeUint(src.queryId, 64);
+        b.storeRef(src.tonBody);
+        b.storeRef(src.jettonBody);
+        b.storeAddress(src.vault1);
+    };
+}
+
+export type Upgrade = {
+    $$type: 'Upgrade';
+    queryId: bigint;
+    newCode: Cell;
+    newData: Maybe<Cell>;
+};
+
+export function storeUpgrade(src: Upgrade) {
+    return (b: Builder) => {
+        b.storeUint(MasterOpocde.Upgrade, 32);
+        b.storeUint(src.queryId, 64);
+        b.storeRef(src.newCode);
+        b.storeMaybeRef(src.newData);
     };
 }
 
@@ -112,6 +129,10 @@ export class JettonMasterBondV1 implements Contract {
 
     static packToTheMoon(src: ToTheMoon) {
         return beginCell().store(storeToTheMoon(src)).endCell();
+    }
+
+    static packUpgrade(src: Upgrade) {
+        return beginCell().store(storeUpgrade(src)).endCell();
     }
 
     async sendMint(
