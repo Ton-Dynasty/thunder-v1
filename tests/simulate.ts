@@ -113,7 +113,7 @@ class JettonMaster {
     calculateLiquidityAndFees() {
         const send_ton_liquidity = (this.ton_reserves * (this.precision - this.commission)) / this.precision;
         const ton_fee_for_admin = this.ton_reserves - send_ton_liquidity + this.fee; 
-        
+
         const price_for_now = (PRICE_PRECISION * (this.ton_reserves + this.v_ton)) / this.jetton_reserves;
         const send_jetton_liquidity = (PRICE_PRECISION * send_ton_liquidity) / price_for_now;
         const jetton_fee_for_admin = this.jetton_reserves - send_jetton_liquidity;
@@ -127,7 +127,7 @@ class JettonMaster {
     }
 
     stats() {
-        const progress = Number((this.ton_reserves * 10000n) / this.ton_the_moon) / 100;
+        const progress = Number((this.ton_reserves * this.ton_the_moon) / this.ton_the_moon) / 100;
         const init_price = Number(this.v_ton) / Number(this.total_supply);
         // console.log('> is on moon:', this.on_moon);
         // console.log('> progress', `${progress.toFixed(2)}%`);
