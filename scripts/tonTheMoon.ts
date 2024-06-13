@@ -5,6 +5,10 @@ import { promptAddress, promptToncoin } from '../utils/ui';
 import { Asset, Factory, MAINNET_FACTORY_ADDR, VaultJetton, VaultNative } from '@dedust/sdk';
 
 export async function run(provider: NetworkProvider) {
+    const precision = 1000n;
+    const commission = 100n;
+    const price_precision = 1000000000n;
+    const v_ton = toNano('1000');
     const factory = provider.open(Factory.createFromAddress(MAINNET_FACTORY_ADDR));
     const tonVault = provider.open(await factory.getNativeVault());
     // UQByWaBNDQ8GSAn3obmnioxuS46Rgim-5CvUUZ3JOtUfVj8-
@@ -14,9 +18,17 @@ export async function run(provider: NetworkProvider) {
     const tonReserve = (await jettonMasterBondV1.getMasterData()).tonReserves;
     const jettonReserve = (await jettonMasterBondV1.getMasterData()).jettonReserves;
 
-    const tonAmount = (tonReserve * (1000n - 100n)) / 1000n; //225000000n; // 5 TON // 225 000 000
-    const priceforNow = (1000000000n * (tonReserve + toNano('1000'))) / jettonReserve;
-    const jettonAmount = (1000000000n * tonAmount) / priceforNow; // 22488755622188
+    // int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision; ;; Only send 90% of ton_reserves to liquidity pool
+    // int ton_fee_for_admin = remain_ton + master::ton_reserves - send_ton_liquidity + master::fee; ;; build_pool_fee is for building pool and farm, thunder fi will pay for it.
+
+    // ;; Calculate jetton reserves send to dedust
+    // int price_for_now = const::price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
+    // int send_jetton_liquidity = const::price_precision * send_ton_liquidity / price_for_now;
+    // int jetton_fee_for_admin = master::jetton_reserves - send_jetton_liquidity;
+
+    const tonAmount = (tonReserve * (precision - commission)) / precision; //225000000n; // 5 TON // 225 000 000
+    const priceforNow = (price_precision * (tonReserve + v_ton)) / jettonReserve;
+    const jettonAmount = (price_precision * tonAmount) / priceforNow; // 22488755622188
 
     const TON = Asset.native();
     const JETTON = Asset.jetton(jettonMasterAddress);
