@@ -20,7 +20,6 @@ export async function loadJMBondFixture() {
                 jettonReserves: toNano('100000000'),
                 fee: 0n,
                 onMoon: false,
-                dexRouter: deployer.address,
                 jettonWalletCode: jettonWalletCode,
                 jettonContent: beginCell().endCell(),
             },

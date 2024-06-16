@@ -93,7 +93,6 @@ export type JettonMasterBondV1Config = {
     jettonReserves: bigint;
     fee: bigint;
     onMoon: boolean;
-    dexRouter: Address;
     jettonWalletCode: Cell;
     jettonContent: Cell;
 };
@@ -108,7 +107,6 @@ export function jettonMasterBondV1ConfigToCell(config: JettonMasterBondV1Config)
         .storeRef(
             beginCell()
                 .storeBit(config.onMoon)
-                .storeAddress(config.dexRouter)
                 .storeRef(config.jettonWalletCode)
                 .storeRef(config.jettonContent)
                 .endCell(),
@@ -217,7 +215,6 @@ export class JettonMasterBondV1 implements Contract {
         const fee = fees.stack.readBigNumber();
         const totalSupply = fees.stack.readBigNumber();
         const onMoon = fees.stack.readBoolean();
-        const dexRouter = fees.stack.readAddress();
         const adminAddress = fees.stack.readAddress();
         return {
             tonReserves,
@@ -225,7 +222,6 @@ export class JettonMasterBondV1 implements Contract {
             fee,
             totalSupply,
             onMoon,
-            dexRouter,
             adminAddress,
         };
     }

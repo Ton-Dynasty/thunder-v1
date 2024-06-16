@@ -71,30 +71,6 @@
     deploy(bounce_flag, to_wallet_address, remaining_ton, msg_body, state_init, SEND_MODE_REGULAR);
 }
 
-() transfer_ton(
-    int query_id,
-    int bounce_flag,
-    slice recipient,
-    int value,
-    cell msg_body,
-    int mode
-) impure inline_ref {
-    if msg_body.cell_null?() {
-        msg_body = begin_cell()
-        .store_op(op::excesses)
-        .store_query_id(query_id)
-        .end_cell();
-    }
-
-    var msg = begin_cell()
-        .store_msg_flags_and_address_none(bounce_flag)
-        .store_slice(recipient)
-        .store_coins(value)
-        .store_only_body_ref(msg_body);
-    
-    send_raw_message(msg.end_cell(), mode);
-}
-
 () transfer_jetton(
     int query_id,
     int send_amount,

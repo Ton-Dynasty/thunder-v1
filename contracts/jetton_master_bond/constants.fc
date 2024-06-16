@@ -1,6 +1,6 @@
 const ONE_TON = 1000000000;
 const const::v_ton = 1000 * ONE_TON; ;; Virtual TON liquidity for initial AMM operation (xy=k), set to 1000 TON.
-const const::ton_the_moon = 10000 * ONE_TON; ;; Threshold for listing on DEX, triggers when ton_reserves reach 10000 TON.
+const const::ton_the_moon = 1500 * ONE_TON; ;; Threshold for listing on DEX, triggers when ton_reserves reach 10000 TON.
 const const::precision = 1000; ;; Denominator for calculate fee_rate and commission.
 const const::fee_rate = 10; ;; Trading fee: fee_rate / precision = 1%.
 const const::commission = 100; ;; Listing commission: commission / precision = 10%.

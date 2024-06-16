@@ -16,7 +16,8 @@
     int send_ton
 ) impure inline_ref {
     send_ton += master::fee;
-    transfer_ton(query_id, NON_BOUNCEABLE, master::admin_address, send_ton, null(), SEND_MODE_REGULAR);
+    cell msg = pack_excess(query_id, master::admin_address, send_ton);
+    send_raw_message(msg, SEND_MODE_REGULAR);
 
     master::fee = 0;
     master::save_data();
@@ -119,12 +120,10 @@
     if (~ is_address_none(response_address)) {
         recipient = response_address;
     }
- 
-    ;; handle burn token
-    cell msg = pack_excess(query_id, recipient, amount_out + send_ton);
 
     ;; Transfer tons (from selling meme tokens) to user
-    transfer_ton(query_id, NON_BOUNCEABLE, recipient, amount_out + send_ton, msg, SEND_MODE_REGULAR);
+    cell msg = pack_excess(query_id, recipient, amount_out + send_ton);
+    send_raw_message(msg, SEND_MODE_REGULAR);
 
     emit::burn(
         from_address,
@@ -177,7 +176,12 @@
 
     ;; Provide ton liquidity to dedust
     int send_ton = send_ton_liquidity + DEDUST_ADD_TON_GAS; ;; dedust ask for 0.15 TON
-    transfer_ton(query_id, NON_BOUNCEABLE, TON_VAULT_ADDR, send_ton, ton_body, SEND_MODE_REGULAR);
+    var msg = begin_cell()
+        .store_msg_flags_and_address_none(NON_BOUNCEABLE)
+        .store_slice(TON_VAULT_ADDR)
+        .store_coins(send_ton)
+        .store_only_body_ref(ton_body);
+    send_raw_message(msg.end_cell(), SEND_MODE_REGULAR);
 
     ;; Mint Jetton to Master Bond, so that it can provide jetton liquidity to dedust
     mint_jetton(
@@ -386,9 +390,9 @@ slice get_wallet_address(slice owner_address) method_id {
     return calculate_jetton_wallet_address(calculate_jetton_wallet_state_init(owner_address, my_address(), master::jetton_wallet_code));
 }
 
-(int, int, int, int, int, slice, slice) get_master_data() method_id {
+(int, int, int, int, int, slice) get_master_data() method_id {
     master::load_data();
-    return (master::ton_reserves, master::jetton_reserves, master::fee, master::total_supply, master::on_moon, master::dex_router, master::admin_address);
+    return (master::ton_reserves, master::jetton_reserves, master::fee, master::total_supply, master::on_moon, master::admin_address);
 }
 
 (int, int, slice, cell, cell) get_jetton_data() method_id {

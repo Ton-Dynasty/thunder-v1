@@ -33,7 +33,7 @@ describe('JettonMasterBondV1 general testcases', () => {
         const total_supply = 100000000n * TON;
         const precision = 1000n;
         const fee_rate = 10n;
-        const ton_the_moon = 10000n * TON;
+        const ton_the_moon = 1500n * TON;
         master = new JettonMaster(ton_the_moon, v_ton, total_supply, precision, fee_rate);
     });
 
@@ -515,22 +515,42 @@ describe('JettonMasterBondV1 general testcases', () => {
         // buyer try to sell meme token after token on the list
         let buyerWallet = await userWallet(buyer.address, jettonMasterBondV1);
         let buyerMemeTokenBalanceBefore = await buyerWallet.getJettonBalance();
+        let totalSupplyBefore = (await jettonMasterBondV1.getMasterData()).totalSupply;
 
         // Buyers burn half of meme tokens
         let burnAmount = buyerMemeTokenBalanceBefore / 2n;
-        const burnResult = await buyerWallet.sendBurn(buyer.getSender(), gas_cost, burnAmount, null, null);
+        const burnResult = await buyerWallet.sendBurn(buyer.getSender(), gas_cost, burnAmount, buyer.address, null);
         let buyerMemeTokenBalanceAfter = await buyerWallet.getJettonBalance();
+        let totalSupplyAfter = (await jettonMasterBondV1.getMasterData()).totalSupply;
 
-        // Expect to throw token already listed error
+        // Expect that buyer send burn to his wallet
         expect(burnResult.transactions).toHaveTransaction({
-            from: buyerWallet.address,
-            to: jettonMasterBondV1.address,
-            success: false,
-            exitCode: 2002,
+            op: MasterOpocde.Burn,
+            from: buyer.address,
+            to: buyerWallet.address,
+            success: true,
         });
 
-        // Epect that buyer meme token balance is still same
-        expect(buyerMemeTokenBalanceAfter).toEqual(buyerMemeTokenBalanceBefore);
+        // Expect that buyer jetton wallet send burn notification to jettonMasterBondV1
+        expect(burnResult.transactions).toHaveTransaction({
+            op: MasterOpocde.BurnNotification,
+            from: buyerWallet.address,
+            to: jettonMasterBondV1.address,
+            success: true,
+        });
+
+        // Expect that jettonMasterBondV1 send ton back
+        expect(burnResult.transactions).toHaveTransaction({
+            from: jettonMasterBondV1.address,
+            to: buyer.address,
+            success: true,
+        });
+
+        // Epect that buyer meme token balance is decreased burnAmount
+        expect(buyerMemeTokenBalanceBefore - buyerMemeTokenBalanceAfter).toEqual(burnAmount);
+
+        // Epect that total supply is decreased burnAmount
+        expect(totalSupplyBefore - totalSupplyAfter).toEqual(burnAmount);
     });
 
     it('should not sell meme tokens if sending ton is not enough', async () => {
@@ -831,7 +851,6 @@ describe('JettonMasterBondV1 premint when deploying contract', () => {
                     jettonReserves: toNano('100000000'),
                     fee: 0n,
                     onMoon: false,
-                    dexRouter: deployer.address,
                     jettonWalletCode: jettonWalletCode,
                     jettonContent: beginCell().endCell(),
                 },

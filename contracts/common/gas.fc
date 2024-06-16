@@ -20,11 +20,11 @@ const RECEIVE_TRANSFER_GAS_CONSUMPTION = 10355;
     Dex Router and Pool is for the next release, so just ignore it now 
 -}
 ;; Dex Router Related
-const DEX_ROUTER_BITS = 42146;
-const DEX_ROUTER_CELLS = 85;
-const SEND_TO_DEX_ROUTER = 10245;
-const DEPLOY_POOL_GAS = 12780;
-const SWAP_INTERNAL_DR_GAS = 12187; ;; Dex Router Jetton Wallet -> Dex Router (Jetton Notify)
+;; const DEX_ROUTER_BITS = 42146;
+;; const DEX_ROUTER_CELLS = 85;
+;; const SEND_TO_DEX_ROUTER = 10245;
+;; const DEPLOY_POOL_GAS = 12780;
+;; const SWAP_INTERNAL_DR_GAS = 12187; ;; Dex Router Jetton Wallet -> Dex Router (Jetton Notify)
 
 ;; Pool Related
 const POOL_BITS = 30259;

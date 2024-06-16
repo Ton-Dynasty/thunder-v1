@@ -4,7 +4,6 @@ global int master::ton_reserves; ;; TON stored in bonding curve, starts at 0.
 global int master::jetton_reserves; ;; Remaining jettons, starts at 10^8.
 global int master::fee; ;; Accumulated trading fees for admin.
 global int master::on_moon; ;; Listing status: -1 if listed, 0 if not.
-global slice master::dex_router; ;; This variable is for next release, for now it is not used.
 global cell master::jetton_wallet_code; ;; Meme token wallet code.
 global cell master::jetton_content; ;; Information about the meme token.
 
@@ -20,7 +19,6 @@ global cell master::jetton_content; ;; Information about the meme token.
     ;; load basic info
     slice basic_info = ds~load_ref().begin_parse();
     master::on_moon = basic_info~load_bool();
-    master::dex_router = basic_info~load_msg_addr();
     master::jetton_wallet_code = basic_info~load_ref();
     master::jetton_content = basic_info~load_ref();
 }
@@ -29,7 +27,6 @@ global cell master::jetton_content; ;; Information about the meme token.
     ;; pack basic info
     cell basic_info = begin_cell()
         .store_bool(master::on_moon)
-        .store_slice(master::dex_router)
         .store_ref(master::jetton_wallet_code)
         .store_ref(master::jetton_content)
     .end_cell();
