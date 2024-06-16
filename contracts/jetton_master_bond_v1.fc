@@ -119,9 +119,12 @@
     if (~ is_address_none(response_address)) {
         recipient = response_address;
     }
+ 
+    ;; handle burn token
+    cell msg = pack_excess(query_id, recipient, amount_out + send_ton);
 
     ;; Transfer tons (from selling meme tokens) to user
-    transfer_ton(query_id, NON_BOUNCEABLE, recipient, amount_out + send_ton, null(), SEND_MODE_REGULAR);
+    transfer_ton(query_id, NON_BOUNCEABLE, recipient, amount_out + send_ton, msg, SEND_MODE_REGULAR);
 
     emit::burn(
         from_address,
@@ -245,12 +248,24 @@
     }
 
     if op == op::burn_notification {
-        ;; Throw error if token already listed. it will send back jetton to user by bounce
-        throw_unless(error::token_already_listed, master::on_moon == FALSE);
         int jetton_amount = ctx::body~load_coins(); ;; meme jetton amount user want to sell
         slice from_address = ctx::body~load_msg_addr(); ;; who sold the meme jetton
         slice response_address = ctx::body~load_msg_addr(); ;; who will receive The TON obtained from selling meme tokens
         ctx::body.end_parse();
+
+        ;; if master::on_moon is TRUE, then turn to normal burn notification logic
+        if master::on_moon {
+            master::total_supply -= jetton_amount;
+            if ~ is_address_none(response_address) {
+                ;; send TON with excess message to response_address
+                cell msg = pack_excess(query_id, response_address, 0);
+                send_raw_message(msg, SEND_MODE_IGNORE_ERRORS + SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE);
+            }
+            master::save_data();
+            return ();
+        }
+        
+        ;; if master::on_moon is FALSE, then use VLMM formula to calculate the amount of TON user will receive
         handle::burn_token(query_id, ctx::sender, ctx::value, ctx::fwd_fee, jetton_amount, from_address, response_address);
 
         return ();
