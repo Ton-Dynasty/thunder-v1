@@ -61,6 +61,52 @@ describe('JettonMasterBondV1 general testcases', () => {
         // const state2 = smc.accountState.state;
         // const stateCell2 = beginCell().store(storeStateInit(state2)).endCell();
         // console.log('State init stats:', collectCellStats(stateCell2, []));
+        const jettonMasterBondV1Code = await compile(JettonMasterBondV1.name);
+        const jettonWalletCode = await compile(JettonWallet.name);
+
+        const blockchain = await Blockchain.create();
+        const deployer = await blockchain.treasury('deployer', { workchain: 0, balance: toNano('100000000') });
+
+        const jettonMasterBondV1 = blockchain.openContract(
+            JettonMasterBondV1.createFromConfig(
+                {
+                    totalSupply: toNano('100000000'),
+                    adminAddress: deployer.address,
+                    tonReserves: 0n,
+                    jettonReserves: toNano('100000000'),
+                    fee: 0n,
+                    onMoon: false,
+                    jettonWalletCode: jettonWalletCode,
+                    jettonContent: beginCell().endCell(),
+                },
+                jettonMasterBondV1Code,
+            ),
+        );
+
+        const deployJettonMasterResult = await jettonMasterBondV1.sendDeploy(deployer.getSender(), toNano('0.05'));
+        expect(deployJettonMasterResult.transactions).toHaveTransaction({
+            from: deployer.address,
+            to: jettonMasterBondV1.address,
+            deploy: true,
+            success: true,
+        });
+
+        // Expect that jetton master bond send excess to deployer
+        expect(deployJettonMasterResult.transactions).toHaveTransaction({
+            op: MasterOpocde.Excess,
+            from: jettonMasterBondV1.address,
+            to: deployer.address,
+            success: true,
+        });
+
+        // // Calculate gas fee for buy token transaction
+        // const deployMasterTx = findTransactionRequired(deployJettonMasterResult.transactions, {
+        //     from: deployer.address,
+        //     to: jettonMasterBondV1.address,
+        //     deploy: true,
+        //     success: true,
+        // });
+        // printTxGasStats('deployMasterTx', deployMasterTx);
     });
 
     it('should buy token with 10 tons', async () => {

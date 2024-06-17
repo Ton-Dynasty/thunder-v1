@@ -62,3 +62,13 @@ int forward_pool_init_state_overhead() inline {
 
     return (total_fee, gas_comp);
 }
+
+(int) cal_deploy_fee(int fwd_fee) inline {
+    int master_gas_consumption = get_precompiled_gas_consumption();
+    int deploy_fee_gas_consumption = null?(master_gas_consumption) ? TOP_UP_FEE : master_gas_consumption;
+    
+    int gas_comp = get_compute_fee(MY_WORKCHAIN, deploy_fee_gas_consumption) + 
+    calculate_master_min_storage_fee();
+
+    return (gas_comp);
+}
