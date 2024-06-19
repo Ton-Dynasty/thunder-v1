@@ -14,7 +14,7 @@ import { Maybe } from '@ton/core/dist/utils/maybe';
 
 export const MasterOpocde = {
     TopUp: 0xd372158c,
-    Mint: 0x642b7d07,
+    ThunderMint: 0x61950add,
     InternalTransfer: 0x178d4519,
     Burn: 0x595f07bc,
     BurnNotification: 0x7bdd97de,
@@ -40,7 +40,7 @@ export type Mint = {
 
 export function storeMint(src: Mint) {
     return (b: Builder) => {
-        b.storeUint(MasterOpocde.Mint, 32);
+        b.storeUint(MasterOpocde.ThunderMint, 32);
         b.storeUint(src.queryId, 64);
         b.storeCoins(src.tonAmount);
         b.storeCoins(src.minTokenOut);
@@ -95,6 +95,9 @@ export type JettonMasterBondV1Config = {
     onMoon: boolean;
     jettonWalletCode: Cell;
     jettonContent: Cell;
+    vTon: bigint;
+    tonTheMoon: bigint;
+    feeRate: bigint;
 };
 
 export function jettonMasterBondV1ConfigToCell(config: JettonMasterBondV1Config): Cell {
@@ -111,6 +114,7 @@ export function jettonMasterBondV1ConfigToCell(config: JettonMasterBondV1Config)
                 .storeRef(config.jettonContent)
                 .endCell(),
         )
+        .storeRef(beginCell().storeCoins(config.vTon).storeCoins(config.tonTheMoon).storeUint(config.feeRate, 16))
         .endCell();
 }
 
@@ -179,6 +183,21 @@ export class JettonMasterBondV1 implements Contract {
             value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell().storeUint(MasterOpocde.ClaimAdminFee, 32).storeUint(0, 64).endCell(),
+        });
+    }
+
+    async sendUpgrade(
+        provider: ContractProvider,
+        via: Sender,
+        args: { value: bigint; bounce?: boolean },
+        body: Upgrade,
+        sendMode?: SendMode,
+    ) {
+        await provider.internal(via, {
+            value: args.value,
+            bounce: args.bounce,
+            sendMode: sendMode,
+            body: JettonMasterBondV1.packUpgrade(body),
         });
     }
 

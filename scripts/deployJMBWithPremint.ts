@@ -41,7 +41,6 @@ export async function run(provider: NetworkProvider) {
                 jettonReserves: totalSupply,
                 fee: fee,
                 onMoon: false,
-                dexRouter: dexRouterAddress,
                 jettonWalletCode: jettonWalletCode,
                 jettonContent: jettonContent,
             },

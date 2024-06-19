@@ -52,7 +52,7 @@
     master::jetton_reserves -= token_out;
 
     ;; If ton_reserves reach to the moon threshold, then send to admin
-    if(master::ton_reserves == const::ton_the_moon) {
+    if(master::ton_reserves == master::ton_the_moon) {
         master::on_moon = TRUE;
     }
 
@@ -153,7 +153,7 @@
     int ton_fee_for_admin = remain_ton + master::ton_reserves - send_ton_liquidity + master::fee; ;; build_pool_fee is for building pool and farm, thunder fi will pay for it.
 
     ;; Calculate jetton reserves send to dex router
-    int price_for_now = const::price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
+    int price_for_now = const::price_precision * (master::ton_reserves + master::v_ton) / master::jetton_reserves;
     int send_jetton_liquidity = const::price_precision * send_ton_liquidity / price_for_now;
     int jetton_fee_for_admin = master::jetton_reserves - send_jetton_liquidity;
 
@@ -218,7 +218,7 @@
     ;; Load data from storage
     master::load_data();
 
-    if op == op::mint {
+    if op == op::thunder_mint {
         ;; load data in mint msg
         int ton_amount = ctx::body~load_coins(); ;; user paid this amount of ton to buy meme token
         int min_token_out = ctx::body~load_coins(); ;; minimum amount of meme token user want to buy

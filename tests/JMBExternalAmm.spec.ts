@@ -78,6 +78,9 @@ describe('JettonMasterBondV1 general testcases', () => {
                     onMoon: false,
                     jettonWalletCode: jettonWalletCode,
                     jettonContent: beginCell().endCell(),
+                    vTon: 1000n * TON,
+                    tonTheMoon: 1500n * TON,
+                    feeRate: 10n,
                 },
                 jettonMasterBondV1Code,
             ),
@@ -146,7 +149,7 @@ describe('JettonMasterBondV1 general testcases', () => {
 
         // Expect that buyer send op::mint to jettonMasterBondV1
         expect(buyTokenResult.transactions).toHaveTransaction({
-            op: MasterOpocde.Mint,
+            op: MasterOpocde.ThunderMint,
             from: buyer.address,
             to: jettonMasterBondV1.address,
             success: true,
@@ -631,7 +634,7 @@ describe('JettonMasterBondV1 general testcases', () => {
         const invalidAmountResult = await buyToken(jettonMasterBondV1, buyer, buyTon);
         let buyerBeforeBalance = await buyer.getBalance();
         expect(invalidAmountResult.transactions).toHaveTransaction({
-            op: MasterOpocde.Mint,
+            op: MasterOpocde.ThunderMint,
             from: buyer.address,
             to: jettonMasterBondV1.address,
             success: false,
@@ -668,7 +671,7 @@ describe('JettonMasterBondV1 general testcases', () => {
 
         // Epect to throw not enough ton error
         expect(notEnoughTonResult.transactions).toHaveTransaction({
-            op: MasterOpocde.Mint,
+            op: MasterOpocde.ThunderMint,
             from: buyer.address,
             to: jettonMasterBondV1.address,
             success: false,
@@ -704,7 +707,7 @@ describe('JettonMasterBondV1 general testcases', () => {
 
         // Epect to throw not enough ton error
         expect(notEnoughTonResult.transactions).toHaveTransaction({
-            op: MasterOpocde.Mint,
+            op: MasterOpocde.ThunderMint,
             from: buyer.address,
             to: jettonMasterBondV1.address,
             success: false,
@@ -887,6 +890,7 @@ describe('JettonMasterBondV1 premint when deploying contract', () => {
     it('should deploy contract with premint', async () => {
         const jettonMasterBondV1Code = await compile(JettonMasterBondV1.name);
         const jettonWalletCode = await compile(JettonWallet.name);
+        const TON = toNano('1');
 
         const jettonMasterBondV1 = blockchain.openContract(
             JettonMasterBondV1.createFromConfig(
@@ -899,6 +903,9 @@ describe('JettonMasterBondV1 premint when deploying contract', () => {
                     onMoon: false,
                     jettonWalletCode: jettonWalletCode,
                     jettonContent: beginCell().endCell(),
+                    vTon: 1000n * TON,
+                    tonTheMoon: 1500n * TON,
+                    feeRate: 10n,
                 },
                 jettonMasterBondV1Code,
             ),

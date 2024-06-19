@@ -3,4 +3,4 @@ const op::upgrade = 0x2508d66a;
 ;; const op::create_pool = "create_pool"c; ;; 2e3034ef ;; This is for the next release
 const op::claim_admin_fee = "claim_admin_fee"c; ;; 913e42af
 const op::to_the_moon = "to_the_moon"c; ;; 18ea8228
-
+const op::thunder_mint = "thunder_mint"c; ;; 61950add
