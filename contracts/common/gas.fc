@@ -7,6 +7,7 @@ const JETTON_CELLS = 48;
 const BUY_MEME_GAS = 15372; ;; ton the moon, 18452
 const BURN_MEME_GAS = 14075;
 const CLAIM_ADMIN_FEE = 7415;
+const REVOKE_FEE = 9000;
 const TOP_UP_FEE = 5204;
 
 ;; Jetton Wallet Related
