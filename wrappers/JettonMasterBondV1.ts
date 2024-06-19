@@ -24,6 +24,7 @@ export const MasterOpocde = {
     ClaimAdminFee: 0x913e42af,
     ToTheMoon: 0x18ea8228,
     Upgrade: 0x2508d66a,
+    Revoke: 0x10f4a1b2,
 };
 
 export type Mint = {
@@ -86,6 +87,18 @@ export function storeUpgrade(src: Upgrade) {
     };
 }
 
+export type Revoke = {
+    $$type: 'Revoke';
+    queryId: bigint;
+};
+
+export function storeRevoke(src: Revoke) {
+    return (b: Builder) => {
+        b.storeUint(MasterOpocde.Revoke, 32);
+        b.storeUint(src.queryId, 64);
+    };
+}
+
 export type JettonMasterBondV1Config = {
     totalSupply: bigint;
     adminAddress: Address;
@@ -131,6 +144,10 @@ export class JettonMasterBondV1 implements Contract {
 
     static packUpgrade(src: Upgrade) {
         return beginCell().store(storeUpgrade(src)).endCell();
+    }
+
+    static packRevoke(src: Revoke) {
+        return beginCell().store(storeRevoke(src)).endCell();
     }
 
     async sendMint(
@@ -179,6 +196,14 @@ export class JettonMasterBondV1 implements Contract {
             value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell().storeUint(MasterOpocde.ClaimAdminFee, 32).storeUint(0, 64).endCell(),
+        });
+    }
+
+    async sendRevoke(provider: ContractProvider, via: Sender, value: bigint, body: Revoke) {
+        await provider.internal(via, {
+            value,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
+            body: JettonMasterBondV1.packRevoke(body),
         });
     }
 

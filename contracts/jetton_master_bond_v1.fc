@@ -335,6 +335,13 @@
         return ();
     }
 
+    if op == op::revoke {
+        throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
+        throw_unless(error::not_on_moon, master::on_moon == TRUE);
+        ;; TODO: check if fee enough to revoke
+        master::admin_address = address_none();
+    }
+
     if op == op::to_the_moon {
         ;; Only admin can trigger this function
         throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
