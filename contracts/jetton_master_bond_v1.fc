@@ -335,6 +335,19 @@
         return ();
     }
 
+    if op == op::revoke {
+        throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
+        throw_unless(error::not_on_moon, master::on_moon == TRUE);
+        ;; Claim admin fee before revoking admin address
+        (int total_fees, int gas_consumptoin) = cal_revoke_fee(ctx::fwd_fee);
+        throw_unless(error::not_enough_ton, ctx::value >= total_fees);
+        handle::claim_admin_fee(query_id ,ctx::value - gas_consumptoin);
+        ;; revoke admin address
+        master::admin_address = address_none();
+        master::save_data();
+        return ();
+    }
+
     if op == op::to_the_moon {
         ;; Only admin can trigger this function
         throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
