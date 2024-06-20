@@ -1,9 +1,10 @@
 import { NetworkProvider, compile } from '@ton/blueprint';
 import { Address, Cell, SendMode, beginCell, toNano } from '@ton/core';
 import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
+import { promptAddress } from '../utils/ui';
 
 export async function run(provider: NetworkProvider) {
-    const updateTargetMasterAddress = Address.parse('EQDfP0qCL0n_WFofADEeXVSYtUUaHtnWHm4S5kALD5yia9JY');
+    const updateTargetMasterAddress = await promptAddress('Enter the JettonMasterBondV1 address: ', provider.ui());
     const newCode = await compile(JettonMasterBondV1.name);
     const jettonMasterBondV1 = provider.open(JettonMasterBondV1.createFromAddress(updateTargetMasterAddress));
     const masterData = await jettonMasterBondV1.getMasterData();

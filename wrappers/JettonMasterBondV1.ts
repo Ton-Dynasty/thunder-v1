@@ -260,6 +260,9 @@ export class JettonMasterBondV1 implements Contract {
         const totalSupply = fees.stack.readBigNumber();
         const onMoon = fees.stack.readBoolean();
         const adminAddress = fees.stack.readAddress();
+        const vTon = fees.stack.readBigNumber();
+        const tonTheMoon = fees.stack.readBigNumber();
+        const feeRate = fees.stack.readBigNumber();
         return {
             tonReserves,
             jettonReserves,
@@ -267,6 +270,9 @@ export class JettonMasterBondV1 implements Contract {
             totalSupply,
             onMoon,
             adminAddress,
+            vTon,
+            tonTheMoon,
+            feeRate,
         };
     }
 

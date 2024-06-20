@@ -41,26 +41,6 @@ describe('JettonMasterBondV1 general testcases', () => {
         blockchain.openContract(JettonWallet.createFromAddress(await jettonMaster.getWalletAddress(address)));
 
     it('should deploy', async () => {
-        // // Calculate Jetton Master Bond contract gas fee
-        // const smc = await blockchain.getContract(jettonMasterBondV1.address);
-        // if (smc.accountState === undefined) throw new Error("Can't access wallet account state");
-        // if (smc.accountState.type !== 'active') throw new Error('Wallet account is not active');
-        // if (smc.account.account === undefined || smc.account.account === null)
-        //     throw new Error("Can't access wallet account!");
-        // console.log('Jetton Master Bond max storage stats:', smc.account.account.storageStats.used);
-        // const state = smc.accountState.state;
-        // const stateCell = beginCell().store(storeStateInit(state)).endCell();
-        // console.log('State init stats:', collectCellStats(stateCell, []));
-        // // Calculate Dex Router contract gas fee
-        // const smc2 = await blockchain.getContract(dexRouter.address);
-        // if (smc2.accountState === undefined) throw new Error("Can't access wallet account state");
-        // if (smc2.accountState.type !== 'active') throw new Error('Wallet account is not active');
-        // if (smc2.account.account === undefined || smc2.account.account === null)
-        //     throw new Error("Can't access wallet account!");
-        // console.log('dexRouter max storage stats:', smc2.account.account.storageStats.used);
-        // const state2 = smc.accountState.state;
-        // const stateCell2 = beginCell().store(storeStateInit(state2)).endCell();
-        // console.log('State init stats:', collectCellStats(stateCell2, []));
         const jettonMasterBondV1Code = await compile(JettonMasterBondV1.name);
         const jettonWalletCode = await compile(JettonWallet.name);
 
@@ -102,14 +82,25 @@ describe('JettonMasterBondV1 general testcases', () => {
             success: true,
         });
 
-        // // Calculate gas fee for buy token transaction
-        // const deployMasterTx = findTransactionRequired(deployJettonMasterResult.transactions, {
-        //     from: deployer.address,
-        //     to: jettonMasterBondV1.address,
-        //     deploy: true,
-        //     success: true,
-        // });
-        // printTxGasStats('deployMasterTx', deployMasterTx);
+        // Calculate Jetton Master Bond contract gas fee
+        const smc = await blockchain.getContract(jettonMasterBondV1.address);
+        if (smc.accountState === undefined) throw new Error("Can't access wallet account state");
+        if (smc.accountState.type !== 'active') throw new Error('Wallet account is not active');
+        if (smc.account.account === undefined || smc.account.account === null)
+            throw new Error("Can't access wallet account!");
+        console.log('Jetton Master Bond max storage stats:', smc.account.account.storageStats.used);
+        const state = smc.accountState.state;
+        const stateCell = beginCell().store(storeStateInit(state)).endCell();
+        console.log('State init stats:', collectCellStats(stateCell, []));
+
+        // Calculate gas fee for buy token transaction
+        const deployMasterTx = findTransactionRequired(deployJettonMasterResult.transactions, {
+            from: deployer.address,
+            to: jettonMasterBondV1.address,
+            deploy: true,
+            success: true,
+        });
+        printTxGasStats('deployMasterTx', deployMasterTx);
     });
 
     it('should buy token with 10 tons', async () => {
@@ -138,14 +129,14 @@ describe('JettonMasterBondV1 general testcases', () => {
         );
         let buyerTonBalanceAfter = await buyer.getBalance();
 
-        // // Calculate gas fee for buy token transaction
-        // const buyMeMeTx = findTransactionRequired(buyTokenResult.transactions, {
-        //     op: MasterOpocde.Mint,
-        //     from: buyer.address,
-        //     to: jettonMasterBondV1.address,
-        //     success: true,
-        // });
-        // printTxGasStats('Buy Meme Jetton With TON', buyMeMeTx);
+        // Calculate gas fee for buy token transaction
+        const buyMeMeTx = findTransactionRequired(buyTokenResult.transactions, {
+            op: MasterOpocde.ThunderMint,
+            from: buyer.address,
+            to: jettonMasterBondV1.address,
+            success: true,
+        });
+        printTxGasStats('Buy Meme Jetton With TON', buyMeMeTx);
 
         // Expect that buyer send op::mint to jettonMasterBondV1
         expect(buyTokenResult.transactions).toHaveTransaction({
@@ -216,13 +207,13 @@ describe('JettonMasterBondV1 general testcases', () => {
         let burnAmount = buyerMemeTokenBalanceBefore / 2n;
         const burnResult = await buyerWallet.sendBurn(buyer.getSender(), gas_cost, burnAmount, null, null);
 
-        // const burnMeMeTx = findTransactionRequired(burnResult.transactions, {
-        //     op: MasterOpocde.BurnNotification,
-        //     from: buyerWallet.address,
-        //     to: jettonMasterBondV1.address,
-        //     success: true,
-        // });
-        // printTxGasStats('Burn Meme Jetton With TON', burnMeMeTx);
+        const burnMeMeTx = findTransactionRequired(burnResult.transactions, {
+            op: MasterOpocde.BurnNotification,
+            from: buyerWallet.address,
+            to: jettonMasterBondV1.address,
+            success: true,
+        });
+        printTxGasStats('Burn Meme Jetton With TON', burnMeMeTx);
 
         let buyerMemeTokenBalanceAfter = await buyerWallet.getJettonBalance();
         let buyerTonBalanceAfter = await buyer.getBalance();
@@ -376,6 +367,20 @@ describe('JettonMasterBondV1 general testcases', () => {
         // Epext that onMoon = true
         let onMoon = (await jettonMasterBondV1.getMasterData()).onMoon;
         expect(onMoon).toEqual(true);
+
+        // TODO: add testcase for revoke
+        // const adminAddressBefore = (await jettonMasterBondV1.getMasterData()).adminAddress;
+        // console.log(adminAddressBefore);
+
+        // // Send Revoke to jettonMasterBondV1
+        // let revokeResult = await jettonMasterBondV1.sendRevoke(deployer.getSender(), toNano('0.05'), {
+        //     $$type: 'Revoke',
+        //     queryId: 0n,
+        // });
+
+        // // After revoke, admin address should be null
+        // let adminAddress = (await jettonMasterBondV1.getMasterData()).adminAddress;
+        // console.log(adminAddress);
     });
 
     it('should buy meme tokens and sell meme tokens 100 times and ton the moon', async () => {
