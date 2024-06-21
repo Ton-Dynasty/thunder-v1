@@ -830,7 +830,10 @@ describe('JettonMasterBondV1 general testcases', () => {
 
         // Admin claim admin fee
         let deployerTonBalanceBefore = await deployer.getBalance();
-        const claimResult = await jettonMasterBondV1.sendClaimFee(deployer.getSender(), toNano('0.05'));
+        const claimResult = await jettonMasterBondV1.sendClaimFee(deployer.getSender(), {
+            $$type: 'Claim',
+            queryId: 0n,
+        });
         let deployerTonBalanceAfter = await deployer.getBalance();
 
         // Expect that depoyer send claim fee to jettonMasterBondV1
@@ -869,7 +872,10 @@ describe('JettonMasterBondV1 general testcases', () => {
         await buyToken(jettonMasterBondV1, buyer, buyTon);
 
         // Admin claim admin fee
-        const claimResult = await jettonMasterBondV1.sendClaimFee(buyer.getSender(), toNano('0.05'));
+        const claimResult = await jettonMasterBondV1.sendClaimFee(buyer.getSender(), {
+            $$type: 'Claim',
+            queryId: 0n,
+        });
         expect(claimResult.transactions).toHaveTransaction({
             from: buyer.address,
             to: jettonMasterBondV1.address,

@@ -9,6 +9,7 @@ import {
     Sender,
     SendMode,
     Slice,
+    toNano,
 } from '@ton/core';
 import { Maybe } from '@ton/core/dist/utils/maybe';
 
@@ -87,6 +88,18 @@ export function storeUpgrade(src: Upgrade) {
     };
 }
 
+export type Claim = {
+    $$type: 'Claim';
+    queryId: bigint;
+};
+
+export function storeClaim(src: Claim) {
+    return (b: Builder) => {
+        b.storeUint(MasterOpocde.ClaimAdminFee, 32);
+        b.storeUint(src.queryId, 64);
+    };
+}
+
 export type Revoke = {
     $$type: 'Revoke';
     queryId: bigint;
@@ -150,6 +163,10 @@ export class JettonMasterBondV1 implements Contract {
         return beginCell().store(storeUpgrade(src)).endCell();
     }
 
+    static packClaim(src: Claim) {
+        return beginCell().store(storeClaim(src)).endCell();
+    }
+
     static packRevoke(src: Revoke) {
         return beginCell().store(storeRevoke(src)).endCell();
     }
@@ -195,11 +212,11 @@ export class JettonMasterBondV1 implements Contract {
         });
     }
 
-    async sendClaimFee(provider: ContractProvider, via: Sender, value: bigint) {
+    async sendClaimFee(provider: ContractProvider, via: Sender, body: Claim) {
         await provider.internal(via, {
-            value,
+            value: toNano('0.5'),
             sendMode: SendMode.PAY_GAS_SEPARATELY,
-            body: beginCell().storeUint(MasterOpocde.ClaimAdminFee, 32).storeUint(0, 64).endCell(),
+            body: JettonMasterBondV1.packClaim(body),
         });
     }
 
@@ -273,6 +290,24 @@ export class JettonMasterBondV1 implements Contract {
             vTon,
             tonTheMoon,
             feeRate,
+        };
+    }
+
+    async getOldMasterData(provider: ContractProvider) {
+        const fees = await provider.get('get_master_data', []);
+        const tonReserves = fees.stack.readBigNumber();
+        const jettonReserves = fees.stack.readBigNumber();
+        const fee = fees.stack.readBigNumber();
+        const totalSupply = fees.stack.readBigNumber();
+        const onMoon = fees.stack.readBoolean();
+        const adminAddress = fees.stack.readAddress();
+        return {
+            tonReserves,
+            jettonReserves,
+            fee,
+            totalSupply,
+            onMoon,
+            adminAddress,
         };
     }
 
