@@ -276,13 +276,7 @@ export class JettonMasterBondV1 implements Contract {
         const fee = fees.stack.readBigNumber();
         const totalSupply = fees.stack.readBigNumber();
         const onMoon = fees.stack.readBoolean();
-        let adminAddress;
-        try {
-            adminAddress = fees.stack.readAddress();
-        } catch (e: any) {
-            expect(e.message).toBe('Invalid address: 0');
-            adminAddress = Address.parseRaw('0:0000000000000000000000000000000000000000000000000000000000000000');
-        }
+        const adminAddress = fees.stack.readAddressOpt();
         const vTon = fees.stack.readBigNumber();
         const tonTheMoon = fees.stack.readBigNumber();
         const feeRate = fees.stack.readBigNumber();

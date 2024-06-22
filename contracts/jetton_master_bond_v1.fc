@@ -175,6 +175,8 @@
     master::ton_reserves = 0;
     master::jetton_reserves = 0;
     master::fee = 0;
+    ;; revoke admin address
+    master::admin_address = address_none();
 
     ;; Provide ton liquidity to dedust
     int send_ton = send_ton_liquidity + DEDUST_ADD_TON_GAS; ;; dedust ask for 0.15 TON
@@ -337,19 +339,6 @@
         return ();
     }
 
-    if op == op::revoke {
-        throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
-        throw_unless(error::not_on_moon, master::on_moon == TRUE);
-        ;; Claim admin fee before revoking admin address
-        (int total_fees, int gas_consumptoin) = cal_revoke_fee(ctx::fwd_fee);
-        throw_unless(error::not_enough_ton, ctx::value >= total_fees);
-        handle::claim_admin_fee(query_id ,ctx::value - gas_consumptoin);
-        ;; revoke admin address
-        master::admin_address = address_none();
-        master::save_data();
-        return ();
-    }
-
     if op == op::to_the_moon {
         ;; Only admin can trigger this function
         throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
@@ -374,17 +363,6 @@
         master::save_data();
         return ();
     }
-
-    ;; We use premint 0 amount to deploy the contract
-    ;; if op == op::top_up {
-    ;;     ;; Send the remaining ton back
-    ;;     int gas_comsumption = cal_deploy_fee(ctx::fwd_fee);
-    ;;     throw_unless(error::not_enough_ton, ctx::value > gas_comsumption + ctx::fwd_fee);
-    ;;     cell msg = pack_excess(query_id, ctx::sender, ctx::value - gas_comsumption);
-    ;;     send_raw_message(msg, SEND_MODE_REGULAR);
-    ;;     return ();
-    ;; }
-
     throw(error::invalid_op);
 }
 

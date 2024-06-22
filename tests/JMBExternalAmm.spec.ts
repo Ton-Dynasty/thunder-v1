@@ -383,29 +383,6 @@ describe('JettonMasterBondV1 general testcases', () => {
         // Epext that onMoon = true
         let onMoon = (await jettonMasterBondV1.getMasterData()).onMoon;
         expect(onMoon).toEqual(true);
-
-        const adminAddressBefore = (await jettonMasterBondV1.getMasterData()).adminAddress;
-
-        // Send Revoke to jettonMasterBondV1
-        let revokeResult = await jettonMasterBondV1.sendRevoke(deployer.getSender(), toNano('0.05'), {
-            $$type: 'Revoke',
-            queryId: 0n,
-        });
-
-        const revokeResultTx = findTransactionRequired(revokeResult.transactions, {
-            op: MasterOpocde.Revoke,
-            from: deployer.address,
-            to: jettonMasterBondV1.address,
-            success: true,
-        });
-        printTxGasStats('Revoke', revokeResultTx);
-
-        // After revoke, admin address should be null
-        let adminAddressAfter = (await jettonMasterBondV1.getMasterData()).adminAddress;
-
-        expect(adminAddressAfter.toString()).toEqual(
-            Address.parseRaw('0:0000000000000000000000000000000000000000000000000000000000000000').toString(),
-        );
     });
 
     it('should buy meme tokens and sell meme tokens 100 times and ton the moon', async () => {
@@ -542,6 +519,10 @@ describe('JettonMasterBondV1 general testcases', () => {
         // Expect that fee = 0n
         let feeAfter = await (await jettonMasterBondV1.getMasterData()).fee;
         expect(feeAfter).toEqual(0n);
+
+        // admin address should be null
+        let adminAddress = (await jettonMasterBondV1.getMasterData()).adminAddress;
+        expect(adminAddress).toEqual(null);
     });
 
     it('should not send to the moon if jetotn master bond is not on moon', async () => {
