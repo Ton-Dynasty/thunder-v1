@@ -196,13 +196,13 @@ export class JettonMasterBondV1 implements Contract {
         return new JettonMasterBondV1(contractAddress(workchain, init), init);
     }
 
-    async sendDeploy(provider: ContractProvider, via: Sender, value: bigint) {
-        await provider.internal(via, {
-            value,
-            sendMode: SendMode.PAY_GAS_SEPARATELY,
-            body: beginCell().storeUint(MasterOpocde.TopUp, 32).storeUint(0, 64).endCell(),
-        });
-    }
+    // async sendDeploy(provider: ContractProvider, via: Sender, value: bigint) {
+    //     await provider.internal(via, {
+    //         value,
+    //         sendMode: SendMode.PAY_GAS_SEPARATELY,
+    //         body: beginCell().storeUint(MasterOpocde.TopUp, 32).storeUint(0, 64).endCell(),
+    //     });
+    // }
 
     async sendToTheMoon(provider: ContractProvider, via: Sender, value: bigint, body: ToTheMoon) {
         await provider.internal(via, {
@@ -276,7 +276,13 @@ export class JettonMasterBondV1 implements Contract {
         const fee = fees.stack.readBigNumber();
         const totalSupply = fees.stack.readBigNumber();
         const onMoon = fees.stack.readBoolean();
-        const adminAddress = fees.stack.readAddress();
+        let adminAddress;
+        try {
+            adminAddress = fees.stack.readAddress();
+        } catch (e: any) {
+            expect(e.message).toBe('Invalid address: 0');
+            adminAddress = Address.parseRaw('0:0000000000000000000000000000000000000000000000000000000000000000');
+        }
         const vTon = fees.stack.readBigNumber();
         const tonTheMoon = fees.stack.readBigNumber();
         const feeRate = fees.stack.readBigNumber();

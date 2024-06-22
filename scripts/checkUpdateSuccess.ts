@@ -14,7 +14,13 @@ export async function run(provider: NetworkProvider) {
         // 'EQB-t2hRTVpcirhBkOo7d5JuXiP6s_RIShq4zhDZVlhkGuYh',
         // 'EQCeDDdaopqdTQ-lkwQJkMI5EZjod2N5GQfOPgILirODPU9_',
         // 'EQCEeg8oqHUvqYugl24_97ONIe12DJICjYqJdHT6OMN9HxtM',
-        'EQCEpGG1QKVlgRz7HtrvlozYOuFPleJiRHzrwa7poCF2Acf5',
+        // 'EQCEpGG1QKVlgRz7HtrvlozYOuFPleJiRHzrwa7poCF2Acf5',
+        // 'kQBlP9ZkkzWnXncyaFgCmtLYNzW4bI20ZN_3GmY0hCPUO6OP',
+        // '0QDYCdCTkn-0E0Zg0RvjhkEEZAhkX3MowCVCgQa_NELmYnNj',
+        // '0QC-x8PKkxkeEORXVPDE64EBveUvFv97j06V1j4jp10tIcyN',
+        // 'kQCm9TofEPhBNE6u62x4563mP64m3mXX1innMk4B4PIZoJaD',
+        // '0QBN3HgF-K2WSEZTKF-5yemMRomv57lXAMHGjd3xlyviFw5r',
+        '0QBt3IUcez4Iu4oA24aPeeRNn9WgWSeEkEqmTeSIkJCAmTX3',
     ];
 
     const newCode = await compile(JettonMasterBondV1.name);
@@ -53,10 +59,10 @@ export async function run(provider: NetworkProvider) {
             updateSuccess = false;
         }
 
-        if (tonTheMoon != 1500n * toNano('1')) {
-            console.log(`tonTheMoon is not 1500n * toNano('1'): ${tonTheMoon}`);
-            updateSuccess = false;
-        }
+        // if (tonTheMoon != 1500n * toNano('1')) {
+        //     console.log(`tonTheMoon is not 1500n * toNano('1'): ${tonTheMoon}`);
+        //     updateSuccess = false;
+        // }
 
         if (feeRate != 10n) {
             console.log(`feeRate is not 10n: ${feeRate}`);

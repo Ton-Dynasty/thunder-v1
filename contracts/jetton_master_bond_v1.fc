@@ -232,8 +232,8 @@
         ;; Throw error if token already listed. it will send back ton to user by bounce
         throw_unless(error::token_already_listed, master::on_moon == FALSE);
 
-        ;; Throw error if token amount is equal to 0. it will send back ton to user by bounce
-        throw_unless(error::invalid_amount, ton_amount > 0);
+        ;; Token amount should be larger than 0
+        throw_unless(error::invalid_amount, ton_amount >= 0);
 
         handle::mint_token(
             query_id, 
@@ -373,14 +373,15 @@
         return ();
     }
 
-    if op == op::top_up {
-        ;; Send the remaining ton back
-        int gas_comsumption = cal_deploy_fee(ctx::fwd_fee);
-        throw_unless(error::not_enough_ton, ctx::value > gas_comsumption + ctx::fwd_fee);
-        cell msg = pack_excess(query_id, ctx::sender, ctx::value - gas_comsumption);
-        send_raw_message(msg, SEND_MODE_REGULAR);
-        return ();
-    }
+    ;; We use premint 0 amount to deploy the contract
+    ;; if op == op::top_up {
+    ;;     ;; Send the remaining ton back
+    ;;     int gas_comsumption = cal_deploy_fee(ctx::fwd_fee);
+    ;;     throw_unless(error::not_enough_ton, ctx::value > gas_comsumption + ctx::fwd_fee);
+    ;;     cell msg = pack_excess(query_id, ctx::sender, ctx::value - gas_comsumption);
+    ;;     send_raw_message(msg, SEND_MODE_REGULAR);
+    ;;     return ();
+    ;; }
 
     throw(error::invalid_op);
 }

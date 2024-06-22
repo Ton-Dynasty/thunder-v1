@@ -31,7 +31,15 @@ export async function loadJMBondFixture() {
         ),
     );
 
-    const deployJettonMasterResult = await jettonMasterBondV1.sendDeploy(deployer.getSender(), toNano('0.05'));
+    // const deployJettonMasterResult = await jettonMasterBondV1.sendDeploy(deployer.getSender(), toNano('0.05'));
+    const deployJettonMasterResult = await buyToken(
+        jettonMasterBondV1,
+        deployer,
+        0n,
+        0n,
+        deployer.address, // destination who will receive the premint meme token
+    );
+
     expect(deployJettonMasterResult.transactions).toHaveTransaction({
         from: deployer.address,
         to: jettonMasterBondV1.address,

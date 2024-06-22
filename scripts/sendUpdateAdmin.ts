@@ -2,13 +2,12 @@ import { NetworkProvider, compile } from '@ton/blueprint';
 import { Address, Cell, OutActionSendMsg, SendMode, beginCell, toNano, internal as internal_relaxed } from '@ton/core';
 import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
 
-
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export async function run(provider: NetworkProvider) {
-    const updateTargetMasterAddresses = 'EQCEpGG1QKVlgRz7HtrvlozYOuFPleJiRHzrwa7poCF2Acf5';
+    const updateTargetMasterAddresses = '0QBt3IUcez4Iu4oA24aPeeRNn9WgWSeEkEqmTeSIkJCAmTX3';
 
     const newCode = await compile(JettonMasterBondV1.name);
 
@@ -16,7 +15,7 @@ export async function run(provider: NetworkProvider) {
     console.log(`Fetching data for ${updateTargetMasterAddresses} \n`);
     let jettonMasterAddress = Address.parse(updateTargetMasterAddresses);
     const jettonMasterBondV1 = provider.open(JettonMasterBondV1.createFromAddress(jettonMasterAddress));
-    const masterData = await jettonMasterBondV1.getMasterData();
+    const masterData = await jettonMasterBondV1.getOldMasterData();
     await sleep(1000);
     const jettonData = await jettonMasterBondV1.getJettonData();
 
@@ -30,9 +29,9 @@ export async function run(provider: NetworkProvider) {
     const jettonContent: Cell = jettonData.content;
 
     const basicInfo = beginCell().storeBit(onMoon).storeRef(jettonWalletCode).storeRef(jettonContent).endCell();
-    const vTon = masterData.vTon;
-    const tonTheMoon = masterData.tonTheMoon;
-    const feeRate = masterData.feeRate;
+    const vTon = toNano('1000'); //masterData.vTon;
+    const tonTheMoon = toNano('0.25'); //masterData.tonTheMoon;
+    const feeRate = 10n; //masterData.feeRate;
     const parmsInfo = beginCell().storeCoins(vTon).storeCoins(tonTheMoon).storeUint(feeRate, 16).endCell();
 
     const newData: Cell = beginCell()

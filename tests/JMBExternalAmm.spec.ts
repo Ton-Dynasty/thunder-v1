@@ -9,6 +9,7 @@ import { collectCellStats, computedGeneric } from '../gasUtils';
 import { findTransactionRequired } from '@ton/test-utils';
 import { MockContract } from '../wrappers/MockContract';
 import JettonMaster from './simulate';
+import exp from 'constants';
 
 describe('JettonMasterBondV1 general testcases', () => {
     let blockchain: Blockchain;
@@ -65,8 +66,14 @@ describe('JettonMasterBondV1 general testcases', () => {
                 jettonMasterBondV1Code,
             ),
         );
+        const deployJettonMasterResult = await buyToken(
+            jettonMasterBondV1,
+            deployer,
+            0n,
+            0n,
+            deployer.address, // destination who will receive the premint meme token
+        );
 
-        const deployJettonMasterResult = await jettonMasterBondV1.sendDeploy(deployer.getSender(), toNano('0.05'));
         expect(deployJettonMasterResult.transactions).toHaveTransaction({
             from: deployer.address,
             to: jettonMasterBondV1.address,
@@ -74,10 +81,19 @@ describe('JettonMasterBondV1 general testcases', () => {
             success: true,
         });
 
-        // Expect that jetton master bond send excess to deployer
+        // Jetton master send jetton internal transfer to deployer jetton wallet
+        const deployerJettonWalletAddress = await jettonMasterBondV1.getWalletAddress(deployer.address);
+        expect(deployJettonMasterResult.transactions).toHaveTransaction({
+            op: MasterOpocde.InternalTransfer,
+            from: jettonMasterBondV1.address,
+            to: deployerJettonWalletAddress,
+            success: true,
+        });
+
+        // Expect that depolyer jetton wallet send excess to deployer
         expect(deployJettonMasterResult.transactions).toHaveTransaction({
             op: MasterOpocde.Excess,
-            from: jettonMasterBondV1.address,
+            from: deployerJettonWalletAddress,
             to: deployer.address,
             success: true,
         });
@@ -369,18 +385,21 @@ describe('JettonMasterBondV1 general testcases', () => {
         expect(onMoon).toEqual(true);
 
         // TODO: add testcase for revoke
-        // const adminAddressBefore = (await jettonMasterBondV1.getMasterData()).adminAddress;
-        // console.log(adminAddressBefore);
+        const adminAddressBefore = (await jettonMasterBondV1.getMasterData()).adminAddress;
+        console.log(adminAddressBefore);
 
-        // // Send Revoke to jettonMasterBondV1
-        // let revokeResult = await jettonMasterBondV1.sendRevoke(deployer.getSender(), toNano('0.05'), {
-        //     $$type: 'Revoke',
-        //     queryId: 0n,
-        // });
+        // Send Revoke to jettonMasterBondV1
+        let revokeResult = await jettonMasterBondV1.sendRevoke(deployer.getSender(), toNano('0.05'), {
+            $$type: 'Revoke',
+            queryId: 0n,
+        });
 
-        // // After revoke, admin address should be null
-        // let adminAddress = (await jettonMasterBondV1.getMasterData()).adminAddress;
-        // console.log(adminAddress);
+        // After revoke, admin address should be null
+        let adminAddressAfter = (await jettonMasterBondV1.getMasterData()).adminAddress;
+
+        expect(adminAddressAfter.toString()).toEqual(
+            Address.parseRaw('0:0000000000000000000000000000000000000000000000000000000000000000').toString(),
+        );
     });
 
     it('should buy meme tokens and sell meme tokens 100 times and ton the moon', async () => {
@@ -631,25 +650,6 @@ describe('JettonMasterBondV1 general testcases', () => {
 
         // Epect that buyer meme token balance is still same
         expect(buyerMemeTokenBalanceAfter).toEqual(buyerMemeTokenBalanceBefore);
-    });
-
-    it('should throw invalid amount when buy ton amount is 0', async () => {
-        const buyer = await blockchain.treasury('buyer', { workchain: 0, balance: toNano('10000000') });
-        const buyTon = 0n;
-        const invalidAmountResult = await buyToken(jettonMasterBondV1, buyer, buyTon);
-        let buyerBeforeBalance = await buyer.getBalance();
-        expect(invalidAmountResult.transactions).toHaveTransaction({
-            op: MasterOpocde.ThunderMint,
-            from: buyer.address,
-            to: jettonMasterBondV1.address,
-            success: false,
-            exitCode: 2003,
-        });
-        let buyerAfterBalance = await buyer.getBalance();
-
-        // Expect buyer ton balance decreased only the gas fee
-        let gas_fee = toNano('0.055');
-        expect(buyerAfterBalance + gas_fee).toBeGreaterThan(buyerBeforeBalance);
     });
 
     it('should throw not enough ton error when buy meme token but sending ton is not enough', async () => {
