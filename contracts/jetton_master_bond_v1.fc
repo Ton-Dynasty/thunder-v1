@@ -76,7 +76,8 @@
         master::total_supply,
         master::ton_reserves,
         master::jetton_reserves,
-        master::on_moon
+        master::on_moon,
+        query_id
     );
 
     master::save_data();
@@ -133,7 +134,8 @@
         master::total_supply,
         master::ton_reserves,
         master::jetton_reserves,
-        master::on_moon
+        master::on_moon,
+        query_id
     );
 
     master::save_data();

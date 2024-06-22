@@ -384,15 +384,21 @@ describe('JettonMasterBondV1 general testcases', () => {
         let onMoon = (await jettonMasterBondV1.getMasterData()).onMoon;
         expect(onMoon).toEqual(true);
 
-        // TODO: add testcase for revoke
         const adminAddressBefore = (await jettonMasterBondV1.getMasterData()).adminAddress;
-        console.log(adminAddressBefore);
 
         // Send Revoke to jettonMasterBondV1
         let revokeResult = await jettonMasterBondV1.sendRevoke(deployer.getSender(), toNano('0.05'), {
             $$type: 'Revoke',
             queryId: 0n,
         });
+
+        const revokeResultTx = findTransactionRequired(revokeResult.transactions, {
+            op: MasterOpocde.Revoke,
+            from: deployer.address,
+            to: jettonMasterBondV1.address,
+            success: true,
+        });
+        printTxGasStats('Revoke', revokeResultTx);
 
         // After revoke, admin address should be null
         let adminAddressAfter = (await jettonMasterBondV1.getMasterData()).adminAddress;

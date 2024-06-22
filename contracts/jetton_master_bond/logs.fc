@@ -1,4 +1,3 @@
-#include "../imports/stdlib.fc";
 
 ;; logs
 const log::mint = "log::mint"c; ;;77a80ef3
@@ -13,7 +12,8 @@ const log::burn = "log::burn"c; ;;21e2e096
     int total_supply,
     int ton_reserve,
     int jetton_reserve,
-    int is_on_moon
+    int is_on_moon,
+    int query_id
 ) impure inline_ref {
     cell coins_data = begin_cell()
         .store_coins(ton_amount)
@@ -28,7 +28,8 @@ const log::burn = "log::burn"c; ;;21e2e096
         .store_slice(minter)
         .store_slice(recipient)
         .store_ref(coins_data)
-        .store_bool(is_on_moon);
+        .store_bool(is_on_moon)
+        .store_query_id(query_id);
 
     emit_log(log::mint, log);
 }
@@ -41,7 +42,8 @@ const log::burn = "log::burn"c; ;;21e2e096
     int total_supply,
     int ton_reserve,
     int jetton_reserve,
-    int is_on_moon
+    int is_on_moon,
+    int query_id
 ) impure inline_ref {
     cell coins_data = begin_cell()
         .store_coins(burn_amount)
@@ -56,7 +58,8 @@ const log::burn = "log::burn"c; ;;21e2e096
         .store_slice(burner)
         .store_slice(recipient)
         .store_ref(coins_data)
-        .store_bool(is_on_moon);
+        .store_bool(is_on_moon)
+        .store_query_id(query_id);
 
     emit_log(log::burn, log);
 }

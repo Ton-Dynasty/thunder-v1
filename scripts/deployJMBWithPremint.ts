@@ -3,7 +3,7 @@ import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
 import { compile, NetworkProvider } from '@ton/blueprint';
 import { JettonWallet } from '@ton/ton';
 import { buildJettonContent } from '../utils/jetton';
-import { promptToncoin } from '../utils/ui';
+import { promptBool, promptToncoin } from '../utils/ui';
 
 export async function run(provider: NetworkProvider) {
     // compile contracts
@@ -17,36 +17,43 @@ export async function run(provider: NetworkProvider) {
     const dexRouterAddress = Address.parse('EQC1VChhiuVJUhiWyFCGXS86me0sn4E6bEnKlQ8rH5TiVM9s');
 
     // prompt user for jetton details
-    const name = await provider.ui().input('Please enter the name of the jetton:'); // prettier-ignore
-    const symbol = await provider.ui().input('Please enter the symbol of the jetton:'); // prettier-ignore
-    const description =  await provider.ui().input('Please enter the description of the jetton:'); // prettier-ignore
-    const image = await provider.ui().input('Please enter the image url of the jetton:'); // prettier-ignore
+    const name = 'wowow123'; //await provider.ui().input('Please enter the name of the jetton:'); // prettier-ignore
+    const symbol = 'wowow123'; //await provider.ui().input('Please enter the symbol of the jetton:'); // prettier-ignore
+    const description = 'wowow123'; //await provider.ui().input('Please enter the description of the jetton:'); // prettier-ignore
+    const image = 'https://cdn.pixabay.com/photo/2023/08/08/10/50/hot-wheels-8177051_1280.jpg'; //wait provider.ui().input('Please enter the image url of the jetton:'); // prettier-ignore
     const jettonContent = buildJettonContent({
-        uri: 'https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md',
         symbol: symbol,
         name: name,
         description: description,
         image: image,
         decimals: decimals,
     });
-    let tonAmount = await promptToncoin('Enter the amount of TON to buy MEME: ', provider.ui());
+    // const premintOrNot = await promptBool('Do you want to pre-mint tokens? : ', ['y', 'n'], provider.ui());
+    let tonAmount = 0n;
+    // if (premintOrNot) {
+    //     tonAmount = await promptToncoin('Enter the amount of TON to buy MEME: ', provider.ui());
+    // }
     let minTokenOut = 0n;
 
     const jettonMasterBondV1 = provider.open(
         JettonMasterBondV1.createFromConfig(
             {
                 totalSupply: totalSupply,
-                adminAddress: provider.sender().address!,
+                adminAddress: Address.parse('0QCg05dcxHO09Ydrw-yTuexzMUa8iJmYAO4eWmyqfgVnDZ_0'),
                 tonReserves: 0n,
                 jettonReserves: totalSupply,
                 fee: fee,
                 onMoon: false,
                 jettonWalletCode: jettonWalletCode,
                 jettonContent: jettonContent,
+                vTon: toNano('1000'),
+                tonTheMoon: toNano('1500'),
+                feeRate: 10n,
             },
             jettonMasterBondV1Code,
         ),
     );
+    console.log('Jetton Master Bond Address: ', jettonMasterBondV1.address);
 
     let sendAllTon = tonAmount + toNano('1');
     await jettonMasterBondV1.sendMint(
