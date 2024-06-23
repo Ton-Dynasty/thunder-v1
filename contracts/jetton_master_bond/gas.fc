@@ -3,12 +3,11 @@
 const MIN_STORAGE_DURATION = 4 * 24 * 3600; ;; 4 days
 
 ;; Jetton Master Related
-const JETTON_MASTER_BITS = 21820;
+const JETTON_MASTER_BITS = 22004;
 const JETTON_CELLS = 52;
 const BUY_MEME_GAS = 16406; ;; ton the moon, 18452
 const BURN_MEME_GAS = 14407;
 const CLAIM_ADMIN_FEE = 7903;
-const REVOKE_FEE = 10580;
 
 ;; Jetton Wallet Related
 const JETTON_WALLET_INITSTATE_BITS  = 931;
@@ -84,21 +83,6 @@ int calculate_master_min_storage_fee() inline {
     
 
     int gas_comp = get_compute_fee(MY_WORKCHAIN, claim_admin_gas_consumption) + 
-    calculate_master_min_storage_fee();
-    
-
-    int total_fee = gas_comp + 
-    fwd_fee * 1;
-
-    return (total_fee, gas_comp);
-}
-
-(int, int) cal_revoke_fee(int fwd_fee) inline {
-    int master_gas_consumption = get_precompiled_gas_consumption();
-    int revoke_admin_gas_consumption = null?(master_gas_consumption) ? REVOKE_FEE : master_gas_consumption;
-    
-
-    int gas_comp = get_compute_fee(MY_WORKCHAIN, revoke_admin_gas_consumption) + 
     calculate_master_min_storage_fee();
     
 

@@ -523,16 +523,14 @@ describe('JettonMasterBondV1 general testcases', () => {
         expect(Number(adminMemeTokenBalanceAfter) / Number(totalSupplyBefore)).toBe(
             Number(airdropRate + farmRate) / Number(precision),
         );
-        console.log(
-            'send Jetton Liquidity Ratio',
-            Number(simulateResult.send_jetton_liquidity) / Number(totalSupplyBefore),
+
+        const trueAdminJettonFeeRatio = Number(simulateResult.true_jetton_fee_for_admin) / Number(totalSupplyBefore);
+
+        const adminJettonFeeRatio = Number(adminMemeTokenBalanceAfter) / Number(totalSupplyBefore);
+
+        expect((1 - Number(totalSupplyAfter) / Number(totalSupplyBefore)).toFixed(3)).toBe(
+            (trueAdminJettonFeeRatio - adminJettonFeeRatio).toFixed(3),
         );
-        console.log(
-            'True jetton admin fee Ratio',
-            Number(simulateResult.true_jetton_fee_for_admin) / Number(totalSupplyBefore),
-        );
-        console.log('airdropRate + farmRate', Number(adminMemeTokenBalanceAfter) / Number(totalSupplyBefore));
-        console.log('totalSupplyAfter / totalSupplyBefore', Number(totalSupplyAfter) / Number(totalSupplyBefore));
 
         // Expect that ton reserves = 0
         let tonReservesAfter = (await jettonMasterBondV1.getMasterData()).tonReserves;
