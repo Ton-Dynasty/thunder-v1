@@ -21,21 +21,25 @@ describe('JettonMasterBondV1 general testcases', () => {
     const fee_rate = 10n;
     const gas_cost = toNano('1');
     const TON = toNano('1');
+    const commission = 100n;
+    const airdropRate = 10n;
+    const farmRate = 10n;
 
     beforeEach(async () => {
-        ({ blockchain, deployer, jettonMasterBondV1 } = await loadJMBondFixture());
         printTxGasStats = (name, transaction) => {
             const txComputed = computedGeneric(transaction);
             console.log(`${name} used ${txComputed.gasUsed} gas`);
             console.log(`${name} gas cost: ${txComputed.gasFees}`);
             return txComputed.gasFees;
         };
-        const v_ton = 1000n * TON;
-        const total_supply = 100000000n * TON;
+        const totalSupply = 100000000n * TON;
         const precision = 1000n;
-        const fee_rate = 10n;
-        const ton_the_moon = 1500n * TON;
-        master = new JettonMaster(ton_the_moon, v_ton, total_supply, precision, fee_rate);
+        const feeRate = 10n;
+        const vTon = 1000n * TON;
+        const tonTheMoon = 1500n * TON;
+        master = new JettonMaster(tonTheMoon, vTon, totalSupply, precision, feeRate, commission, airdropRate, farmRate);
+
+        ({ blockchain, deployer, jettonMasterBondV1 } = await loadJMBondFixture(vTon, tonTheMoon, fee_rate));
     });
 
     const userWallet = async (address: Address, jettonMaster: SandboxContract<JettonMasterBondV1>) =>
@@ -462,6 +466,7 @@ describe('JettonMasterBondV1 general testcases', () => {
         let adminMemeWallet = await userWallet(deployer.address, jettonMasterBondV1);
         let adminMemeTokenBalanceBefore = await adminMemeWallet.getJettonBalance();
         let jettonReserves = await (await jettonMasterBondV1.getMasterData()).jettonReserves;
+        const totalSupplyBefore = (await jettonMasterBondV1.getMasterData()).totalSupply;
         let toTheMoonResult = await jettonMasterBondV1.sendToTheMoon(deployer.getSender(), toNano('1.2'), {
             $$type: 'ToTheMoon',
             queryId: 0n,
@@ -507,6 +512,27 @@ describe('JettonMasterBondV1 general testcases', () => {
 
         // // Expect that admin jetton balance should be jetton_fee_for_admin
         expect(adminMemeTokenBalanceAfter).toEqual(simulateResult.jetton_fee_for_admin);
+        expect(adminMemeTokenBalanceAfter).toEqual((totalSupplyBefore * (airdropRate + farmRate)) / precision);
+
+        // Expect that total supply is decreased by (jetton_fee_for_admin + send_jetton_liquidity)
+        let totalSupplyAfter = (await jettonMasterBondV1.getMasterData()).totalSupply;
+
+        expect(totalSupplyAfter).toEqual(master.total_supply);
+
+        // 2% of total supply
+        expect(Number(adminMemeTokenBalanceAfter) / Number(totalSupplyBefore)).toBe(
+            Number(airdropRate + farmRate) / Number(precision),
+        );
+        console.log(
+            'send Jetton Liquidity Ratio',
+            Number(simulateResult.send_jetton_liquidity) / Number(totalSupplyBefore),
+        );
+        console.log(
+            'True jetton admin fee Ratio',
+            Number(simulateResult.true_jetton_fee_for_admin) / Number(totalSupplyBefore),
+        );
+        console.log('airdropRate + farmRate', Number(adminMemeTokenBalanceAfter) / Number(totalSupplyBefore));
+        console.log('totalSupplyAfter / totalSupplyBefore', Number(totalSupplyAfter) / Number(totalSupplyBefore));
 
         // Expect that ton reserves = 0
         let tonReservesAfter = (await jettonMasterBondV1.getMasterData()).tonReserves;

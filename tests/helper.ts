@@ -4,7 +4,7 @@ import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
 import { compile } from '@ton/blueprint';
 import { JettonWallet } from '../wrappers/JettonWallet';
 
-export async function loadJMBondFixture() {
+export async function loadJMBondFixture(vTon: bigint = toNano("1000"), tonTheMoon: bigint = toNano("1500"), feeRate: bigint = 10n) {
     const jettonMasterBondV1Code = await compile(JettonMasterBondV1.name);
     const jettonWalletCode = await compile(JettonWallet.name);
 
@@ -23,9 +23,9 @@ export async function loadJMBondFixture() {
                 onMoon: false,
                 jettonWalletCode: jettonWalletCode,
                 jettonContent: beginCell().endCell(),
-                vTon: 1000n * TON,
-                tonTheMoon: 1500n * TON,
-                feeRate: 10n,
+                vTon: vTon,
+                tonTheMoon: tonTheMoon,
+                feeRate: feeRate,
             },
             jettonMasterBondV1Code,
         ),

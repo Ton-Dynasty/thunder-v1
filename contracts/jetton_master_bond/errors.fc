@@ -5,6 +5,7 @@ const error::token_already_listed = 2002;
 const error::invalid_amount = 2003;
 const error::burn_amount_zero = 2004;
 const error::not_on_moon = 2005;
+const error::not_enough_jetton = 2006;
 
 const error::not_admin = 70;
 const error::not_valid_wallet = 74;

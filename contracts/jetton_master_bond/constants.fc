@@ -5,4 +5,6 @@ const const::precision = 1000; ;; Denominator for calculate fee_rate and commiss
 ;; const master::fee_rate = 10; ;; Trading fee: fee_rate / precision = 1%.
 const const::commission = 100; ;; Listing commission: commission / precision = 10%.
 const const::price_precision = 1000000000; ;; Decimal precision for price calculations.
+const const::airdrop_rate = 10; ;; Airdrop rate: airdrop_rate / precision = 1%.
+const const::farm_rate = 10; ;; Farm rate: farm_rate / precision = 1%.
 const slice TON_VAULT_ADDR = "EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_"a;
