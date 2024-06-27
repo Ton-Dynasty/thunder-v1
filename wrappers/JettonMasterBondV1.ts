@@ -37,7 +37,7 @@ export type Mint = {
     responseAddress: Address;
     custom_payload: Maybe<Cell>;
     forwardTonAmount: bigint;
-    forwardPayload: Cell;
+    forwardPayload: Cell | null;
 };
 
 export function storeMint(src: Mint) {
@@ -50,7 +50,7 @@ export function storeMint(src: Mint) {
         b.storeAddress(src.responseAddress);
         b.storeMaybeRef(src.custom_payload);
         b.storeCoins(src.forwardTonAmount);
-        b.storeRef(src.forwardPayload);
+        b.storeMaybeRef(src.forwardPayload);
     };
 }
 

@@ -1,8 +1,4 @@
 #include "imports/stdlib.fc";
-#include "common/errors.fc";
-#include "common/utils.fc";
-#include "common/workchain.fc";
-#include "common/opcodes.fc";
 #include "jetton_master_bond/constants.fc";
 #include "jetton_master_bond/opcodes.fc";
 #include "jetton_master_bond/storages.fc";
@@ -34,7 +30,7 @@
     slice response_address,
     cell custom_payload,
     int forward_ton_amount,
-    cell forward_payload
+    slice either_forward_payload
 ) impure inline_ref {
     ;; Check that user send enough TON to mint tokens and pay for gas fees
     (int total_fees, int gas_consumptoin) = cal_buy_fee(ctx::fwd_fee);
@@ -65,7 +61,7 @@
         destination,
         response_address,
         forward_ton_amount,
-        forward_payload
+        either_forward_payload
     );
 
     emit::mint(
@@ -175,7 +171,7 @@
         master::admin_address,
         master::admin_address,
         0, 
-        begin_cell().store_uint(0, 1).end_cell()
+        begin_cell().store_uint(0, 1).end_cell().begin_parse()
     );
 
     ;; Update storage
@@ -203,7 +199,7 @@
         my_address(),
         master::admin_address,
         0, 
-        begin_cell().store_uint(0, 1).end_cell()
+        begin_cell().store_uint(0, 1).end_cell().begin_parse()
     );
 
     ;; Provide jetton liquidity to dedust
@@ -237,8 +233,8 @@
         slice response_address = ctx::body~load_msg_addr(); ;; who will receive the remaining ton
         cell custom_payload = ctx::body~load_maybe_ref();
         int forward_ton_amount = ctx::body~load_coins();
-        cell forward_payload = ctx::body~load_ref();
-        ctx::body.end_parse();
+        check_either_forward_payload(ctx::body);
+        slice either_forward_payload = ctx::body;
 
         ;; Throw error if token already listed. it will send back ton to user by bounce
         throw_unless(error::token_already_listed, master::on_moon == FALSE);
@@ -257,7 +253,7 @@
             response_address,
             custom_payload,
             forward_ton_amount,
-            forward_payload
+            either_forward_payload
         );
         return ();
     }

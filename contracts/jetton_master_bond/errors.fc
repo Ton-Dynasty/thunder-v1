@@ -1,3 +1,4 @@
+
 ;; Jetton Master errors
 const error::not_enough_ton = 2000;
 const error::not_meet_min_amount = 2001;
@@ -7,5 +8,6 @@ const error::burn_amount_zero = 2004;
 const error::not_on_moon = 2005;
 const error::not_enough_jetton = 2006;
 
+const error::invalid_message = 49;
 const error::not_admin = 70;
 const error::not_valid_wallet = 74;

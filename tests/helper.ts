@@ -4,7 +4,11 @@ import { JettonMasterBondV1 } from '../wrappers/JettonMasterBondV1';
 import { compile } from '@ton/blueprint';
 import { JettonWallet } from '../wrappers/JettonWallet';
 
-export async function loadJMBondFixture(vTon: bigint = toNano("1000"), tonTheMoon: bigint = toNano("1500"), feeRate: bigint = 10n) {
+export async function loadJMBondFixture(
+    vTon: bigint = toNano('1000'),
+    tonTheMoon: bigint = toNano('1500'),
+    feeRate: bigint = 10n,
+) {
     const jettonMasterBondV1Code = await compile(JettonMasterBondV1.name);
     const jettonWalletCode = await compile(JettonWallet.name);
 
@@ -59,7 +63,7 @@ export const buyToken = async (
     response_address: Address = buyer.address,
     custom_payload: Cell | null = null,
     forward_ton_amount: bigint = 0n,
-    forward_payload: Cell = beginCell().storeUint(0n, 1).endCell(),
+    forward_payload: Cell | null = null,
 ) => {
     let sendAllTon = tonAmount + toNano('1');
     return await jettonMasterBondV1.sendMint(

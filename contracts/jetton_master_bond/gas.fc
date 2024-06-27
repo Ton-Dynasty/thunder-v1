@@ -3,9 +3,9 @@
 const MIN_STORAGE_DURATION = 4 * 24 * 3600; ;; 4 days
 
 ;; Jetton Master Related
-const JETTON_MASTER_BITS = 22004;
+const JETTON_MASTER_BITS = 22172;
 const JETTON_CELLS = 52;
-const BUY_MEME_GAS = 16406; ;; ton the moon, 18452
+const BUY_MEME_GAS = 16655; ;; ton the moon, 18452
 const BURN_MEME_GAS = 14407;
 const CLAIM_ADMIN_FEE = 7903;
 

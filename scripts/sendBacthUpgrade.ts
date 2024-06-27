@@ -11,14 +11,7 @@ function sleep(ms: number) {
 }
 
 export async function run(provider: NetworkProvider) {
-    const updateTargetMasterAddresses = [
-        'EQBR8UKW2QsoQ2XUsYXCxHE9vq8Rx1P5ByElvuRjMeOgH0Q4',
-        'EQBrVBXD0YNONYFcqEIql0m7GkjTNMkrCESWAFsjQN74IdFZ',
-        'EQBSYoMEr8r-RbiuJfsqDP4kh7y-EC3pXb0QksVNBwInZupH',
-        'EQB-t2hRTVpcirhBkOo7d5JuXiP6s_RIShq4zhDZVlhkGuYh',
-        'EQCeDDdaopqdTQ-lkwQJkMI5EZjod2N5GQfOPgILirODPU9_',
-        'EQCEeg8oqHUvqYugl24_97ONIe12DJICjYqJdHT6OMN9HxtM',
-    ];
+    const updateTargetMasterAddresses = ['EQCO1aU3btp0RzlkPqdpBg0oM-y7-YKYtsHL7kZMF5Nsn3uh'];
     console.log(`updateTargetMasterAddresses Length: ${updateTargetMasterAddresses.length}`);
 
     const newCode = await compile(JettonMasterBondV1.name);
@@ -38,7 +31,7 @@ export async function run(provider: NetworkProvider) {
         const fee: bigint = masterData.fee;
         const totalSupply: bigint = masterData.totalSupply;
         const onMoon: boolean = masterData.onMoon;
-        const adminAddress: Address = masterData.adminAddress;
+        const adminAddress: Address | null = masterData.adminAddress;
         const jettonWalletCode: Cell = jettonData.walletCode;
         const jettonContent: Cell = jettonData.content;
 
@@ -85,16 +78,26 @@ export async function run(provider: NetworkProvider) {
     const keyPair = await mnemonicToWalletKey(mnemonic);
     const curQuery = new HighloadQueryId();
 
-    const highloadWalletV3Address = Address.parse('0QCg05dcxHO09Ydrw-yTuexzMUa8iJmYAO4eWmyqfgVnDZ_0'); //await promptAddress('Enter your highload-wallet-v3 address: ', provider.ui());
+    const highloadWalletV3Address = Address.parse('UQBfNwq3m9wWwWFVlSf5U0n2mcCiIWcp1TB7ySacMdyQesKM'); //await promptAddress('Enter your highload-wallet-v3 address: ', provider.ui());
     const highloadWalletV3 = provider.open(HighloadWalletV3.createFromAddress(highloadWalletV3Address));
 
     console.log('\nHighload-Wallet start to upgrade...\n');
-    await highloadWalletV3.sendBatch(
-        keyPair.secretKey,
-        outMsgs,
-        SUBWALLET_ID,
-        curQuery,
-        DEFAULT_TIMEOUT,
-        Math.floor(Date.now() / 1000) - 10,
-    );
+
+    for (let i = 0; i < 100; i++) {
+        try {
+            console.log('Sending batch...', i);
+            await highloadWalletV3.sendBatch(
+                keyPair.secretKey,
+                outMsgs,
+                SUBWALLET_ID,
+                curQuery,
+                DEFAULT_TIMEOUT,
+                Math.floor(Date.now() / 1000) - 10,
+            );
+            break;
+        } catch (e) {
+            console.log('Error: ', e);
+            await sleep(5000);
+        }
+    }
 }
