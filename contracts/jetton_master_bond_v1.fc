@@ -1,8 +1,4 @@
 #include "imports/stdlib.fc";
-#include "common/errors.fc";
-#include "common/utils.fc";
-#include "common/workchain.fc";
-#include "common/opcodes.fc";
 #include "jetton_master_bond/constants.fc";
 #include "jetton_master_bond/opcodes.fc";
 #include "jetton_master_bond/storages.fc";
@@ -34,7 +30,7 @@
     slice response_address,
     cell custom_payload,
     int forward_ton_amount,
-    cell forward_payload
+    slice either_forward_payload
 ) impure inline_ref {
     ;; Check that user send enough TON to mint tokens and pay for gas fees
     (int total_fees, int gas_consumptoin) = cal_buy_fee(ctx::fwd_fee);
@@ -52,7 +48,7 @@
     master::jetton_reserves -= token_out;
 
     ;; If ton_reserves reach to the moon threshold, then send to admin
-    if(master::ton_reserves == const::ton_the_moon) {
+    if(master::ton_reserves == master::ton_the_moon) {
         master::on_moon = TRUE;
     }
 
@@ -65,7 +61,7 @@
         destination,
         response_address,
         forward_ton_amount,
-        forward_payload
+        either_forward_payload
     );
 
     emit::mint(
@@ -76,7 +72,8 @@
         master::total_supply,
         master::ton_reserves,
         master::jetton_reserves,
-        master::on_moon
+        master::on_moon,
+        query_id
     );
 
     master::save_data();
@@ -133,7 +130,8 @@
         master::total_supply,
         master::ton_reserves,
         master::jetton_reserves,
-        master::on_moon
+        master::on_moon,
+        query_id
     );
 
     master::save_data();
@@ -149,13 +147,20 @@
 ) impure inline_ref {
     int remain_ton = ctx::value - MINT_GAS * 2 - DEDUST_FOWARD_GAS - DEDUST_SEND_GAS - DEDUST_ADD_TON_GAS;
     ;; Calculate jetton reserves send to dex router and thunder fi admin fee
+
     int send_ton_liquidity = master::ton_reserves * (const::precision - const::commission) / const::precision; ;; Only send 90% of ton_reserves to liquidity pool
     int ton_fee_for_admin = remain_ton + master::ton_reserves - send_ton_liquidity + master::fee; ;; build_pool_fee is for building pool and farm, thunder fi will pay for it.
 
     ;; Calculate jetton reserves send to dex router
-    int price_for_now = const::price_precision * (master::ton_reserves + const::v_ton) / master::jetton_reserves;
+    int price_for_now = const::price_precision * (master::ton_reserves + master::v_ton) / master::jetton_reserves;
+
     int send_jetton_liquidity = const::price_precision * send_ton_liquidity / price_for_now;
-    int jetton_fee_for_admin = master::jetton_reserves - send_jetton_liquidity;
+    int jetton_fee_for_admin = master::total_supply * (const::airdrop_rate + const::farm_rate) / const::precision; ;; 1% for airdrop, 1% for farm
+    int true_jetton_fee_for_admin = master::jetton_reserves - send_jetton_liquidity;
+    throw_unless(error::not_enough_jetton, true_jetton_fee_for_admin >= jetton_fee_for_admin);
+
+    ;; ~dump(true_jetton_fee_for_admin - jetton_fee_for_admin);
+    master::total_supply -= (true_jetton_fee_for_admin - jetton_fee_for_admin); ;; burn the remaining jetton
 
     ;; Send fee to admin by minting jetton
     mint_jetton(
@@ -166,13 +171,15 @@
         master::admin_address,
         master::admin_address,
         0, 
-        begin_cell().store_uint(0, 1).end_cell()
+        begin_cell().store_uint(0, 1).end_cell().begin_parse()
     );
 
     ;; Update storage
     master::ton_reserves = 0;
     master::jetton_reserves = 0;
     master::fee = 0;
+    ;; revoke admin address
+    master::admin_address = address_none();
 
     ;; Provide ton liquidity to dedust
     int send_ton = send_ton_liquidity + DEDUST_ADD_TON_GAS; ;; dedust ask for 0.15 TON
@@ -192,7 +199,7 @@
         my_address(),
         master::admin_address,
         0, 
-        begin_cell().store_uint(0, 1).end_cell()
+        begin_cell().store_uint(0, 1).end_cell().begin_parse()
     );
 
     ;; Provide jetton liquidity to dedust
@@ -218,7 +225,7 @@
     ;; Load data from storage
     master::load_data();
 
-    if op == op::mint {
+    if op == op::thunder_mint {
         ;; load data in mint msg
         int ton_amount = ctx::body~load_coins(); ;; user paid this amount of ton to buy meme token
         int min_token_out = ctx::body~load_coins(); ;; minimum amount of meme token user want to buy
@@ -226,14 +233,14 @@
         slice response_address = ctx::body~load_msg_addr(); ;; who will receive the remaining ton
         cell custom_payload = ctx::body~load_maybe_ref();
         int forward_ton_amount = ctx::body~load_coins();
-        cell forward_payload = ctx::body~load_ref();
-        ctx::body.end_parse();
+        check_either_forward_payload(ctx::body);
+        slice either_forward_payload = ctx::body;
 
         ;; Throw error if token already listed. it will send back ton to user by bounce
         throw_unless(error::token_already_listed, master::on_moon == FALSE);
 
-        ;; Throw error if token amount is equal to 0. it will send back ton to user by bounce
-        throw_unless(error::invalid_amount, ton_amount > 0);
+        ;; Token amount should be larger than 0
+        throw_unless(error::invalid_amount, ton_amount >= 0);
 
         handle::mint_token(
             query_id, 
@@ -246,7 +253,7 @@
             response_address,
             custom_payload,
             forward_ton_amount,
-            forward_payload
+            either_forward_payload
         );
         return ();
     }
@@ -335,19 +342,6 @@
         return ();
     }
 
-    if op == op::revoke {
-        throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
-        throw_unless(error::not_on_moon, master::on_moon == TRUE);
-        ;; Claim admin fee before revoking admin address
-        (int total_fees, int gas_consumptoin) = cal_revoke_fee(ctx::fwd_fee);
-        throw_unless(error::not_enough_ton, ctx::value >= total_fees);
-        handle::claim_admin_fee(query_id ,ctx::value - gas_consumptoin);
-        ;; revoke admin address
-        master::admin_address = address_none();
-        master::save_data();
-        return ();
-    }
-
     if op == op::to_the_moon {
         ;; Only admin can trigger this function
         throw_unless(error::not_admin, equal_slices_bits(ctx::sender, master::admin_address));
@@ -372,16 +366,6 @@
         master::save_data();
         return ();
     }
-
-    if op == op::top_up {
-        ;; Send the remaining ton back
-        int gas_comsumption = cal_deploy_fee(ctx::fwd_fee);
-        throw_unless(error::not_enough_ton, ctx::value > gas_comsumption + ctx::fwd_fee);
-        cell msg = pack_excess(query_id, ctx::sender, ctx::value - gas_comsumption);
-        send_raw_message(msg, SEND_MODE_REGULAR);
-        return ();
-    }
-
     throw(error::invalid_op);
 }
 
@@ -407,9 +391,9 @@ slice get_wallet_address(slice owner_address) method_id {
     return calculate_jetton_wallet_address(calculate_jetton_wallet_state_init(owner_address, my_address(), master::jetton_wallet_code));
 }
 
-(int, int, int, int, int, slice) get_master_data() method_id {
+(int, int, int, int, int, slice, int, int, int) get_master_data() method_id {
     master::load_data();
-    return (master::ton_reserves, master::jetton_reserves, master::fee, master::total_supply, master::on_moon, master::admin_address);
+    return (master::ton_reserves, master::jetton_reserves, master::fee, master::total_supply, master::on_moon, master::admin_address, master::v_ton, master::ton_the_moon, master::fee_rate);
 }
 
 (int, int, slice, cell, cell) get_jetton_data() method_id {

@@ -6,6 +6,9 @@ global int master::fee; ;; Accumulated trading fees for admin.
 global int master::on_moon; ;; Listing status: -1 if listed, 0 if not.
 global cell master::jetton_wallet_code; ;; Meme token wallet code.
 global cell master::jetton_content; ;; Information about the meme token.
+global int master::v_ton ; ;; Virtual TON liquidity for initial AMM operation (xy=k), set to 1000 TON.
+global int master::ton_the_moon; ;; Threshold for listing on DEX, triggers when ton_reserves reach 10000 TON.
+global int master::fee_rate; ;; Trading fee: fee_rate / precision = 1%.
 
 () master::load_data() impure inline_ref {
     slice ds = get_data().begin_parse();
@@ -21,6 +24,12 @@ global cell master::jetton_content; ;; Information about the meme token.
     master::on_moon = basic_info~load_bool();
     master::jetton_wallet_code = basic_info~load_ref();
     master::jetton_content = basic_info~load_ref();
+
+    ;; load parms info
+    slice parms_info = ds~load_ref().begin_parse();
+    master::v_ton = parms_info~load_coins();
+    master::ton_the_moon = parms_info~load_coins();
+    master::fee_rate = parms_info~load_uint(16);
 }
 
 () master::save_data() impure inline_ref {
@@ -29,6 +38,12 @@ global cell master::jetton_content; ;; Information about the meme token.
         .store_bool(master::on_moon)
         .store_ref(master::jetton_wallet_code)
         .store_ref(master::jetton_content)
+    .end_cell();
+
+    cell parms_info = begin_cell()
+        .store_coins(master::v_ton)
+        .store_coins(master::ton_the_moon)
+        .store_uint(master::fee_rate, 16)
     .end_cell();
 
     ;; set data
@@ -40,6 +55,7 @@ global cell master::jetton_content; ;; Information about the meme token.
             .store_coins(master::jetton_reserves)
             .store_coins(master::fee)
             .store_ref(basic_info)
+            .store_ref(parms_info)
         .end_cell()
     );
 }

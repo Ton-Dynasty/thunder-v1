@@ -9,12 +9,13 @@ import {
     Sender,
     SendMode,
     Slice,
+    toNano,
 } from '@ton/core';
 import { Maybe } from '@ton/core/dist/utils/maybe';
 
 export const MasterOpocde = {
     TopUp: 0xd372158c,
-    Mint: 0x642b7d07,
+    ThunderMint: 0x61950add,
     InternalTransfer: 0x178d4519,
     Burn: 0x595f07bc,
     BurnNotification: 0x7bdd97de,
@@ -36,12 +37,12 @@ export type Mint = {
     responseAddress: Address;
     custom_payload: Maybe<Cell>;
     forwardTonAmount: bigint;
-    forwardPayload: Cell;
+    forwardPayload: Cell | null;
 };
 
 export function storeMint(src: Mint) {
     return (b: Builder) => {
-        b.storeUint(MasterOpocde.Mint, 32);
+        b.storeUint(MasterOpocde.ThunderMint, 32);
         b.storeUint(src.queryId, 64);
         b.storeCoins(src.tonAmount);
         b.storeCoins(src.minTokenOut);
@@ -49,7 +50,7 @@ export function storeMint(src: Mint) {
         b.storeAddress(src.responseAddress);
         b.storeMaybeRef(src.custom_payload);
         b.storeCoins(src.forwardTonAmount);
-        b.storeRef(src.forwardPayload);
+        b.storeMaybeRef(src.forwardPayload);
     };
 }
 
@@ -87,6 +88,18 @@ export function storeUpgrade(src: Upgrade) {
     };
 }
 
+export type Claim = {
+    $$type: 'Claim';
+    queryId: bigint;
+};
+
+export function storeClaim(src: Claim) {
+    return (b: Builder) => {
+        b.storeUint(MasterOpocde.ClaimAdminFee, 32);
+        b.storeUint(src.queryId, 64);
+    };
+}
+
 export type Revoke = {
     $$type: 'Revoke';
     queryId: bigint;
@@ -108,6 +121,9 @@ export type JettonMasterBondV1Config = {
     onMoon: boolean;
     jettonWalletCode: Cell;
     jettonContent: Cell;
+    vTon: bigint;
+    tonTheMoon: bigint;
+    feeRate: bigint;
 };
 
 export function jettonMasterBondV1ConfigToCell(config: JettonMasterBondV1Config): Cell {
@@ -124,6 +140,7 @@ export function jettonMasterBondV1ConfigToCell(config: JettonMasterBondV1Config)
                 .storeRef(config.jettonContent)
                 .endCell(),
         )
+        .storeRef(beginCell().storeCoins(config.vTon).storeCoins(config.tonTheMoon).storeUint(config.feeRate, 16))
         .endCell();
 }
 
@@ -144,6 +161,10 @@ export class JettonMasterBondV1 implements Contract {
 
     static packUpgrade(src: Upgrade) {
         return beginCell().store(storeUpgrade(src)).endCell();
+    }
+
+    static packClaim(src: Claim) {
+        return beginCell().store(storeClaim(src)).endCell();
     }
 
     static packRevoke(src: Revoke) {
@@ -175,13 +196,13 @@ export class JettonMasterBondV1 implements Contract {
         return new JettonMasterBondV1(contractAddress(workchain, init), init);
     }
 
-    async sendDeploy(provider: ContractProvider, via: Sender, value: bigint) {
-        await provider.internal(via, {
-            value,
-            sendMode: SendMode.PAY_GAS_SEPARATELY,
-            body: beginCell().storeUint(MasterOpocde.TopUp, 32).storeUint(0, 64).endCell(),
-        });
-    }
+    // async sendDeploy(provider: ContractProvider, via: Sender, value: bigint) {
+    //     await provider.internal(via, {
+    //         value,
+    //         sendMode: SendMode.PAY_GAS_SEPARATELY,
+    //         body: beginCell().storeUint(MasterOpocde.TopUp, 32).storeUint(0, 64).endCell(),
+    //     });
+    // }
 
     async sendToTheMoon(provider: ContractProvider, via: Sender, value: bigint, body: ToTheMoon) {
         await provider.internal(via, {
@@ -191,11 +212,26 @@ export class JettonMasterBondV1 implements Contract {
         });
     }
 
-    async sendClaimFee(provider: ContractProvider, via: Sender, value: bigint) {
+    async sendClaimFee(provider: ContractProvider, via: Sender, body: Claim) {
         await provider.internal(via, {
-            value,
+            value: toNano('0.5'),
             sendMode: SendMode.PAY_GAS_SEPARATELY,
-            body: beginCell().storeUint(MasterOpocde.ClaimAdminFee, 32).storeUint(0, 64).endCell(),
+            body: JettonMasterBondV1.packClaim(body),
+        });
+    }
+
+    async sendUpgrade(
+        provider: ContractProvider,
+        via: Sender,
+        args: { value: bigint; bounce?: boolean },
+        body: Upgrade,
+        sendMode?: SendMode,
+    ) {
+        await provider.internal(via, {
+            value: args.value,
+            bounce: args.bounce,
+            sendMode: sendMode,
+            body: JettonMasterBondV1.packUpgrade(body),
         });
     }
 
@@ -234,6 +270,30 @@ export class JettonMasterBondV1 implements Contract {
     }
 
     async getMasterData(provider: ContractProvider) {
+        const fees = await provider.get('get_master_data', []);
+        const tonReserves = fees.stack.readBigNumber();
+        const jettonReserves = fees.stack.readBigNumber();
+        const fee = fees.stack.readBigNumber();
+        const totalSupply = fees.stack.readBigNumber();
+        const onMoon = fees.stack.readBoolean();
+        const adminAddress = fees.stack.readAddressOpt();
+        const vTon = fees.stack.readBigNumber();
+        const tonTheMoon = fees.stack.readBigNumber();
+        const feeRate = fees.stack.readBigNumber();
+        return {
+            tonReserves,
+            jettonReserves,
+            fee,
+            totalSupply,
+            onMoon,
+            adminAddress,
+            vTon,
+            tonTheMoon,
+            feeRate,
+        };
+    }
+
+    async getOldMasterData(provider: ContractProvider) {
         const fees = await provider.get('get_master_data', []);
         const tonReserves = fees.stack.readBigNumber();
         const jettonReserves = fees.stack.readBigNumber();

@@ -19,6 +19,8 @@ class JettonMaster {
     precision: bigint;
     fee_rate: bigint;
     commission: bigint;
+    airdrop_rate: bigint;
+    farm_rate: bigint;
 
     constructor(
         ton_the_moon: bigint,
@@ -26,9 +28,11 @@ class JettonMaster {
         total_supply: bigint,
         precision: bigint,
         fee_rate: bigint,
+        commission: bigint = 100n,
+        airdrop_rate: bigint = 10n,
+        farm_rate: bigint = 10n,
         admin_address: string = 'address: 0xton',
         dex_router: string = 'address: dex router',
-        commission: bigint = 100n,
     ) {
         this.ton_the_moon = ton_the_moon;
         this.on_moon = false;
@@ -44,6 +48,8 @@ class JettonMaster {
         this.precision = precision;
         this.fee_rate = fee_rate;
         this.commission = commission;
+        this.airdrop_rate = airdrop_rate;
+        this.farm_rate = farm_rate;
     }
 
     get token_price() {
@@ -80,7 +86,7 @@ class JettonMaster {
             const remain_ton = amount_in - ton_has_to_pay;
             this.ton_reserves += true_amount_in;
             this.jetton_reserves -= amount_out;
-            this.fee += (ton_has_to_pay - true_amount_in);
+            this.fee += ton_has_to_pay - true_amount_in;
             return [remain_ton, 0n];
         } else {
             this.on_moon = true;
@@ -89,7 +95,7 @@ class JettonMaster {
             const remain_ton = amount_in - (expect_ton * (this.precision + this.fee_rate)) / this.precision;
             this.ton_reserves += expect_ton;
             this.jetton_reserves -= revised_jetton_amount;
-            this.fee += (ton_has_to_pay - true_amount_in)
+            this.fee += ton_has_to_pay - true_amount_in;
             return [remain_ton, amount_out - revised_jetton_amount];
         }
     }
@@ -112,17 +118,20 @@ class JettonMaster {
 
     calculateLiquidityAndFees() {
         const send_ton_liquidity = (this.ton_reserves * (this.precision - this.commission)) / this.precision;
-        const ton_fee_for_admin = this.ton_reserves - send_ton_liquidity + this.fee; 
+        const ton_fee_for_admin = this.ton_reserves - send_ton_liquidity + this.fee;
 
         const price_for_now = (PRICE_PRECISION * (this.ton_reserves + this.v_ton)) / this.jetton_reserves;
         const send_jetton_liquidity = (PRICE_PRECISION * send_ton_liquidity) / price_for_now;
-        const jetton_fee_for_admin = this.jetton_reserves - send_jetton_liquidity;
+        const jetton_fee_for_admin = (this.total_supply * (this.airdrop_rate + this.farm_rate)) / this.precision;
+        const true_jetton_fee_for_admin = this.jetton_reserves - send_jetton_liquidity;
+        this.total_supply -= (true_jetton_fee_for_admin - jetton_fee_for_admin);
 
         return {
             send_ton_liquidity,
             ton_fee_for_admin,
             send_jetton_liquidity,
-            jetton_fee_for_admin
+            jetton_fee_for_admin,
+            true_jetton_fee_for_admin,
         };
     }
 

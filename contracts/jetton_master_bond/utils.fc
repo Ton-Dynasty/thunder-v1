@@ -1,3 +1,80 @@
+#include "../common/workchain.fc";
+#include "opcodes.fc";
+
+;; deploy contract with state_init
+() deploy(
+    int bounce_flag,
+    slice recipient,
+    int value,
+    cell body,
+    cell state_init,
+    int mode
+) impure inline_ref {
+    var msg = begin_cell()
+        .store_msg_flags_and_address_none(bounce_flag)
+        .store_slice(recipient)
+        .store_coins(value)
+        .store_statinit_ref_and_body_ref(state_init, body)
+        .end_cell();
+    send_raw_message(msg, mode);
+}
+
+() send_bounceable_msg(slice to, int value, cell body, int mode) impure inline_ref {
+    var msg = begin_cell()
+        .store_msg_flags_and_address_none(BOUNCEABLE)
+        .store_slice(to) ;; dest
+        .store_coins(value)
+        .store_only_body_ref(body);
+    send_raw_message(msg.end_cell(), mode);
+}
+
+cell pack_excess(int query_id, slice response_address, int value) inline {
+    var msg = begin_cell()
+                .store_uint(NON_BOUNCEABLE, 6) ;; nobounce - int_msg_info$0 ihr_disabled:Bool bounce:Bool bounced:Bool src:MsgAddress -> 011000
+                .store_slice(response_address)
+                .store_coins(value)
+                .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
+                .store_uint(op::excesses, 32)
+                .store_uint(query_id, 64);
+    return msg.end_cell();
+}
+
+cell pack_jetton_wallet_data(int balance, slice owner_address, slice jetton_master_address) inline {
+    return begin_cell()
+    .store_coins(balance)
+    .store_slice(owner_address)
+    .store_slice(jetton_master_address)
+    .end_cell();
+}
+
+cell calculate_jetton_wallet_state_init(slice owner_address, slice jetton_master_address, cell jetton_wallet_code) inline {
+    return begin_cell()
+    .store_uint(0, 2) ;; 0b00 - No split_depth; No special
+    .store_maybe_ref(jetton_wallet_code)
+    .store_maybe_ref(
+        pack_jetton_wallet_data(
+            0, ;; balance
+            owner_address,
+            jetton_master_address)
+    )
+    .store_uint(0, 1) ;; Empty libraries
+    .end_cell();
+}
+
+slice calculate_jetton_wallet_address(cell state_init) inline {
+    return begin_cell()
+    .store_uint(4, 3) ;; 0b100 = addr_std$10 tag; No anycast
+    .store_int(MY_WORKCHAIN, 8)
+    .store_uint(cell_hash(state_init), 256)
+    .end_cell()
+    .begin_parse();
+}
+
+slice calculate_user_jetton_wallet_address(slice owner_address, slice jetton_master_address, cell jetton_wallet_code) inline {
+    return calculate_jetton_wallet_address(calculate_jetton_wallet_state_init(owner_address, jetton_master_address, jetton_wallet_code));
+}
+
+
 {-
  * @brief Estimate the amount of Jetton that can be minted based on the amount of TON provided.
  * 
@@ -10,13 +87,13 @@
 (int, int, int) simulate::estimate_buy_result(
     int amount_in ;; The amount of TON provided for minting.
 ) inline_ref {
-    int k = const::v_ton * master::total_supply; ;; this k come from original state
-    int amount_in_after_fees = (amount_in * (const::precision - const::fee_rate) / const::precision); ;; Subtract mint fees
-    int true_amount_in = min(amount_in_after_fees, const::ton_the_moon - master::ton_reserves); ;; Master can only mint up to const::ton_the_moon
-    int ton_has_to_pay = true_amount_in * const::precision / (const::precision - const::fee_rate);
+    int k = master::v_ton * master::total_supply; ;; this k come from original state
+    int amount_in_after_fees = (amount_in * (const::precision - master::fee_rate) / const::precision); ;; Subtract mint fees
+    int true_amount_in = min(amount_in_after_fees, master::ton_the_moon - master::ton_reserves); ;; Master can only mint up to master::ton_the_moon
+    int ton_has_to_pay = true_amount_in * const::precision / (const::precision - master::fee_rate);
 
     ;; Calculate amount_out base on (x + delta_x ) * (y - delta_y) = k
-    int x = master::ton_reserves + const::v_ton;
+    int x = master::ton_reserves + master::v_ton;
     int amount_out = master::jetton_reserves - (k / (x + true_amount_in));
 
     return (amount_out, true_amount_in, ton_has_to_pay);
@@ -34,12 +111,21 @@
 -}
 (int, int, int) simulate::estimate_sell_result(int jetton_in) inline_ref {
     
-    int k = const::v_ton * master::total_supply; ;; this k come from original state
-    int delta_ton = (master::ton_reserves + const::v_ton) - k / (master::jetton_reserves + jetton_in); ;; Calculate the ton amount out before fees
-    int fee = delta_ton * const::fee_rate / const::precision; ;; Calculate the fee
+    int k = master::v_ton * master::total_supply; ;; this k come from original state
+    int delta_ton = (master::ton_reserves + master::v_ton) - k / (master::jetton_reserves + jetton_in); ;; Calculate the ton amount out before fees
+    int fee = delta_ton * master::fee_rate / const::precision; ;; Calculate the fee
     int amount_out = delta_ton - fee; ;; Calculate the amount out after fees
 
     return (amount_out, delta_ton, fee);
+}
+
+() check_either_forward_payload(slice s) impure inline {
+    if (s.preload_uint(1)) {
+        ;; forward_payload in ref
+        (int remain_bits, int remain_refs) = slice_bits_refs(s);
+        throw_unless(error::invalid_message, (remain_refs == 1) & (remain_bits == 1)); ;; we check that there is no excess in the slice
+    }
+    ;; else forward_payload in slice - arbitrary bits and refs
 }
 
 () mint_jetton(
@@ -50,7 +136,7 @@
     slice recipient,
     slice response_address,
     int forward_ton_amount,
-    cell forward_payload
+    slice either_forward_payload
 ) impure inline_ref {
 
     ;; Mint jetton to recipient
@@ -61,7 +147,7 @@
     .store_slice(recipient)
     .store_slice(response_address)
     .store_coins(forward_ton_amount)
-    .store_ref(forward_payload)
+    .store_slice(either_forward_payload)
     .end_cell();
 
     ;; Calculate recipient's wallet address
